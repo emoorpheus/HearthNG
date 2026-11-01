@@ -1,7 +1,7 @@
 // The small line at the bottom right of Settings: versions and root state, to read off a photo of the screen.
 // Read when Settings opens (never at start-up). Everything that can't be read is simply left out.
 
-import {HEARTH_VERSION} from '../config/version';
+import {HEARTH_VERSION, UPSTREAM_VERSION} from '../config/version';
 import {exec} from './apps';
 import {type Failure, type RootState} from './failure';
 import {lunaCall} from './luna';
@@ -62,7 +62,7 @@ export function rootNote (kind: Failure | null): string {
 }
 
 export function aboutText (v: Versions, root: RootState, kind: Failure | null, hearth: string = HEARTH_VERSION): string {
-	const parts = [`Hearth ${hearth}`];
+	const parts = [`HearthNG ${hearth} (Hearth ${UPSTREAM_VERSION})`];
 	if (v.webos) parts.push(`webOS ${v.webos}`);
 	if (v.firmware) parts.push(`firmware ${v.firmware}`);
 	if (v.homebrew) parts.push(`Homebrew ${v.homebrew}`);

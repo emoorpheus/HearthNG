@@ -23,7 +23,7 @@
 #            service is up
 #   enable   create the start-up link      disable   remove it
 
-LAUNCHER_ID="tld.my.customlauncher"
+LAUNCHER_ID="com.hearthng.launcher"
 LAUNCHER="${LAUNCHER:-/media/developer/apps/usr/palm/applications/$LAUNCHER_ID}"
 DIR="$LAUNCHER/homehook"
 MARK="${MARK:-/tmp/inputhook}"

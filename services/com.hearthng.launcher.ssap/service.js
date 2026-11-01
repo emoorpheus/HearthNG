@@ -9,7 +9,7 @@ var net = require('net');
 var tls = require('tls');
 var crypto = require('crypto');
 
-var service = new Service('tld.my.customlauncher.ssap');
+var service = new Service('com.hearthng.launcher.ssap');
 var HOST = '127.0.0.1';
 var ALLOWED = ['ssap://com.webos.applicationManager/listLaunchPoints', 'ssap://tv/getExternalInputList'];
 
@@ -17,7 +17,7 @@ var ALLOWED = ['ssap://com.webos.applicationManager/listLaunchPoints', 'ssap://t
 var TRIES = [
 	{port: 3000, tls: false, origin: 'file://'},
 	{port: 3000, tls: false, origin: ''},
-	{port: 3000, tls: false, origin: 'file://tld.my.customlauncher'},
+	{port: 3000, tls: false, origin: 'file://com.hearthng.launcher'},
 	{port: 3000, tls: false, origin: 'http://localhost'},
 	{port: 3001, tls: true, origin: 'file://'},
 	{port: 3001, tls: true, origin: ''}

@@ -11,3 +11,4 @@ Project Progress/
 dist-legacy
 site/
 public/languages/
+scripts/.cache-*.mjs

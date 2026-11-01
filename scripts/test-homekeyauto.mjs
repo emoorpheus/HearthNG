@@ -13,7 +13,7 @@ eq(c.autoPick(seen(125, 774), {}), {code: 774}, 'LG table order: 774 before 125'
 eq(c.autoPick(seen(398), {}), null, 'a colour key is not a Home code');
 eq(c.autoPick(seen(773), null), null, 'keybinds file unknown: nothing is written');
 eq(c.autoPick([], {}), null, 'nothing detected');
-const ours = {'773': {action: 'launch', id: 'tld.my.customlauncher'}};
+const ours = {'773': {action: 'launch', id: 'com.hearthng.launcher'}};
 eq(c.autoPick(seen(774), ours), null, 'Hearth already has a button: no second one');
 const foreign = {'773': {action: 'launch', id: 'com.other.app'}};
 const p = c.autoPick(seen(773), foreign);

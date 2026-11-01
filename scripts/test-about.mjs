@@ -16,10 +16,10 @@ const pkg = JSON.parse(readFileSync(dir + '../package.json', 'utf8')).version;
 const info = JSON.parse(readFileSync(dir + '../public/appinfo.json', 'utf8')).version;
 eq([a.HEARTH_VERSION, a.HEARTH_VERSION], [pkg, info], 'the version in the app matches package.json and appinfo.json');
 
-eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79', homebrew: '0.7.3'}, 'yes', null, '9.9.9'), 'Hearth 9.9.9  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Homebrew 0.7.3  ·  Root: yes', 'full line when rooted');
-eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79'}, 'no', 'denied', '9.9.9'), 'Hearth 9.9.9  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Root: not available (the TV refused the command)', 'root refused: says so, no Homebrew version');
-eq(a.aboutText({}, 'no', 'no-service', '1'), 'Hearth 1  ·  Root: not available (Homebrew Channel service not found)', 'no service: says so');
-eq(a.aboutText({}, 'unknown', null, '1'), 'Hearth 1  ·  Root: checking…', 'before the check ends');
+eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79', homebrew: '0.7.3'}, 'yes', null, '9.9.9'), 'HearthNG 9.9.9 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Homebrew 0.7.3  ·  Root: yes', 'full line when rooted');
+eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79'}, 'no', 'denied', '9.9.9'), 'HearthNG 9.9.9 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Root: not available (the TV refused the command)', 'root refused: says so, no Homebrew version');
+eq(a.aboutText({}, 'no', 'no-service', '1'), 'HearthNG 1 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  Root: not available (Homebrew Channel service not found)', 'no service: says so');
+eq(a.aboutText({}, 'unknown', null, '1'), 'HearthNG 1 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  Root: checking…', 'before the check ends');
 
 const apps = [{id: 'a'}, {id: 'b'}, {id: 'c'}];
 eq(a.extendOrder(apps, ['b']), ['b', 'a', 'c'], 'apps not in the saved order go after it, in list order');

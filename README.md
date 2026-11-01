@@ -12,7 +12,7 @@ It replaces the busy home screen with something quiet:
 - **your apps and TV inputs in one row** along the bottom
 - a background that is plain **OLED black**, a **picture**, or a **slideshow** (your own photos or the 25 bundled photos)
 
-It is a normal webOS app (app ID `tld.my.customlauncher`). On a rooted TV it can also become the screen the TV starts into and the one the Home button opens.
+It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can also become the screen the TV starts into and the one the Home button opens.
 
 **Old and new web views:** one install file runs on **Chromium 38** (webOS 3) and on **Chromium 53 and newer** (webOS 4 up to the newest). A small loader picks the right build when the app starts.
 
@@ -184,7 +184,7 @@ New to this? The [Beginners guide](https://rudra-avatar.github.io/Hearth/BEGINNE
 
 ### Option 2: install the file yourself
 
-Download `tld.my.customlauncher_2.0.1_all.ipk` from the [Releases](../../releases) page, then use one of these:
+Download `com.hearthng.launcher_2.0.1_all.ipk` from the [Releases](../../releases) page, then use one of these:
 
 - **webOS Dev Manager on a computer** (Windows, Mac, Linux; [download](https://github.com/webosbrew/dev-manager-desktop)). No root needed, Developer Mode is enough.
 - **webOS Dev Manager on an Android phone** (the app *webOS Dev Manager* on Google Play). The downloaded file is in *Downloads*.
@@ -199,10 +199,10 @@ With Dev Manager:
 With SSH on a rooted TV:
 
 ```
-scp -O tld.my.customlauncher_2.0.1_all.ipk root@TV_IP:/tmp/
+scp -O com.hearthng.launcher_2.0.1_all.ipk root@TV_IP:/tmp/
 ssh root@TV_IP
-luna-send -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/tld.my.customlauncher_2.0.1_all.ipk","subscribe":true}'
-luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"tld.my.customlauncher"}'
+luna-send -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_2.0.1_all.ipk","subscribe":true}'
+luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.hearthng.launcher"}'
 ```
 
 ### Updating and removing
@@ -542,7 +542,7 @@ Older webOS versions do not need this.
 The script `tools/webos11-permission.sh` (inside the app) adds the permission. The installer writes Hearth's permission file again on every install or update, so the script installs itself as a boot hook that checks it at each start. Once, over SSH on the TV:
 
 ```
-sh /media/developer/apps/usr/palm/applications/tld.my.customlauncher/tools/webos11-permission.sh
+sh /media/developer/apps/usr/palm/applications/com.hearthng.launcher/tools/webos11-permission.sh
 ```
 
 Or from a computer, with the file from this repository (`public/tools/`):
@@ -578,7 +578,7 @@ More in the [Troubleshooting guide](https://rudra-avatar.github.io/Hearth/troubl
 - **ganondorft**, pull request #6: the webOS 11 permission fix and the Windows line-ending fix.
 - **iulyax27**, pull requests #8 and #10: icon batches, the Input Hook guide, and the ideas for quiet mode, OLED shift and *When Home is pressed*.
 - **Obednal97**, pull requests #16 to #22 and #25: input status (#16), the Settings scroll fix (#17), *Set Hearth as the TV's Home app* (#18), remote button reassigning and the remote drawings (#19, #22), *When Home is pressed* (#20), icon refresh after app updates (#21), and *When the TV turns on, open...* with the TV's start-up table method (#25). Hearth's code is adapted from theirs.
-- **simbasjungles**, free-my-tv pull request #285: the fix for the "1008" error that newer LG firmware gives a web page's connection to the TV's remote-control service (SSAP): a small packaged service connects with the right origin. Hearth's helper service `tld.my.customlauncher.ssap` follows that idea and is written in Hearth's own code; it is what makes the app list work without root on webOS 11.2.
+- **simbasjungles**, free-my-tv pull request #285: the fix for the "1008" error that newer LG firmware gives a web page's connection to the TV's remote-control service (SSAP): a small packaged service connects with the right origin. Hearth's helper service `com.hearthng.launcher.ssap` follows that idea and is written in Hearth's own code; it is what makes the app list work without root on webOS 11.2.
 - **Recent apps panel, icon shapes and bottom fade:** community contribution, author not named. The idea and the TV services to call came from it; Hearth's code is its own.
 
 **Projects and ideas:**
@@ -610,7 +610,7 @@ Needs Node 18+.
 npm install
 npm test           # unit tests, plus the shell tests of the TV scripts
 npm run build      # type-check, then build dist/ (app.js for Chrome 53+, app.legacy.js for webOS 3.x / Chromium 38)
-npm run package    # dist/ -> build/tld.my.customlauncher_<version>_all.ipk
+npm run package    # dist/ -> build/com.hearthng.launcher_<version>_all.ipk
 ```
 
 `npm run dev` serves the UI in a desktop browser with sample apps and folders.

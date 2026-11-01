@@ -161,10 +161,10 @@ eq(/experimental, webOS 4\.x/.test(homeAppRow({homeApp: ''}).label), true, 'the 
 eq(!!homeAppRow({homeApp: ''}).disabled, false, 'it is not greyed out on a TV without the setting (the toast says so)');
 eq(!!homeAppRow({homeApp: 'com.webos.app.home'}).disabled, false, 'it is usable on webOS 7.x where the setting exists');
 eq(homeAppRow({homeApp: 'com.webos.app.home'}).valueText, 'Off', 'Off while the setting names LG Home');
-eq(homeAppRow({homeApp: 'tld.my.customlauncher'}).valueText, 'On', 'On while it names Hearth');
+eq(homeAppRow({homeApp: 'com.hearthng.launcher'}).valueText, 'On', 'On while it names Hearth');
 eq(!!homeAppRow({homeApp: 'com.webos.app.home', homeHook: {running: true, linked: true}}).disabled, true, 'greyed out while the helper is on');
-eq(!!p.optionsFor('system', c0, {homeApp: 'tld.my.customlauncher', homeHook: {running: false, linked: false}}).find((o) => o.id === 'replaceHome').disabled, true, 'and the helper row is greyed out while the Home app setting names Hearth');
-eq(!!homeAppRow({homeApp: 'tld.my.customlauncher', homeHook: {running: true, linked: true}}).disabled, false, 'a row that is on stays usable so it can be switched off');
+eq(!!p.optionsFor('system', c0, {homeApp: 'com.hearthng.launcher', homeHook: {running: false, linked: false}}).find((o) => o.id === 'replaceHome').disabled, true, 'and the helper row is greyed out while the Home app setting names Hearth');
+eq(!!homeAppRow({homeApp: 'com.hearthng.launcher', homeHook: {running: true, linked: true}}).disabled, false, 'a row that is on stays usable so it can be switched off');
 eq(p.ROOT_OPTIONS.indexOf('homeApp') !== -1, true, 'the Home app row needs root');
 eq(p.optionsFor('clock', c0).map((o) => o.id).filter((id) => !/^weather/.test(id)).join(','), 'widgetOn,clockFormat,showPeriod,showDate,clockSize,clockFont,clockWeight,clockTop,clockLeft,clockAlign,clockColor,clockShadow,clockOpacity', 'the Widget tab (P41f: Show widget first): Time rows, then Widget look with the font after the size, no backdrop');
 const fonts = [];
