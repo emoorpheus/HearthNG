@@ -252,6 +252,13 @@ export function App () {
 		});
 	}, [config.themeSel]);   // eslint-disable-line react-hooks/exhaustive-deps
 	useEffect(() => { document.documentElement.classList.toggle('look-minimal', config.minimal); }, [config.minimal]);
+	// OLED pure black (HearthNG): html.oled-black = theme OLED black; html.oled-bare = and the background is the theme's own #000
+	// (built-in, no photo), so the gradient, the shades and the text shadow would draw black on black (rules: end of global.css)
+	useEffect(() => {
+		const el = document.documentElement.classList;
+		el.toggle('oled-black', config.theme === 'black');
+		el.toggle('oled-bare', config.theme === 'black' && config.background === 'theme' && config.wallpaper.mode === 'gradient');
+	}, [config.theme, config.background, config.wallpaper.mode]);
 	const iconStyle = effectiveIconStyle(config.iconStyle, config.theme);          // Accent mono is not offered in OLED black
 	// Dark mono icons: the tile background and the shape colour come from the theme (OLED black: pure #000, pixels off)
 	useEffect(() => {

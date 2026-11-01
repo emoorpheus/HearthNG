@@ -820,3 +820,13 @@ html, body {
 /* Settings -> Widget: miniature of the widget only (P76d). Left, width and height come from WidgetPreview (free space right of the option list). */
 .widget-preview { position: absolute; top: 540px; z-index: 5; pointer-events: none; }
 .widget-preview__strip { position: absolute; left: 0; top: 0; -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+
+/* ---------- OLED pure black (HearthNG; classes set in app.tsx) ---------- */
+/* html.oled-bare: theme OLED black + Wallpaper "The theme's own": one flat #000, no gradient layer, no shade, no bottom fade,
+   no text shadow (all of them would only draw black on black). With a photo they stay: they only darken the picture. */
+.oled-bare .wallpaper { background-color: #000; background-image: none; }
+.oled-bare .wallpaper__scrim, .oled-bare .wallpaper__fade { display: none; }
+.oled-bare .clock__time, .oled-bare .clock__period, .oled-bare .clock__date, .oled-bare .clock__weather { text-shadow: none; }
+/* html.oled-black: no soft (blurred) shadows under a picked-up tile, the Recent apps panel and dialogs; thin outlines and the focus ring stay */
+.oled-black .tile--lifted .tile__ring { box-shadow: 0 0 0 5px var(--color-tile-border-focus); }
+.oled-black .recents, .oled-black .dialog { box-shadow: 0 0 0 2px var(--color-tile-border); }

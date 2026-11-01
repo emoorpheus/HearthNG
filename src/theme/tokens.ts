@@ -39,8 +39,8 @@ const BLACK: Colors = {
 	textSecondary: '#A8A8A8',
 	textMuted: '#6A6A6A',
 	widgetInk: '#F2F2F2',
-	tileBg: '#101010',
-	tileBgFocus: '#1D1D1D',
+	tileBg: '#000000',        // OLED pure black (HearthNG; was #101010): pixels off behind the icons
+	tileBgFocus: '#000000',   // (was #1D1D1D) focus stays visible: white ring + larger tile
 	tileBorder: '#2A2A2A',
 	tileBorderFocus: '#F2F2F2',
 	badge: '#F2F2F2',
@@ -54,10 +54,10 @@ const BLACK: Colors = {
 	switchKnob: '#A8A8A8',
 	switchKnobOn: '#000000',
 	danger: '#EF7A73',
-	overlay: 'rgba(0, 0, 0, 0.78)',
+	overlay: '#000000',       // (was rgba(0, 0, 0, 0.78)) Settings on pure black: a photo wallpaper does not show through
 	pickerBg: '#000000',
 	iconInk: '#B9B9B9', iconTile: '#000000',
-	softInk: '#7A7A7A', softTile: '#0A0A0A', accentInk: '#E6E6E6', gradInk: '#6E6E6E',
+	softInk: '#7A7A7A', softTile: '#000000', accentInk: '#E6E6E6', gradInk: '#6E6E6E',
 	scrim: '0, 0, 0', scrimTop: '0.22', scrimMid: '0.08', scrimBottom: '0.5'
 };
 
