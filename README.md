@@ -1,5 +1,74 @@
 <p align="center"><img src="public/largeIcon.png" alt="Hearth icon" width="120"></p>
 
+# HearthNG for webOS
+
+**HearthNG** is a fork of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) 2.0.1. Everything after the
+HearthNG sections describes Hearth and applies to HearthNG too, except where these sections say otherwise.
+
+## What HearthNG changes
+
+- **Its own app ID** `com.hearthng.launcher` (Hearth: `tld.my.customlauncher`), title *HearthNG*, version 1.0.0. The
+  about line in Settings shows `HearthNG 1.0.0 (Hearth 2.0.1)`. HearthNG does not replace or update Hearth.
+- **Replace LG Home (helper)** (rooted TVs, *Settings, System, TV start*), for TVs where LG Home is its own process
+  (webOS 25: `flutter-client -i com.webos.app.home`):
+  - LG Home's process is **frozen** (`SIGSTOP`) while HearthNG is in front, so it cannot come back over HearthNG. It is
+    unfrozen by the *LG Home* tile, when the setting is switched off, when HearthNG is uninstalled and by the
+    emergency exit.
+  - After every launch the helper checks that HearthNG really is in front and asks again; if HearthNG still does not
+    show, it restarts it, and as a last resort opens LG Home and shows a notification.
+  - Standby: nothing is launched while the TV is off; when it is on again HearthNG is opened (not over HDMI or a cast).
+  - A "Home screen is loading…" notification appears only when HearthNG is late. Notifications are in Russian when the
+    TV's menu language is Russian, in English otherwise.
+  - A watchdog (`guard.sh`) starts the helper again if it stops (at most 5 times per boot, then it unfreezes LG Home).
+  - An **emergency exit** over SSH (below).
+  - On TVs without that LG Home process nothing is frozen and the helper behaves as in Hearth.
+  - Details: [`src/homehook/README.md`](src/homehook/README.md).
+- **Russian** comes with the app (*Settings, System, Hearth language*).
+- **OLED black** is pure black: tiles, the focused tile and the Settings background are `#000`; with the theme's own
+  background (no photo) the wallpaper is one flat black, without gradient, shading or text shadow.
+
+### Status
+
+Test build. HearthNG's changes are being tested on one TV: LG OLED65M59LA, webOS 25. Other TVs are untested.
+
+### Install HearthNG
+
+There is no Homebrew Channel repository for HearthNG yet (the address under *Install* below installs Hearth). Install
+the file `com.hearthng.launcher_1.0.0_all.ipk` with webOS Dev Manager (see *Option 2* below), or on a rooted TV over SSH
+(use your TV's address instead of `TV_IP`):
+
+```
+scp -O com.hearthng.launcher_1.0.0_all.ipk root@TV_IP:/tmp/
+ssh root@TV_IP
+luna-send -w 60000 -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_1.0.0_all.ipk","subscribe":true}'
+```
+
+### Moving from Hearth to HearthNG
+
+Hearth and HearthNG use the same helper folders on the TV (`/media/developer/launcher-*`), so use only one of them.
+Settings are not carried over (another app ID).
+
+1. In Hearth, switch off *Replace LG Home (helper)*, *Map home button* and the screen saver, and set *When the TV turns
+   on, open...* back to *TV default*.
+2. Uninstall Hearth (Homebrew Channel or Dev Manager).
+3. Install HearthNG, open it and switch on what you use.
+
+If Hearth stays installed and is opened with its helper switched on, it writes its own helper over HearthNG's; HearthNG's
+watchdog then unfreezes LG Home and stops. Switching *Replace LG Home (helper)* on again in HearthNG takes the folder back.
+
+### Emergency exit
+
+If HearthNG and LG Home both fail to show, over SSH:
+
+```
+sh /media/developer/launcher-homehook/stop.sh          # stops the helper and its watchdog, unfreezes LG Home
+sh /media/developer/launcher-homehook/stop.sh resume   # undo
+```
+
+The emergency exit survives a restart until `stop.sh resume` or until *Replace LG Home (helper)* is switched on again.
+
+---
+
 # Hearth for WebOS: a fast, calm home screen for webOS TVs
 
 **Hearth for WebOS** is made only for TVs that run webOS.
@@ -166,6 +235,8 @@ New to this? The [Beginners guide](https://rudra-avatar.github.io/Hearth/BEGINNE
 
 ### Option 1: through the Homebrew Channel (recommended, gets you updates)
 
+This installs Hearth (`tld.my.customlauncher`), not HearthNG.
+
 1. Open the **Homebrew Channel** on the TV and go to **Settings**.
 2. Choose **Add repository** and type this address:
 
@@ -184,7 +255,7 @@ New to this? The [Beginners guide](https://rudra-avatar.github.io/Hearth/BEGINNE
 
 ### Option 2: install the file yourself
 
-Download `com.hearthng.launcher_2.0.1_all.ipk` from the [Releases](../../releases) page, then use one of these:
+Download `com.hearthng.launcher_1.0.0_all.ipk` from the [Releases](../../releases) page, then use one of these:
 
 - **webOS Dev Manager on a computer** (Windows, Mac, Linux; [download](https://github.com/webosbrew/dev-manager-desktop)). No root needed, Developer Mode is enough.
 - **webOS Dev Manager on an Android phone** (the app *webOS Dev Manager* on Google Play). The downloaded file is in *Downloads*.
@@ -199,9 +270,9 @@ With Dev Manager:
 With SSH on a rooted TV:
 
 ```
-scp -O com.hearthng.launcher_2.0.1_all.ipk root@TV_IP:/tmp/
+scp -O com.hearthng.launcher_1.0.0_all.ipk root@TV_IP:/tmp/
 ssh root@TV_IP
-luna-send -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_2.0.1_all.ipk","subscribe":true}'
+luna-send -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_1.0.0_all.ipk","subscribe":true}'
 luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.hearthng.launcher"}'
 ```
 
