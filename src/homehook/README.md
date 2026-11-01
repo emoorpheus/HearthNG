@@ -1,67 +1,102 @@
-# Open the launcher instead of LG Home (experimental)
+# Open the launcher instead of LG Home (helper)
 
-Source of the "Open this launcher instead of LG Home" setting. The launcher writes these files to the TV itself
-(`/media/developer/launcher-homehook`); you never need to copy them by hand.
+Source of the **Settings → System → TV start → Replace LG Home (helper)** setting. The launcher writes these files to the TV itself
+(`/media/developer/launcher-homehook`); you never need to copy them by hand. Tested on one TV only: LG OLED65M59LA,
+webOS 25. Everything else (other models, webOS 3 to 24) is untested in HearthNG.
 
-**Nothing is replaced, mounted or modified.** A small shell script (`watch.sh`) runs in the background and watches which app the TV
-reports as being in front. When that becomes LG Home (Home button, leaving an app with Back, boot), it asks the TV to open the launcher.
+**Nothing on the TV's flash is replaced, mounted or modified.** A shell script (`watch.sh`) runs in the background and
+watches which app the TV reports as being in front. When that becomes LG Home (Home button, leaving an app with Back,
+boot), it asks the TV to open the launcher.
 
-- `watch.sh`: the watcher. Uses the TV's "app in front" subscription; if that keeps ending at once, it asks once a second instead.
-  After opening the launcher it **checks that the launcher really showed itself** (the launcher touches `/tmp/launcher-alive` whenever it is on screen)
-  and asks again, up to three times, if not. It also does this when the TV reports the launcher in front, because the TV can report an app in front
-  after its process has been closed, which is a black screen.
-- `apply.sh`: starts the watcher if it isn't running (and takes off a stand-in that version 1.5 mounted over LG Home, if one is left).
-- `stock.sh`: "I want LG's own Home now": the watcher stands down until LG Home has been left again. The launcher's "LG Home" tile runs it.
-- `diagnose.sh`: collects what is needed to see why something isn't working.
+## The files
 
-## The switch (Settings → Options)
+- `watch.sh`: the watcher.
+  - Uses the TV's "app in front" subscription; if that keeps ending at once, it asks once a second instead.
+  - After opening the launcher it checks, once a second, that the launcher really is in front, and asks again
+    (`VERIFY_TRIES`, 8). Still not there: it closes the launcher and starts it again (`RESTART_WAIT`, 30 s). Still not
+    there: it opens LG Home the way the launcher's "LG Home" tile does (`FAILSAFE=1`, the default) and shows a
+    notification.
+  - **Freezing LG Home.** Where LG Home is its own process (webOS 25: `flutter-client -i com.webos.app.home`), that
+    process is frozen (`SIGSTOP`) while the launcher is in front, so it cannot come back over the launcher. It is unfrozen
+    (`SIGCONT`) by `stock.sh` (the "LG Home" tile), by FAILSAFE, by `stop.sh`, by `guard.sh` when it gives up, when the
+    setting is switched off and when the launcher is uninstalled. Stopping only the watcher does **not** unfreeze it.
+    Without such a process nothing is frozen.
+  - An empty foreground counts as LG Home only while that LG Home process exists (`EMPTY_AS_HOME=auto`); elsewhere it is
+    left alone.
+  - The TV switched off with the remote (standby): nothing is launched while it is off. When it is on again and LG Home,
+    nothing or the launcher is in front, the launcher is opened; another app (HDMI, a cast) is left alone.
+  - A notification "Home screen is loading…" appears only if the launcher is not in front 3 s after it was asked for,
+    and is closed as soon as it (or another app) is in front. Notifications are in Russian when the TV's menu language is
+    Russian, in English otherwise (`TOAST_LANG`).
+  - webOS 4.x: `com.webos.app.fullhome` counts as LG Home. webOS 3 (no LG Home app): the home bar is seen in the system
+    log instead (from Hearth's own helper).
+- `guard.sh`: the watchdog, started together with the watcher. Every 10 s: if the watcher is not running (two checks in a
+  row) it starts it again with `apply.sh`, at most 5 times per boot; then it gives up, unfreezes LG Home and shows a
+  notification. If the launcher is uninstalled, or `watch.sh` is not HearthNG's (for example Hearth itself wrote its own
+  helper into the same folder), it unfreezes LG Home and exits. It never freezes anything.
+- `apply.sh`: starts the watcher and the guard if they are not running. Run at boot, whenever the launcher opens, and by
+  the guard. If the launcher is no longer installed it unfreezes LG Home and, after 40 s, removes its own boot link and
+  folder.
+- `stock.sh`: "I want LG's own Home now": unfreezes LG Home; the watcher stands down until LG Home has been left again.
+  The launcher's "LG Home" tile runs it.
+- `stop.sh`: the emergency exit (below).
+- `diagnose.sh`: collects what is needed to see why something isn't working. It changes nothing.
 
-- **Replace LG Home with a helper script**: installs the scripts, adds a link in `/var/lib/webosbrew/init.d` (`48-launcher-homehook`) so the
-  helper starts at boot, and starts the watcher. The helper also starts whenever the launcher opens. Off: stops it and deletes everything.
-  LG Home can flash for a moment before the launcher opens; the Input Hook app, or **Replace LG Home with a script and SAM**, avoids that.
-- On webOS 4.x the Home button opens LG's full-screen overlay (`com.webos.app.fullhome`). The watcher treats it like LG Home when the TV reports it in front,
-  but it usually never becomes the app in front, so there use **Set Hearth as the TV's Home app** instead (see `src/homeapp/README.md`).
+## The switch (Settings → System → TV start)
 
-## Reversing it
+**Replace LG Home (helper)**: writes the scripts, adds a link in `/var/lib/webosbrew/init.d` (`48-launcher-homehook`) so
+the helper starts at boot, and starts the watcher and the guard. Switching it on also undoes the emergency exit. Off:
+stops everything, unfreezes LG Home and deletes the files and the link.
 
-Any one of these works:
+Only one launcher can use this folder. Hearth (`tld.my.customlauncher`) uses the same one: if Hearth is opened with its own
+helper switched on, it rewrites the files with its own version, and HearthNG's guard then unfreezes LG Home and stops.
+Uninstall Hearth before using HearthNG.
 
-1. In the launcher: **Settings → Options → Replace LG Home with a helper script → OK** (stops it and deletes everything it added, the boot link included).
-2. Over SSH:
+## Emergency exit
+
+Over SSH (`ssh root@TV_IP`, with your TV's address):
+
+```
+sh /media/developer/launcher-homehook/stop.sh          # stop the watcher and the guard, unfreeze LG Home
+sh /media/developer/launcher-homehook/stop.sh resume   # undo: start them again
+```
+
+`stop.sh` leaves a file `/media/developer/launcher-homehook/stopped`. It survives a restart: while it is there, nothing
+starts the watcher (not the boot link, not the launcher, not the guard). `stop.sh resume`, or switching the setting on
+again in the launcher, removes it.
+
+## Removing it completely
+
+1. In the launcher: **Settings → System → TV start → Replace LG Home (helper) → OK** (stops it, unfreezes LG Home, deletes the
+   files and the boot link).
+2. Or over SSH:
    ```
-   rm -f /var/lib/webosbrew/init.d/48-launcher-homehook          # the start-at-boot script
-   kill "$(cat /tmp/launcher-homehook-watch.pid)"                # stop the helper now
-   rm -rf /media/developer/launcher-homehook                     # delete its files
+   sh /media/developer/launcher-homehook/stop.sh
+   rm -f /var/lib/webosbrew/init.d/48-launcher-homehook
+   rm -rf /media/developer/launcher-homehook
    ```
-3. A reboot stops the helper. If the boot link is still there it starts again a few seconds after boot, so also remove the link (above).
 
-**Before uninstalling the launcher, turn the setting off.** (If you forget, nothing breaks: the helper checks the launcher is installed
-before opening it, and otherwise leaves LG Home alone.)
+If the launcher is uninstalled with the setting still on, nothing breaks: the watcher and the guard check that the
+launcher is installed, unfreeze LG Home, and `apply.sh` removes the link and the folder at the next boot.
 
-## Seeing what is happening, and sharing the logs
+## Seeing what is happening
 
-Do this **while the problem is happening** (for example with the black screen showing; SSH still works then):
+Do this **while the problem is happening** (SSH still works with a black screen):
 
-1. Open an SSH session to the TV (`ssh root@TV_IP`, or your SSH app).
-2. Run:
-   ```
-   sh /media/developer/launcher-homehook/diagnose.sh
-   ```
-   It prints everything needed: the files, whether the helper is running (and how many copies), whether the scripts parse on the TV's shell,
-   a self-test of the helper's decision on the TV's own shell, the app in front, and the helper's log.
-3. Share it: **select all the output and copy it into your message**, or take screenshots of it, or copy the saved file to your PC:
-   ```
-   scp root@TV_IP:/tmp/launcher-diagnose.txt .
-   ```
-   and attach `launcher-diagnose.txt`.
+```
+sh /media/developer/launcher-homehook/diagnose.sh
+```
 
-To watch the helper live while you open an app and press Back: in one SSH window run `tail -f /tmp/launcher-homehook.log`, then use the TV.
-Lines look like `watcher: started`, `watcher: LG Home is in front: opened the launcher`, `watcher: the launcher has not shown itself: opening it again`,
-`launcher: first screen NNN ms after the page started` and `launcher: visible` / `launcher: hidden`.
+It prints the files, whether the watcher and the guard are running, whether the emergency exit is on, the frozen
+processes, whether the scripts parse on the TV's shell, a self-test of the watcher's decision on the TV's own shell, the
+app in front and the end of the log. The same text is saved in `/tmp/launcher-diagnose.txt`
+(`scp root@TV_IP:/tmp/launcher-diagnose.txt .`).
 
-**To get going again right away** (if the helper has stopped): `sh /media/developer/launcher-homehook/apply.sh` starts it if it isn't running.
-If it says it is running but the diagnose output shows it isn't, run `rm -f /tmp/launcher-homehook-watch.pid` first.
+To watch live: `tail -f /tmp/launcher-homehook.log`. Times are seconds since boot (`/proc/uptime`). Lines start with
+`watcher:`, `guard:` or `stop:`.
 
-## Notes
-- The "LG Home" tile in the launcher lets LG's own Home show: it runs `stock.sh`, then opens LG Home.
-- While the launcher is open it also ends LG's home app to free memory (Settings → Options → Close LG Home when this opens); the TV starts it again only when needed.
+## Tests
+
+`npm test` runs `scripts/test-homehook.sh` (any POSIX shell) and `scripts/test-homehook-ng.sh` (Linux only: it uses a
+real stand-in LG Home process and reads its state from `/proc`; skipped elsewhere). To run the second one with BusyBox,
+as on the TV: `sh scripts/test-homehook-ng.sh /path/to/busybox`.

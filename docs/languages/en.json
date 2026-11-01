@@ -379,6 +379,8 @@
     "homehook.theLauncherMustBe": "The launcher must be installed to do this",
     "homehook.theHelperFilesAre": "The helper files are missing, nothing was changed",
     "homehook.couldnTSetThat": "Couldn't set that up{detail}. Nothing was changed",
+    "homehook.theEmergencyExitIsOn": "The emergency exit is on (stop.sh): the helper stays stopped. Select \"Replace LG Home\" again to start it",
+    "homehook.statusStopped": "Stopped (emergency exit)",
     "keepreadycmd.theTvReportedSee": "the TV reported \"{state}\" (see {KEEP_LOG})",
     "keepreadycmd.couldnTChangeThis": "Couldn't change this{detail}. Nothing was changed",
     "keepreadycmd.keepHearthReadyOn": "Keep Hearth ready: on. Log: {KEEP_LOG}",

@@ -12,28 +12,30 @@ const here = (p) => new URL(p, import.meta.url).pathname;
 let fail = 0;
 const eq = (a, b, m) => { const ok = a === b; if (!ok) fail++; console.log(ok ? 'ok  ' : 'FAIL', m, ok ? '' : `(${a} != ${b})`); };
 
-eq([h.parseHookResult('applied\n[exit 0]'), h.parseHookResult('x\nlauncher-missing\n[exit 2]'), h.parseHookResult('garbage'), h.parseHookResult('')].join(','), 'applied,launcher-missing,failed,failed', 'the result word is found in the apply output');
+eq([h.parseHookResult('applied\n[exit 0]'), h.parseHookResult('x\nlauncher-missing\n[exit 2]'), h.parseHookResult('stopped\n[exit 0]'), h.parseHookResult('garbage'), h.parseHookResult('')].join(','), 'applied,launcher-missing,stopped,failed,failed', 'the result word is found in the apply output');
+eq(h.utf8Base64('plain ascii'), btoa('plain ascii'), 'ASCII text is encoded as before');
+eq(Buffer.from(h.utf8Base64('Домашний экран загружается…'), 'base64').toString('utf8'), 'Домашний экран загружается…', 'non-ASCII text is carried as UTF-8');
 eq([h.parseExit('hello\n[exit 0]'), h.parseExit('boom\n[exit 127]\n'), h.parseExit('no status')].map(String).join(','), '0,127,null', 'exit codes are read');
 eq(h.lastLine('base64: invalid option -- d\n[exit 1]'), 'base64: invalid option -- d', 'the last message is what the user is told');
 const st = (o) => JSON.stringify(h.parseHookStatus(o));
-eq([st('running\nlinked\n'), st('linked\n'), st('running\n'), st('')].join(' '), '{"running":true,"linked":true} {"running":false,"linked":true} {"running":true,"linked":false} {"running":false,"linked":false}', 'status output is read');
+eq([st('running\nlinked\n'), st('linked\n'), st('running\n'), st(''), st('linked\nstopped\n')].join(' '), '{"running":true,"linked":true,"stopped":false} {"running":false,"linked":true,"stopped":false} {"running":true,"linked":false,"stopped":false} {"running":false,"linked":false,"stopped":false} {"running":false,"linked":true,"stopped":true}', 'status output is read');
 
 const root = mkdtempSync(join(tmpdir(), 'fake-tv-'));
 const fake = (cmd) => cmd.split('/media/developer').join(root + '/media/developer').split('/var/lib/webosbrew').join(root + '/var/lib/webosbrew').split('/tmp/launcher').join(root + '/tmp/launcher');
-const env = () => ({...process.env, DRY_RUN: '1', LOG: root + '/tmp/log', APP_QML: root + '/usr/palm/qml', HOOK: root + '/media/developer/launcher-homehook', LAUNCHER: root + '/media/developer/apps/usr/palm/applications/com.hearthng.launcher', PIDFILE: root + '/tmp/launcher-homehook-watch.pid', ALLOW: root + '/tmp/launcher-allow-stock-home'});
+const env = () => ({...process.env, DRY_RUN: '1', LOG: root + '/tmp/log', APP_QML: root + '/usr/palm/qml', HOOK: root + '/media/developer/launcher-homehook', LAUNCHER: root + '/media/developer/apps/usr/palm/applications/com.hearthng.launcher', PIDFILE: root + '/tmp/launcher-homehook-watch.pid', GUARD_PIDFILE: root + '/tmp/launcher-homehook-guard.pid', ALLOW: root + '/tmp/launcher-allow-stock-home'});
 const run = (cmd) => execSync(fake(cmd), {shell: '/bin/sh', encoding: 'utf8', env: env()});
 const sh = (cmd) => { try { return run(cmd); } catch (e) { return String(e.stdout || ''); } };
 mkdirSync(root + '/tmp', {recursive: true});
 mkdirSync(root + '/usr/palm/qml', {recursive: true});
 mkdirSync(root + '/var/lib/webosbrew/init.d', {recursive: true});
-const files = {watchSh: readFileSync(here('../src/homehook/watch.sh'), 'utf8'), applySh: readFileSync(here('../src/homehook/apply.sh'), 'utf8'), stockSh: readFileSync(here('../src/homehook/stock.sh'), 'utf8'), diagnoseSh: readFileSync(here('../src/homehook/diagnose.sh'), 'utf8')};
+const files = {watchSh: readFileSync(here('../src/homehook/watch.sh'), 'utf8'), applySh: readFileSync(here('../src/homehook/apply.sh'), 'utf8'), stockSh: readFileSync(here('../src/homehook/stock.sh'), 'utf8'), diagnoseSh: readFileSync(here('../src/homehook/diagnose.sh'), 'utf8'), guardSh: readFileSync(here('../src/homehook/guard.sh'), 'utf8'), stopSh: readFileSync(here('../src/homehook/stop.sh'), 'utf8')};
 const hook = root + '/media/developer/launcher-homehook';
 const link = root + '/var/lib/webosbrew/init.d/48-launcher-homehook';
 const launcherDir = root + '/media/developer/apps/usr/palm/applications/com.hearthng.launcher';
 
-const runInstall = () => {
+const runInstall = (options) => {
   let output = '';
-  const steps = h.installSteps(files);
+  const steps = h.installSteps(files, options);
   for (let i = 0; i < steps.length; i++) {
     output = sh(h.withStatus(steps[i].command));
     if (i < steps.length - 1 && h.parseExit(output) !== 0) return {output, failedStep: steps[i].name};
@@ -48,12 +50,22 @@ writeFileSync(launcherDir + '/appinfo.json', '{}');
 
 // install (the boot link is always added)
 eq(h.parseHookResult(runInstall().output), 'applied', 'install works');
-eq(['watch.sh', 'apply.sh', 'stock.sh', 'diagnose.sh'].every((f) => readFileSync(hook + '/' + f, 'utf8') === files[f.replace('.sh', 'Sh')]), true, 'all four scripts were written byte for byte');
+eq(h.SCRIPT_NAMES.every((f) => readFileSync(hook + '/' + f, 'utf8') === files[f.replace('.sh', 'Sh')]), true, 'all six scripts were written byte for byte (UTF-8 included)');
+eq(/[^\x00-\x7f]/.test(files.watchSh), true, 'watch.sh does carry non-ASCII text (the Russian notifications)');
 eq(readFileSync(hook + '/version', 'utf8').trim(), h.HOOK_VERSION, 'the version was recorded');
 eq(sh(h.VERSION_COMMAND).trim(), h.HOOK_VERSION, 'the launcher can read the installed version back');
 eq(existsSync(link), true, 'the boot link exists');
-eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true}', 'status: linked (the watcher is not started in a dry run)');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false}', 'status: linked (the watcher is not started in a dry run)');
 eq(h.parseHookResult(sh(h.APPLY_COMMAND)), 'applied', 'applying again works');
+
+// the emergency exit (stop.sh): apply starts nothing, an update keeps it, switching the helper on undoes it
+writeFileSync(hook + '/stopped', '');
+eq(h.parseHookResult(sh(h.APPLY_COMMAND)), 'stopped', 'with the emergency exit on, apply says stopped');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":true}', 'status: stopped');
+eq(h.parseHookResult(runInstall().output), 'stopped', 'rewriting the files (an update) keeps the emergency exit');
+eq(existsSync(hook + '/stopped'), true, 'and its file');
+eq(h.parseHookResult(runInstall({resume: true}).output), 'applied', 'switching the helper on undoes the emergency exit');
+eq(existsSync(hook + '/stopped'), false, 'and removes its file');
 
 // installing again keeps the link, and it is added if it was missing (an older install, or one removed by hand)
 sh(`rm -f '${link}'`);
@@ -73,6 +85,12 @@ sh(h.withStatus(stopStep.command));
 await new Promise((r) => setTimeout(r, 300));
 let alive = true; try { process.kill(child.pid, 0); } catch { alive = false; }
 eq([alive, existsSync(root + '/tmp/launcher-homehook-watch.pid')].join(','), 'false,false', 'an older watcher is stopped and its pid file removed');
+const guardChild = spawn('sleep', ['60'], {stdio: 'ignore', detached: true}); guardChild.unref();
+writeFileSync(root + '/tmp/launcher-homehook-guard.pid', String(guardChild.pid));
+sh(h.withStatus(stopStep.command));
+await new Promise((r) => setTimeout(r, 300));
+let guardAlive = true; try { process.kill(guardChild.pid, 0); } catch { guardAlive = false; }
+eq([guardAlive, existsSync(root + '/tmp/launcher-homehook-guard.pid')].join(','), 'false,false', 'its guard is stopped too, and its pid file removed');
 
 // a watcher that ignores a polite stop (as a shell busy with a long command does) is still stopped
 const stubborn = spawn('sh', ['-c', 'trap : TERM; while true; do sleep 1; done'], {stdio: 'ignore', detached: true}); stubborn.unref();
@@ -95,7 +113,9 @@ eq(existsSync(hook + '/watch.sh.new') || existsSync(hook + '/apply.sh.new'), fal
 // removal
 sh(h.REMOVE_COMMAND);
 eq([existsSync(hook), existsSync(link), existsSync(root + '/tmp/launcher-allow-stock-home')].join(','), 'false,false,false', 'remove deletes the folder, the boot link and the stand-down flag');
-eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":false}', 'status: off after removal');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":false,"stopped":false}', 'status: off after removal');
+eq(h.REMOVE_COMMAND.includes("pkill -CONT -f '[f]lutter-client -i com\\.webos\\.app\\.home([^A-Za-z0-9._-]|$)'"), true, 'removal unfreezes LG Home (exact process pattern)');
+eq(h.REMOVE_COMMAND.indexOf('pkill -CONT') > h.REMOVE_COMMAND.indexOf('[l]auncher-homehook/watch.sh'), true, 'only after the watcher is stopped');
 eq(h.parseHookResult(sh(h.APPLY_COMMAND)), 'files-missing', 'apply after removal does nothing');
 
 // the commands themselves

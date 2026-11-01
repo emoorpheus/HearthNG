@@ -4,7 +4,9 @@
 
 import applySh from '../homehook/apply.sh?raw';
 import diagnoseSh from '../homehook/diagnose.sh?raw';
+import guardSh from '../homehook/guard.sh?raw';
 import stockSh from '../homehook/stock.sh?raw';
+import stopSh from '../homehook/stop.sh?raw';
 import watchSh from '../homehook/watch.sh?raw';
 import {exec} from './apps';
 import {classifyFailure, failureReason} from './failure';
@@ -21,7 +23,7 @@ export type {HookResult, HookStatus};
 // The TV's shell reads a carriage return as part of the word ("then\r"), so scripts from a Windows checkout would fail
 // with "syntax error". Always send them with plain line ends (idea from pull request #6, ganondorft).
 const lf = (text: string): string => text.replace(/\r\n?/g, '\n');
-const FILES = {watchSh: lf(watchSh), applySh: lf(applySh), stockSh: lf(stockSh), diagnoseSh: lf(diagnoseSh)};
+const FILES = {watchSh: lf(watchSh), applySh: lf(applySh), stockSh: lf(stockSh), diagnoseSh: lf(diagnoseSh), guardSh: lf(guardSh), stopSh: lf(stopSh)};
 
 export function getHookStatus (): Promise<HookStatus | null> {
 	if (!isWebOS()) return Promise.resolve(null);
@@ -35,10 +37,12 @@ export interface HookOutcome {
 }
 
 /** Writes the scripts, adds the boot link, and starts the watcher, one small step at a time.
- *  If it can't be done everything it added is removed again, and the outcome says why. */
-export function installHomeHook (): Promise<HookOutcome> {
+ *  If it can't be done everything it added is removed again, and the outcome says why.
+ *  `resume`: the user switched the helper on, so an emergency exit (stop.sh) that is still on is undone. Otherwise
+ *  (a newer helper after an update) the files are rewritten and an emergency exit stays on ('stopped'). */
+export function installHomeHook (resume: boolean = false): Promise<HookOutcome> {
 	if (!isWebOS()) return Promise.resolve({result: 'failed', detail: tt('homehook.notRunningOnATv')});
-	const steps = installSteps(FILES);
+	const steps = installSteps(FILES, {resume});
 	const run = (i: number): Promise<HookOutcome> => {
 		const step = steps[i];
 		return exec(withStatus(step.command), 15000).then(
@@ -51,7 +55,7 @@ export function installHomeHook (): Promise<HookOutcome> {
 			(error: Error): HookOutcome => ({result: 'failed', detail: `${step.name}: ${failureReason(classifyFailure(error), error && error.message ? error.message : '')}`})
 		);
 	};
-	return run(0).then((outcome) => outcome.result === 'applied' ? outcome : removeHomeHook().then(() => outcome));
+	return run(0).then((outcome) => (outcome.result === 'applied' || outcome.result === 'stopped') ? outcome : removeHomeHook().then(() => outcome));
 }
 
 export interface Reapplied extends HookOutcome {
@@ -68,7 +72,7 @@ export function reapplyHomeHook (): Promise<Reapplied> {
 	return exec(VERSION_COMMAND, 6000).then((out) => out.trim(), () => null).then((installed): Reapplied | Promise<Reapplied> => {
 		if (installed === null) return {result: 'failed', detail: tt('homehook.theHomebrewServiceDidNot'), fatal: false, unreachable: true};
 		if (installed !== HOOK_VERSION) {
-			return installHomeHook().then((outcome): Reapplied => ({...outcome, fatal: outcome.result !== 'applied'}));
+			return installHomeHook().then((outcome): Reapplied => ({...outcome, fatal: outcome.result !== 'applied' && outcome.result !== 'stopped'}));
 		}
 		return applyHomeHook().then((result): Reapplied => ({result, detail: '', fatal: result === 'launcher-missing' || result === 'files-missing'}));
 	});
@@ -146,6 +150,7 @@ export function markAliveSoon (note?: string, repeat: boolean = true): void {
 export function hookMessage (result: HookResult, detail = ''): string {
 	switch (result) {
 		case 'applied': return tt('homehook.onLgHomeNow');
+		case 'stopped': return tt('homehook.theEmergencyExitIsOn');
 		case 'launcher-missing': return tt('homehook.theLauncherMustBe');
 		case 'files-missing': return tt('homehook.theHelperFilesAre');
 		default: return tt('homehook.couldnTSetThat', {detail: detail ? ': ' + detail : ''});

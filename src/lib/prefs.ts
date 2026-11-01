@@ -37,7 +37,7 @@ export interface SystemInfo {
 	/** K2: the TV has a memory list that Keep Hearth ready can change (false: none; null/undefined: unknown) */
 	keepList?: boolean | null;
 	/** the hand-over watcher: running, and whether it starts at boot (null while unknown) */
-	homeHook: {running: boolean; linked: boolean} | null;
+	homeHook: {running: boolean; linked: boolean; stopped?: boolean} | null;
 	/** the launcher is in the TV's input list (null while unknown) */
 	tvInput?: boolean | null;
 	/** "When the TV turns on, open...": what is on the TV (null while unknown or not readable) */
@@ -454,7 +454,7 @@ const BASE_PREFS: PrefDef[] = [
 	},
 	{
 		id: 'replaceHome', tab: 'system', kind: 'action',
-		text: (_c, info) => (!info || !info.homeHook ? td('common.unknown') : info.homeHook.running ? td('common.on') : td('common.off'))
+		text: (_c, info) => (!info || !info.homeHook ? td('common.unknown') : info.homeHook.running ? td('common.on') : info.homeHook.stopped ? td('homehook.statusStopped') : td('common.off'))
 	},
 	{
 		// P58c (PR #18, Obednal97): the TV's own Home app setting; the row is never greyed out for the webOS version

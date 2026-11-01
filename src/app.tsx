@@ -1142,7 +1142,7 @@ export function App () {
 					const proceed = () => {
 						setNotice(null);
 						showToast(tt('app.settingUp3'));
-						installHomeHook().then(({result, detail}) => {
+						installHomeHook(true).then(({result, detail}) => {
 							if (result !== 'applied') { refresh(); showToast(hookMessage(result, detail), 'error'); return; }
 							updateConfig({...config, replaceHome: true});
 							refresh();
