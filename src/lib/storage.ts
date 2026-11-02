@@ -239,6 +239,12 @@ export interface UserConfig {
 	showLabels: boolean;
 	/** minimalist look: no borders around icons or on the selected one; the selected icon is simply larger */
 	minimal: boolean;
+	/** HearthNG: the thin outline round every icon (off: none at rest; the selected icon keeps its ring) */
+	tileFrame: boolean;
+	/** HearthNG: names only under the selected icon (with Show app names on) */
+	labelsOnFocus: boolean;
+	/** HearthNG: the user's own look, kept when a preset replaced it (Settings -> Look -> Preset -> Your own brings it back); null = none */
+	presetStash: PresetLook | null;
 	/** the LG Home and System Settings tiles at the end of the row (Hearth's own Settings tile is always there) */
 	showLgHome: boolean;
 	/** inputs with nothing plugged in are greyed out and HDMI-CEC device names are shown (P62, PR #16) */
@@ -369,6 +375,9 @@ export const DEFAULT_CONFIG: UserConfig = {
 	homeFocus: 'last',                // P41c
 	showLabels: true,
 	minimal: false,
+	tileFrame: true,
+	labelsOnFocus: false,
+	presetStash: null,
 	showLgHome: false,                // P41c: hidden on a fresh install (saved settings keep theirs)
 	inputStatus: true,
 	showSystem: false,                // P41c: same
@@ -387,6 +396,27 @@ export const DEFAULT_CONFIG: UserConfig = {
 	weather: DEFAULT_WEATHER,
 	wallpaper: DEFAULT_WALLPAPER
 };
+
+/** HearthNG presets: the settings a look preset sets (colours and decorations; sizes and positions are never part of it). */
+export const PRESET_KEYS = ['theme', 'themeSel', 'background', 'wallpaperOpacity', 'fadeStrength', 'fadeHeight', 'iconStyle', 'minimal', 'iconLight', 'iconColor', 'iconOpacity',
+	'tileFrame', 'showLabels', 'labelsOnFocus', 'labelColor', 'labelWeight', 'oledShift', 'quietSec', 'quietDimSec', 'quietDimLevel'] as const;
+export const PRESET_CLOCK_KEYS = ['color', 'shadow', 'shadowStrength', 'opacity', 'weight'] as const;
+export type PresetKey = typeof PRESET_KEYS[number];
+export type PresetClockKey = typeof PRESET_CLOCK_KEYS[number];
+/** A look as a preset sees it; the kept copy of the user's own look also holds the wallpaper and the widget's theme ink. */
+export type PresetLook = Pick<UserConfig, PresetKey | 'wallpaper'> & {clock: Pick<ClockConfig, PresetClockKey> & {ink?: string}};
+
+/** The preset-relevant part of the settings (copies, so later changes do not reach it). */
+export function lookOf (c: UserConfig): PresetLook {
+	const out = {wallpaper: {...c.wallpaper}} as Record<string, unknown>;
+	const src = c as unknown as Record<string, unknown>;
+	PRESET_KEYS.forEach((k) => { out[k] = src[k]; });
+	const clock: Record<string, unknown> = {};
+	PRESET_CLOCK_KEYS.forEach((k) => { clock[k] = c.clock[k]; });
+	if (c.clock.ink) clock.ink = c.clock.ink;
+	out.clock = clock;
+	return out as unknown as PresetLook;
+}
 
 function stringList (value: unknown): string[] | null {
 	return Array.isArray(value) ? value.filter((x): x is string => typeof x === 'string') : null;
@@ -466,122 +496,12 @@ export function loadConfig (): UserConfig {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return {...DEFAULT_CONFIG};
 		restoreThemeFonts();          // P80: the kept theme's font ids must be known before the saved font is checked
-		const parsed = JSON.parse(raw) as Partial<UserConfig> & {wallpaper?: Partial<WallpaperConfig>; clock?: Partial<ClockConfig>; weather?: Partial<WeatherConfig>};
+		const parsed = JSON.parse(raw) as Saved;
 		// Issue #32: the 1.2.0 photos (nature-NN) are other numbers in 2.0: a lookup table (lib/legacyids.ts), never a plain rename; runs BEFORE the backup below, so the backup carries the right id
 		if (typeof parsed.background === 'string') parsed.background = currentPhotoId(parsed.background);
 		if (typeof parsed.screensaverSource === 'string') parsed.screensaverSource = currentSaverSource(parsed.screensaverSource);
-		const w: Partial<WallpaperConfig> = parsed.wallpaper || {};
-		const c: Partial<ClockConfig> = parsed.clock || {};
-		const wx: Partial<WeatherConfig> = parsed.weather || DEFAULT_WEATHER;
-		const wc = wx.city as Partial<City> | null | undefined;
-		const city: City | null = wc && typeof wc.name === 'string' && wc.name && validCoords(wc.lat, wc.lon) ? {name: wc.name.slice(0, 60), lat: wc.lat as number, lon: wc.lon as number, detail: typeof wc.detail === 'string' ? wc.detail.slice(0, 80) : undefined} : null;
-		const mode: WallpaperMode = w.mode === 'image' || w.mode === 'folder' ? w.mode : 'gradient';
-		const path = typeof w.path === 'string' ? w.path : '';
-		const interval = typeof w.intervalSec === 'number' && w.intervalSec >= 5 ? w.intervalSec : DEFAULT_WALLPAPER.intervalSec;
-		const out: UserConfig = {
-			defaultsV: DEFAULTS_VERSION,
-			appIds: stringList(parsed.appIds),
-			// older settings listed the apps to SHOW: they are converted once the app list is known
-			hiddenIds: stringList(parsed.hiddenIds) !== null ? stringList(parsed.hiddenIds) : (stringList(parsed.appIds) === null ? [] : null),
-			sourceIds: stringList(parsed.sourceIds) || [],
-			tileOrder: stringList(parsed.tileOrder),
-			favourites: stringList(parsed.favourites) || [],
-			closeHome: parsed.closeHome !== false,
-			tvApps: parsed.tvApps === true,
-			language: typeof parsed.language === 'string' ? languageId(parsed.language) : DEFAULT_LANGUAGE,
-			showDebug: parsed.showDebug === true,
-			replaceHome: parsed.replaceHome === true,
-			homeApp: parsed.homeApp === true,
-			homeAppPrevious: typeof parsed.homeAppPrevious === 'string' && /^[A-Za-z0-9._-]+$/.test(parsed.homeAppPrevious) ? parsed.homeAppPrevious : '',
-			powerOnApp: typeof parsed.powerOnApp === 'string' && /^[A-Za-z0-9._-]+$/.test(parsed.powerOnApp) ? parsed.powerOnApp : '',
-			powerOnNetwork: parsed.powerOnNetwork === true,
-			keepReady: parsed.keepReady === true || (parsed.keepReady as unknown) === 3,   // P73: one switch; a saved level 3 reads as On, levels 1 and 2 as Off
-			keepRelaunch: parsed.keepRelaunch === true,
-			preloadOff: typeof parsed.preloadOff === 'number' && parsed.preloadOff > 0 && parsed.preloadOff < 500 ? Math.floor(parsed.preloadOff) : 0,
-			takeoverHome: parsed.takeoverHome === true,
-			screensaver: parsed.screensaver !== false,        // P41c: a saved setting without the field (updaters) reads as On
-			screensaverSource: typeof parsed.screensaverSource !== 'string' ? DEFAULT_CONFIG.screensaverSource : (parsed.screensaverSource.charAt(0) === '/' || /^@(photos|video|photo:photo-[0-9][0-9])$/.test(parsed.screensaverSource)) && parsed.screensaverSource.length < 400 ? parsed.screensaverSource : '',   // P41c: the built-in choices (@photos, @video) were dropped on reload before
-			screensaverInterval: typeof parsed.screensaverInterval === 'number' && parsed.screensaverInterval >= 5 && parsed.screensaverInterval <= 3600 ? Math.round(parsed.screensaverInterval) : 60,
-			screensaverShuffle: parsed.screensaverShuffle !== false,
-			screensaverPowerOff: typeof parsed.screensaverPowerOff === 'number' && parsed.screensaverPowerOff >= 0 && parsed.screensaverPowerOff <= 86400 ? (parsed.screensaverPowerOff === 30 ? 60 : Math.round(parsed.screensaverPowerOff)) : (parsed.screensaverPowerOff === undefined ? DEFAULT_CONFIG.screensaverPowerOff : 0),
-			screensaverCare: parsed.screensaverCare !== false && (parsed.screensaverCare as unknown) !== 'off',
-			screensaverDim: parsed.screensaverDim === true,
-			screensaverFit: parsed.screensaverFit === 'fill' ? 'fill' : 'fit',
-			screensaverRecursive: parsed.screensaverRecursive === true,
-			theme: THEME_IDS.indexOf(parsed.theme as ThemeName) !== -1 ? (parsed.theme as ThemeName) : 'black',
-			background: BACKGROUND_IDS.indexOf(parsed.background as string) !== -1 ? (parsed.background as string) : 'theme',
-			iconScale: ranged(parsed.iconScale, 'iconScale'),
-			iconOpacity: ranged(parsed.iconOpacity, 'iconOpacity'),
-			iconGap: ranged(parsed.iconGap, 'iconGap'),
-			wallpaperOpacity: ranged(parsed.wallpaperOpacity, 'wallpaperOpacity'),
-			fadeStrength: ranged(parsed.fadeStrength, 'fadeStrength'),
-			fadeHeight: ranged(parsed.fadeHeight, 'fadeHeight'),
-			iconStyle: ICON_STYLE_IDS.indexOf(parsed.iconStyle as string) !== -1 ? (parsed.iconStyle as string) : 'original',
-			iconLight: parsed.iconLight === true,
-			themeSel: typeof parsed.themeSel === 'string' && /^[a-z0-9-]{1,40}$/.test(parsed.themeSel) ? parsed.themeSel : '',
-			iconColor: PLAIN_COLOR_IDS.indexOf(parsed.iconColor as string) !== -1 ? (parsed.iconColor as string) : 'theme',
-			remoteModel: parsed.remoteModel === 'magic-2019' || parsed.remoteModel === 'magic-2021' || parsed.remoteModel === 'magic-2025' ? parsed.remoteModel : 'ir',
-			tileShape: TILE_SHAPE_IDS.indexOf(parsed.tileShape as string) !== -1 ? (parsed.tileShape as string) : 'rounded',
-			recentsW: ranged(parsed.recentsW, 'recentsW'),
-			recentsH: ranged(parsed.recentsH, 'recentsH'),
-			quietSec: ranged(parsed.quietSec, 'quietSec'),
-			quietDimSec: ranged(parsed.quietDimSec, 'quietDimSec'),
-			quietDimLevel: ranged(parsed.quietDimLevel, 'quietDimLevel'),
-			screensaverDimLevel: typeof parsed.screensaverDimLevel === 'number' && parsed.screensaverDimLevel >= 10 && parsed.screensaverDimLevel <= 80 ? Math.round(parsed.screensaverDimLevel / 10) * 10 : 40,
-			oledShift: parsed.oledShift !== false,
-			labelColor: LABEL_COLOR_IDS.indexOf(parsed.labelColor as string) !== -1 ? (parsed.labelColor as string) : 'theme',
-			labelFont: parsed.labelFont === 'default' || CLOCK_FONT_IDS.indexOf(parsed.labelFont as ClockFont) !== -1 ? (parsed.labelFont as string) : 'default',
-			labelSize: typeof parsed.labelSize === 'number' && parsed.labelSize >= 80 && parsed.labelSize <= 140 ? Math.round(parsed.labelSize / 10) * 10 : 100,
-			labelWeight: LABEL_WEIGHTS.indexOf(parsed.labelWeight as number) !== -1 ? (parsed.labelWeight as number) : 400,
-			homeFocus: parsed.homeFocus === 'first' ? 'first' : 'last',
-			scrollSpeed: SCROLL_SPEED_IDS.indexOf(parsed.scrollSpeed as ScrollSpeed) !== -1 ? (parsed.scrollSpeed as ScrollSpeed) : 'medium',
-			showLabels: parsed.showLabels !== false,
-			minimal: parsed.minimal === true,
-			showLgHome: parsed.showLgHome !== false,
-			inputStatus: parsed.inputStatus !== false,   // P41c: a saved setting without the field (updaters) reads as On; an explicit Off stays
-			showSystem: parsed.showSystem !== false,
-			orderByRecent: parsed.orderByRecent === true,
-			remap: cleanRemap(parsed.remap),
-			remapKept: parsed.remapKept === true,
-			sourceEdits: cleanEdits(parsed.sourceEdits),
-			appEdits: cleanEdits(parsed.appEdits),
-			rows: parsed.rows === 2 ? 2 : 1,
-			sideMargin: ranged(parsed.sideMargin, 'sideMargin'),
-			bottomMargin: ranged(parsed.bottomMargin, 'bottomMargin'),
-			favSideMargin: ranged(parsed.favSideMargin, 'favSideMargin'),
-			favBottomMargin: ranged(parsed.favBottomMargin, 'favBottomMargin'),
-			clockFormat: parsed.clockFormat === 'tv' || parsed.clockFormat === '24h' || parsed.clockFormat === '12h' ? parsed.clockFormat : DEFAULT_CONFIG.clockFormat,
-			clock: {
-				size: ranged(c.size, 'clockSize'),
-				show: c.show !== false,
-				weight: c.weight === 300 || c.weight === 400 || c.weight === 500 || c.weight === 600 || c.weight === 700 ? c.weight : 400,
-				font: CLOCK_FONT_IDS.indexOf(c.font as ClockFont) !== -1 ? (c.font as ClockFont) : 'outfit',
-				top: ranged(c.top, 'clockTop'),
-				left: ranged(c.left, 'clockLeft'),
-				color: widgetColor(c.color, parsed.theme),
-				...(validInk(c.ink) ? {ink: validInk(c.ink)} : {}),
-				shadow: c.shadow !== false,
-				shadowStrength: ranged(c.shadowStrength, 'clockShadow'),
-				opacity: ranged(c.opacity, 'clockOpacity'),
-				showDate: c.showDate !== false,
-				showPeriod: c.showPeriod !== false,
-				align: c.align === 'center' || c.align === 'right' ? c.align : 'left'
-			},
-			weather: {
-				on: wx.on === true && city !== null,
-				city,
-				unit: wx.unit === 'f' ? 'f' : 'c',
-				showCity: wx.showCity !== false,
-				showRange: wx.showRange === true   // P109: a saved setting without the field reads as Off (same as a fresh install)
-			},
-			wallpaper: {
-				mode: path ? mode : 'gradient',
-				path,
-				intervalSec: interval,
-				shuffle: w.shuffle !== false,
-				recursive: mode === 'folder' && w.recursive === true
-			}
-		};
+		const out = fromSaved(parsed);
+		out.presetStash = stashFrom(parsed);
 		if (parsed.defaultsV !== DEFAULTS_VERSION) {          // P41f: once per version, every saved look setting (own wallpaper included) goes back to the defaults
 			backUpLook(out);          // P106: the old look stays available through one row in Look
 			const fresh = withDefaultLook(out);
@@ -592,6 +512,141 @@ export function loadConfig (): UserConfig {
 	} catch {
 		return {...DEFAULT_CONFIG};
 	}
+}
+
+type Saved = Partial<UserConfig> & {wallpaper?: Partial<WallpaperConfig>; clock?: Partial<ClockConfig>; weather?: Partial<WeatherConfig>; presetStash?: unknown};
+
+/** HearthNG: the kept own look, checked by the same rules as the settings themselves (anything wrong in it falls back like a saved value would). */
+function stashFrom (parsed: Saved): PresetLook | null {
+	const st = parsed.presetStash as (Record<string, unknown> & {clock?: Record<string, unknown>; wallpaper?: Record<string, unknown>}) | null | undefined;
+	if (!st || typeof st !== 'object' || Array.isArray(st)) return null;
+	const merged: Record<string, unknown> = {...parsed, presetStash: null};
+	PRESET_KEYS.forEach((k) => { if (k in st) merged[k] = st[k]; });
+	const ownClock: Record<string, unknown> = {...(parsed.clock || {})};
+	delete ownClock.ink;
+	merged.clock = {...ownClock, ...(st.clock && typeof st.clock === 'object' ? st.clock : {})};
+	if (st.wallpaper && typeof st.wallpaper === 'object') merged.wallpaper = st.wallpaper;
+	return lookOf(fromSaved(merged as Saved));
+}
+
+/** The saved settings, every value checked (a wrong or missing one falls back to its default). */
+function fromSaved (parsed: Saved): UserConfig {
+	const w: Partial<WallpaperConfig> = parsed.wallpaper || {};
+	const c: Partial<ClockConfig> = parsed.clock || {};
+	const wx: Partial<WeatherConfig> = parsed.weather || DEFAULT_WEATHER;
+	const wc = wx.city as Partial<City> | null | undefined;
+	const city: City | null = wc && typeof wc.name === 'string' && wc.name && validCoords(wc.lat, wc.lon) ? {name: wc.name.slice(0, 60), lat: wc.lat as number, lon: wc.lon as number, detail: typeof wc.detail === 'string' ? wc.detail.slice(0, 80) : undefined} : null;
+	const mode: WallpaperMode = w.mode === 'image' || w.mode === 'folder' ? w.mode : 'gradient';
+	const path = typeof w.path === 'string' ? w.path : '';
+	const interval = typeof w.intervalSec === 'number' && w.intervalSec >= 5 ? w.intervalSec : DEFAULT_WALLPAPER.intervalSec;
+	const out: UserConfig = {
+		defaultsV: DEFAULTS_VERSION,
+		appIds: stringList(parsed.appIds),
+		// older settings listed the apps to SHOW: they are converted once the app list is known
+		hiddenIds: stringList(parsed.hiddenIds) !== null ? stringList(parsed.hiddenIds) : (stringList(parsed.appIds) === null ? [] : null),
+		sourceIds: stringList(parsed.sourceIds) || [],
+		tileOrder: stringList(parsed.tileOrder),
+		favourites: stringList(parsed.favourites) || [],
+		closeHome: parsed.closeHome !== false,
+		tvApps: parsed.tvApps === true,
+		language: typeof parsed.language === 'string' ? languageId(parsed.language) : DEFAULT_LANGUAGE,
+		showDebug: parsed.showDebug === true,
+		replaceHome: parsed.replaceHome === true,
+		homeApp: parsed.homeApp === true,
+		homeAppPrevious: typeof parsed.homeAppPrevious === 'string' && /^[A-Za-z0-9._-]+$/.test(parsed.homeAppPrevious) ? parsed.homeAppPrevious : '',
+		powerOnApp: typeof parsed.powerOnApp === 'string' && /^[A-Za-z0-9._-]+$/.test(parsed.powerOnApp) ? parsed.powerOnApp : '',
+		powerOnNetwork: parsed.powerOnNetwork === true,
+		keepReady: parsed.keepReady === true || (parsed.keepReady as unknown) === 3,   // P73: one switch; a saved level 3 reads as On, levels 1 and 2 as Off
+		keepRelaunch: parsed.keepRelaunch === true,
+		preloadOff: typeof parsed.preloadOff === 'number' && parsed.preloadOff > 0 && parsed.preloadOff < 500 ? Math.floor(parsed.preloadOff) : 0,
+		takeoverHome: parsed.takeoverHome === true,
+		screensaver: parsed.screensaver !== false,        // P41c: a saved setting without the field (updaters) reads as On
+		screensaverSource: typeof parsed.screensaverSource !== 'string' ? DEFAULT_CONFIG.screensaverSource : (parsed.screensaverSource.charAt(0) === '/' || /^@(photos|video|photo:photo-[0-9][0-9])$/.test(parsed.screensaverSource)) && parsed.screensaverSource.length < 400 ? parsed.screensaverSource : '',   // P41c: the built-in choices (@photos, @video) were dropped on reload before
+		screensaverInterval: typeof parsed.screensaverInterval === 'number' && parsed.screensaverInterval >= 5 && parsed.screensaverInterval <= 3600 ? Math.round(parsed.screensaverInterval) : 60,
+		screensaverShuffle: parsed.screensaverShuffle !== false,
+		screensaverPowerOff: typeof parsed.screensaverPowerOff === 'number' && parsed.screensaverPowerOff >= 0 && parsed.screensaverPowerOff <= 86400 ? (parsed.screensaverPowerOff === 30 ? 60 : Math.round(parsed.screensaverPowerOff)) : (parsed.screensaverPowerOff === undefined ? DEFAULT_CONFIG.screensaverPowerOff : 0),
+		screensaverCare: parsed.screensaverCare !== false && (parsed.screensaverCare as unknown) !== 'off',
+		screensaverDim: parsed.screensaverDim === true,
+		screensaverFit: parsed.screensaverFit === 'fill' ? 'fill' : 'fit',
+		screensaverRecursive: parsed.screensaverRecursive === true,
+		theme: THEME_IDS.indexOf(parsed.theme as ThemeName) !== -1 ? (parsed.theme as ThemeName) : 'black',
+		background: BACKGROUND_IDS.indexOf(parsed.background as string) !== -1 ? (parsed.background as string) : 'theme',
+		iconScale: ranged(parsed.iconScale, 'iconScale'),
+		iconOpacity: ranged(parsed.iconOpacity, 'iconOpacity'),
+		iconGap: ranged(parsed.iconGap, 'iconGap'),
+		wallpaperOpacity: ranged(parsed.wallpaperOpacity, 'wallpaperOpacity'),
+		fadeStrength: ranged(parsed.fadeStrength, 'fadeStrength'),
+		fadeHeight: ranged(parsed.fadeHeight, 'fadeHeight'),
+		iconStyle: ICON_STYLE_IDS.indexOf(parsed.iconStyle as string) !== -1 ? (parsed.iconStyle as string) : 'original',
+		iconLight: parsed.iconLight === true,
+		themeSel: typeof parsed.themeSel === 'string' && /^[a-z0-9-]{1,40}$/.test(parsed.themeSel) ? parsed.themeSel : '',
+		iconColor: PLAIN_COLOR_IDS.indexOf(parsed.iconColor as string) !== -1 ? (parsed.iconColor as string) : 'theme',
+		remoteModel: parsed.remoteModel === 'magic-2019' || parsed.remoteModel === 'magic-2021' || parsed.remoteModel === 'magic-2025' ? parsed.remoteModel : 'ir',
+		tileShape: TILE_SHAPE_IDS.indexOf(parsed.tileShape as string) !== -1 ? (parsed.tileShape as string) : 'rounded',
+		recentsW: ranged(parsed.recentsW, 'recentsW'),
+		recentsH: ranged(parsed.recentsH, 'recentsH'),
+		quietSec: ranged(parsed.quietSec, 'quietSec'),
+		quietDimSec: ranged(parsed.quietDimSec, 'quietDimSec'),
+		quietDimLevel: ranged(parsed.quietDimLevel, 'quietDimLevel'),
+		screensaverDimLevel: typeof parsed.screensaverDimLevel === 'number' && parsed.screensaverDimLevel >= 10 && parsed.screensaverDimLevel <= 80 ? Math.round(parsed.screensaverDimLevel / 10) * 10 : 40,
+		oledShift: parsed.oledShift !== false,
+		labelColor: LABEL_COLOR_IDS.indexOf(parsed.labelColor as string) !== -1 ? (parsed.labelColor as string) : 'theme',
+		labelFont: parsed.labelFont === 'default' || CLOCK_FONT_IDS.indexOf(parsed.labelFont as ClockFont) !== -1 ? (parsed.labelFont as string) : 'default',
+		labelSize: typeof parsed.labelSize === 'number' && parsed.labelSize >= 80 && parsed.labelSize <= 140 ? Math.round(parsed.labelSize / 10) * 10 : 100,
+		labelWeight: LABEL_WEIGHTS.indexOf(parsed.labelWeight as number) !== -1 ? (parsed.labelWeight as number) : 400,
+		homeFocus: parsed.homeFocus === 'first' ? 'first' : 'last',
+		scrollSpeed: SCROLL_SPEED_IDS.indexOf(parsed.scrollSpeed as ScrollSpeed) !== -1 ? (parsed.scrollSpeed as ScrollSpeed) : 'medium',
+		showLabels: parsed.showLabels !== false,
+		minimal: parsed.minimal === true,
+		tileFrame: parsed.tileFrame !== false,
+		labelsOnFocus: parsed.labelsOnFocus === true,
+		presetStash: null,
+		showLgHome: parsed.showLgHome !== false,
+		inputStatus: parsed.inputStatus !== false,   // P41c: a saved setting without the field (updaters) reads as On; an explicit Off stays
+		showSystem: parsed.showSystem !== false,
+		orderByRecent: parsed.orderByRecent === true,
+		remap: cleanRemap(parsed.remap),
+		remapKept: parsed.remapKept === true,
+		sourceEdits: cleanEdits(parsed.sourceEdits),
+		appEdits: cleanEdits(parsed.appEdits),
+		rows: parsed.rows === 2 ? 2 : 1,
+		sideMargin: ranged(parsed.sideMargin, 'sideMargin'),
+		bottomMargin: ranged(parsed.bottomMargin, 'bottomMargin'),
+		favSideMargin: ranged(parsed.favSideMargin, 'favSideMargin'),
+		favBottomMargin: ranged(parsed.favBottomMargin, 'favBottomMargin'),
+		clockFormat: parsed.clockFormat === 'tv' || parsed.clockFormat === '24h' || parsed.clockFormat === '12h' ? parsed.clockFormat : DEFAULT_CONFIG.clockFormat,
+		clock: {
+			size: ranged(c.size, 'clockSize'),
+			show: c.show !== false,
+			weight: c.weight === 300 || c.weight === 400 || c.weight === 500 || c.weight === 600 || c.weight === 700 ? c.weight : 400,
+			font: CLOCK_FONT_IDS.indexOf(c.font as ClockFont) !== -1 ? (c.font as ClockFont) : 'outfit',
+			top: ranged(c.top, 'clockTop'),
+			left: ranged(c.left, 'clockLeft'),
+			color: widgetColor(c.color, parsed.theme),
+			...(validInk(c.ink) ? {ink: validInk(c.ink)} : {}),
+			shadow: c.shadow !== false,
+			shadowStrength: ranged(c.shadowStrength, 'clockShadow'),
+			opacity: ranged(c.opacity, 'clockOpacity'),
+			showDate: c.showDate !== false,
+			showPeriod: c.showPeriod !== false,
+			align: c.align === 'center' || c.align === 'right' ? c.align : 'left'
+		},
+		weather: {
+			on: wx.on === true && city !== null,
+			city,
+			unit: wx.unit === 'f' ? 'f' : 'c',
+			showCity: wx.showCity !== false,
+			showRange: wx.showRange === true   // P109: a saved setting without the field reads as Off (same as a fresh install)
+		},
+		wallpaper: {
+			mode: path ? mode : 'gradient',
+			path,
+			intervalSec: interval,
+			shuffle: w.shuffle !== false,
+			recursive: mode === 'folder' && w.recursive === true
+		}
+	};
+	return out;
 }
 
 export function saveConfig (config: UserConfig): void {

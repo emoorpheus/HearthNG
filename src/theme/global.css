@@ -587,6 +587,11 @@ html, body {
 .rows--label-weight .tile .tile__label { font-weight: var(--label-weight); }
 /* Look → Show app names: off */
 .rows--no-labels .tile__label { display: none; }
+/* HearthNG: Look → Icon outline: off (home row only; the selected icon keeps its ring) */
+.no-tile-frame .rows .tile__box { box-shadow: none; }
+/* HearthNG: Look → Name only under the selected icon. Opacity only: the row keeps its height and nothing is laid out again */
+.labels-on-focus .rows .tile__label { opacity: 0; transition: color var(--motion-focus-ms) ease-out, opacity var(--motion-focus-ms) ease-out; }
+.labels-on-focus .rows .tile--focused .tile__label, .labels-on-focus .rows .tile--lifted .tile__label { opacity: 1; }
 
 /* ---------- options ---------- */
 

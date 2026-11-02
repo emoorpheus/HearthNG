@@ -252,6 +252,9 @@ export function App () {
 		});
 	}, [config.themeSel]);   // eslint-disable-line react-hooks/exhaustive-deps
 	useEffect(() => { document.documentElement.classList.toggle('look-minimal', config.minimal); }, [config.minimal]);
+	// HearthNG: Look -> Icon outline off; Look -> Name only under the selected icon (with Show app names on)
+	useEffect(() => { document.documentElement.classList.toggle('no-tile-frame', !config.tileFrame); }, [config.tileFrame]);
+	useEffect(() => { document.documentElement.classList.toggle('labels-on-focus', config.showLabels && config.labelsOnFocus); }, [config.showLabels, config.labelsOnFocus]);
 	// OLED pure black (HearthNG): html.oled-black = theme OLED black; html.oled-bare = and the background is the theme's own #000
 	// (built-in, no photo), so the gradient, the shades and the text shadow would draw black on black (rules: end of global.css)
 	useEffect(() => {

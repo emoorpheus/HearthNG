@@ -29,6 +29,7 @@ import {needsRestart, powerOnName, type PowerOnStatus} from './poweroncmd';
 import {LANGUAGES, PACK_ID, languageLabel, languageOf} from './languages';
 import {hasPack, packName} from '../i18n/pack';
 import {td} from '../i18n';
+import {choosePreset, presetChoices, presetOf, presetText} from './presets';
 
 export type PrefTab = 'look' | 'clock' | 'wallpaper' | 'saver' | 'system';
 
@@ -203,6 +204,8 @@ export function resetLook (c: UserConfig): UserConfig {
 		scrollSpeed: 'medium',
 		showLabels: true,
 		minimal: false,
+		tileFrame: true,
+		labelsOnFocus: false,
 		rows: 1,
 		sideMargin: RANGES.sideMargin.def,
 		bottomMargin: RANGES.bottomMargin.def,
@@ -279,6 +282,16 @@ function powerOnText (c: UserConfig, info?: SystemInfo): string {
 const BASE_PREFS: PrefDef[] = [
 	// ----- Look -----
 	{
+		// HearthNG: look presets (lib/presets.ts); ← → and OK step them, "Your own" brings back the look a preset replaced
+		id: 'preset', tab: 'look', kind: 'choice',
+		text: (c) => presetText(presetOf(c)),
+		change: (c, press) => {
+			const now = presetOf(c);
+			const v = stepValue(presetChoices(c), now, delta(press), press === 'ok');
+			return v === now ? c : choosePreset(c, v);
+		}
+	},
+	{
 		id: 'theme', tab: 'look', kind: 'choice',
 		text: (c) => { const t = c.themeSel ? userThemeList().filter((x) => x.slug === c.themeSel)[0] : undefined; return t ? t.name : themeText(c.theme); },
 		change: (c, press) => {
@@ -333,6 +346,10 @@ const BASE_PREFS: PrefDef[] = [
 		[1, 2] as const, (c) => c.rows, (c, v) => ({...c, rows: v}), (v) => (v === 1 ? td('pref.row1') : td('pref.rows2'))),
 	toggle('showLabels', 'look',
 		(c) => c.showLabels, (c, v) => ({...c, showLabels: v})),
+	toggle('labelsOnFocus', 'look',
+		(c) => c.labelsOnFocus, (c, v) => ({...c, labelsOnFocus: v}), (c) => c.showLabels),
+	toggle('tileFrame', 'look',
+		(c) => c.tileFrame, (c, v) => ({...c, tileFrame: v})),
 	choice('labelColor', 'look',
 		LABEL_COLOR_IDS, (c) => c.labelColor, (c, v) => ({...c, labelColor: v}), labelColorText),
 	choice('labelFont', 'look',
@@ -531,11 +548,11 @@ const BASE_PREFS: PrefDef[] = [
 
 /** Where every row lives, in order: tab, group ('' = no group, always shown), row ids. */
 const LAYOUT: [PrefTab, string, string[]][] = [
-	['look', '', ['restoreLook']],
+	['look', '', ['preset', 'restoreLook']],
 	['look', 'Theme', ['theme', 'themeExport', 'themeSave', 'themeRemove']],
-	['look', 'Icons', ['iconScale', 'tileShape', 'iconStyle', 'iconLight', 'iconColor', 'iconGap', 'iconOpacity']],
+	['look', 'Icons', ['iconScale', 'tileShape', 'iconStyle', 'iconLight', 'iconColor', 'tileFrame', 'iconGap', 'iconOpacity']],
 	['look', 'Home row', ['rows', 'scrollSpeed', 'homeFocus', 'sideMargin', 'bottomMargin', 'inputStatus', 'showLgHome', 'showSystem']],
-	['look', 'Labels', ['showLabels', 'labelColor', 'labelFont', 'labelSize', 'labelWeight']],
+	['look', 'Labels', ['showLabels', 'labelsOnFocus', 'labelColor', 'labelFont', 'labelSize', 'labelWeight']],
 	['look', 'Quiet mode', ['quietSec', 'quietDimSec', 'quietDimLevel', 'oledShift']],
 	['look', 'Favourites', ['favSideMargin', 'favBottomMargin']],
 	['look', 'Recent apps', ['recentsSize']],
