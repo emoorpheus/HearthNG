@@ -1,6 +1,6 @@
 # Changelog
 
-## HearthNG 1.0.0 (based on Hearth 2.0.1)
+## HearthNG 1.0.0 (based on Hearth 2.0.2)
 
 First version of the HearthNG fork. Test build.
 
@@ -9,6 +9,22 @@ First version of the HearthNG fork. Test build.
 - Russian language bundled.
 - *Look, Preset*: Standard, OLED, Night, Minimal and Gallery set the colours and decorations in one go (sizes and places stay); *Your own* brings back the look you had. New switches *Icon outline* and *Name only under the selected icon*. With the one-colour icon styles, letter tiles of apps without a picture are one colour too.
 - OLED black: pure black tiles, focus and Settings background; with the theme's own background, a flat black wallpaper without gradient, shading or text shadow.
+- Hearth 2.0.2 taken over: French and Polish, *Uninstall apps*, wallpaper *Picture size*, a 20 s slideshow step, screen saver *Brightness* in 10 % steps, shorter screen saver row names, *Add Hearth as a TV input* as one On/Off row (HearthNG no longer takes itself out of the TV inputs at start). Russian texts for all of it.
+
+## 2.0.2
+
+### Languages
+
+- New languages that come with Hearth: **Français** (fr) and **Polski** (pl), written and checked by native speakers. Credits: Polish by sir_RAFIK (issue #35); French by Foxinou35 (issue #33). They carry no *(machine translated)* mark.
+
+### Changes
+
+- *Add Hearth as a TV input* is back in System, TV start, as one On/Off row (rooted TVs). Hearth no longer takes itself out of the TV inputs after an update.
+- *Uninstall apps* button in Settings, Apps & Sources, Apps (rooted TVs): press it, then OK on an app to uninstall it, after a confirmation.
+- Wallpaper *Picture size*: *Fill the screen* (as before) or *Fit* (the whole picture). Your wallpaper stays as it was until you change it.
+- The wallpaper slideshow can change picture every 20 seconds.
+- Screen saver *Brightness*: *Dim* now goes from 10% to 80% in steps of 10% (your saved choice is kept).
+- Screen saver tab: the *Screen saver:* start of each row name is gone (the tab already says it).
 
 ## 2.0.1
 

@@ -3,6 +3,8 @@ export const BUNDLED_LANGUAGES: readonly {id: string; name: string}[] = [
 	{id: "ar", name: "العربية"},
 	{id: "de", name: "Deutsch"},
 	{id: "es", name: "Español"},
+	{id: "fr", name: "Français"},
 	{id: "id", name: "Bahasa Indonesia"},
+	{id: "pl", name: "Polski"},
 	{id: "ru", name: "Русский"}
 ];

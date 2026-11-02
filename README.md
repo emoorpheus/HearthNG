@@ -2,13 +2,13 @@
 
 # HearthNG for webOS
 
-**HearthNG** is a fork of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) 2.0.1. Everything after the
+**HearthNG** is a fork of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) 2.0.2. Everything after the
 HearthNG sections describes Hearth and applies to HearthNG too, except where these sections say otherwise.
 
 ## What HearthNG changes
 
 - **Its own app ID** `com.hearthng.launcher` (Hearth: `tld.my.customlauncher`), title *HearthNG*, version 1.0.0. The
-  about line in Settings shows `HearthNG 1.0.0 (Hearth 2.0.1)`. HearthNG does not replace or update Hearth.
+  about line in Settings shows `HearthNG 1.0.0 (Hearth 2.0.2)`. HearthNG does not replace or update Hearth.
 - **Replace LG Home (helper)** (rooted TVs, *Settings, System, TV start*), for TVs where LG Home is its own process
   (webOS 25: `flutter-client -i com.webos.app.home`):
   - LG Home's process is **frozen** (`SIGSTOP`) while HearthNG is in front, so it cannot come back over HearthNG. It is
@@ -127,7 +127,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
 - **Start the TV straight into Hearth** (rooted). *System, TV start, When the TV turns on, open...* opens Hearth at power-on.
 - **The Home button opens Hearth** (rooted). Hearth bundles the Input Hook key hook and starts it itself, so you need no other app; a helper script covers leaving apps with Back.
 - **Remote buttons** (rooted, experimental). Give the colour buttons and other dedicated buttons of your remote a new job.
-- **Languages.** Hearth's menus can be switched to Indonesian, Spanish, German or Arabic (machine translated, waiting for native speakers) or to your own language file. See [Language files](https://rudra-avatar.github.io/Hearth/language_packs/).
+- **Languages.** Hearth's menus can be switched to French and Polish (checked by native speakers), to Indonesian, Spanish, German or Arabic (machine translated, waiting for native speakers) or to your own language file. See [Language files](https://rudra-avatar.github.io/Hearth/language_packs/).
 - **Made to be fast.** The home screen is drawn from saved data first; everything else (app list, weather, helper checks) happens a few seconds later in the background. While another app is in front, Hearth lets go of its wallpaper and stops its clock.
 - **Clear messages.** When something cannot work on your TV, Hearth says what and why instead of failing silently, and greys out the options that need a rooted TV.
 
@@ -442,7 +442,7 @@ The weather comes from [Open-Meteo](https://open-meteo.com) (free, no account).
 
 *Settings, Screen saver, Custom Screen Saver (Photo, GIF, Video or Slideshow).* It is **on by default with a built-in video**; a failed set-up turns it off with a message.
 
-Under *Screen saver: pictures* you can choose:
+Under *Pictures* you can choose:
 
 - a photo
 - a GIF
@@ -506,7 +506,7 @@ A theme puts its values into the normal settings, so you can still change them a
 - the languages that come with Hearth (no root; they arrive with updates)
 - your own language file (OK loads it, rooted TVs)
 
-The bundled Indonesian, Spanish, German and Arabic packs are machine translated and are shown as *(machine translated)* until a native speaker reviews them.
+The bundled French pack (by Foxinou35) and Polish pack (by sir_RAFIK) were written and checked by native speakers. The bundled Indonesian, Spanish, German and Arabic packs are machine translated and are shown as *(machine translated)* until a native speaker reviews them.
 
 To add a language, see [Language files](https://rudra-avatar.github.io/Hearth/language_packs/) and the *Translation* issue form. Supported scripts: Latin, Cyrillic, Greek and Arabic (left to right).
 
@@ -567,7 +567,7 @@ A small background helper watches which app the TV reports as being in front. Wh
 
 - It needs one full restart of the TV to start working.
 - It is undone by choosing *TV default* (or `rm /var/luna/preferences/bootd.json` over SSH).
-- It replaces the old *Add the launcher as a TV input*; Hearth removes that input once after updating.
+- *System, TV start, Add Hearth as a TV input* (On/Off, rooted TVs) lists Hearth next to HDMI 1. Set the TV to start on its last input.
 
 Details and undo steps: [`src/poweron/README.md`](src/poweron/README.md).
 
