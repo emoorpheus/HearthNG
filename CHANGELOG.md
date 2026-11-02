@@ -5,7 +5,7 @@
 First version of the HearthNG fork. Test build.
 
 - New app ID `com.hearthng.launcher`, title HearthNG, version 1.0.0; the about line shows the Hearth version it is based on. It installs next to Hearth, does not update it and does not take over its settings.
-- *Replace LG Home (helper)*: LG Home's own process (webOS 25) is frozen while HearthNG is in front; checks after every launch, a restart of HearthNG and, as a last resort, LG Home with a notification; standby handled; a loading notification only when HearthNG is late (Russian or English by the TV's menu language); a watchdog that restarts the helper (at most 5 times per boot); an emergency exit (`stop.sh`, `stop.sh resume`) that survives a restart.
+- *Replace LG Home (helper)*: LG Home's own process (webOS 25) is frozen while HearthNG is in front; checks after every launch, a restart of HearthNG and, as a last resort, LG Home with a notification; standby handled; a subscription that goes quiet is noticed within about 10 s and made again; a loading notification only when HearthNG is late (Russian or English by the TV's menu language); a watchdog that restarts the helper (at most 5 times per boot); an emergency exit (`stop.sh`, `stop.sh resume`) that survives a restart.
 - Russian language bundled.
 - OLED black: pure black tiles, focus and Settings background; with the theme's own background, a flat black wallpaper without gradient, shading or text shadow.
 

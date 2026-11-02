@@ -21,6 +21,11 @@
 #  - The emergency exit file ($HOOK/stopped, made by stop.sh) exists: it does not start.
 #  - webOS 4.x: com.webos.app.fullhome counts as LG Home. webOS 3 (no LG Home app): the home bar is seen in the
 #    system log instead. If the "app in front" subscription keeps ending at once, it asks once a second instead.
+#  - The subscription can also go quiet while luna-send keeps running (Hearth P0.6 on a webOS 25 TV: no report for
+#    35 minutes after the first minute, the watcher alive, LG Home left on screen). check_loop asks once every
+#    CHECK_EVERY s what is in front and compares it with the last report; CHECK_MISSES checks in a row that disagree
+#    (or one report handled for HANDLE_MAX s): the subscription is ended and made again, and its first report (what is
+#    in front now) is handled as usual. After SILENT_MAX such restarts it asks once a second instead.
 #  - WATCH_STDIN=1 / WATCH_BAR_STDIN=1: test modes (reports from stdin; no pid file, no subscription, nothing frozen
 #    at start). diagnose.sh uses WATCH_STDIN for its self-test.
 # The line in open_launcher that launches the launcher must end in ">/dev/null 2>&1": diagnose.sh's self-test cuts that
@@ -65,6 +70,15 @@ STANDBY_FLAG="${STANDBY_FLAG:-/tmp/launcher-standby}"   # exists = the TV went t
 STANDBY_REF="${STANDBY_REF:-/tmp/launcher-standby-ref}" # touched when the TV went to standby
 WAKE_REF="${WAKE_REF:-/tmp/launcher-wake-ref}"          # touched when wake_loop saw the TV turn on
 EVENT_LOG="${EVENT_LOG:-1}"           # 1 = log every report about the app in front
+CHECK_EVERY="${CHECK_EVERY:-5}"       # s (whole number): how often check_loop compares the app in front with the last report; 0 = never
+CHECK_MISSES="${CHECK_MISSES:-2}"     # this many checks in a row disagree: the subscription has gone quiet, make it again
+HANDLE_MAX="${HANDLE_MAX:-60}"        # one report handled for this many s: the reader is stuck, make the subscription again
+SILENT_MAX="${SILENT_MAX:-3}"         # after this many quiet subscriptions: ask once a second instead (poll_loop)
+CHECK_NAP="${CHECK_NAP:-sleep}"
+LAST_REPORT="${LAST_REPORT:-/tmp/launcher-homehook-last-report}"   # the last report from the subscription
+HANDLING="${HANDLING:-/tmp/launcher-homehook-handling}"            # while a report is handled: the uptime (whole s) it began
+SILENT_FLAG="${SILENT_FLAG:-/tmp/launcher-homehook-silent}"        # check_loop ended a quiet subscription (holds why)
+POLLING="${POLLING:-/tmp/launcher-homehook-polling}"               # exists while poll_loop asks once a second
 # The loading notification: auto = in the TV's menu language (Russian or English), any other text = that text,
 # empty = none. Empty by default in the WATCH_STDIN test mode (the self-test must not show notifications).
 if [ -n "$WATCH_STDIN" ]; then LOADING_TOAST="${LOADING_TOAST-}"; else LOADING_TOAST="${LOADING_TOAST-auto}"; fi
@@ -585,6 +599,8 @@ handle () {
     line="$1"
     case "$line" in
         *'"appId"'*) ;;
+        *'"returnValue":false'*|*'"returnValue": false'*)
+            log "the subscription answered with an error: $(echo "$line" | cut -c1-200)"; return ;;
         *) return ;;
     esac
     if takeover_active; then
@@ -661,6 +677,7 @@ handle_bar () {
 # The subscription keeps ending at once on this TV: ask once a second instead. A report is handled only when the app in
 # front has changed (the check after each launch asks again by itself).
 poll_loop () {
+    : > "$POLLING"                       # check_loop ends: there is no subscription to check any more
     pl_last=
     while :; do
         pl_f=$(front)
@@ -670,6 +687,47 @@ poll_loop () {
                 if [ "$pl_app" != "$pl_last" ]; then pl_last=$pl_app; handle "$pl_f"; fi ;;
         esac
         $POLL_NAP 1
+    done
+}
+
+# Is the subscription still heard? 0 = no (why in sc_why): a report has been handled for HANDLE_MAX s, or the app in
+# front is not the one in the last report. While a report is being handled (not for long), or SAM does not answer,
+# there is nothing to compare: 1.
+sub_check () {
+    sc_h=; { read -r sc_h < "$HANDLING"; } 2>/dev/null
+    if [ -n "$sc_h" ]; then
+        sc_u=; { read -r sc_u _r < "$UPTIME_FILE"; } 2>/dev/null; sc_u=${sc_u%%.*}
+        if [ $(( ${sc_u:-0} - sc_h )) -ge "$HANDLE_MAX" ]; then sc_why="one report has been handled for $(( ${sc_u:-0} - sc_h )) s"; return 0; fi
+        return 1
+    fi
+    sc_f=$(front)
+    case "$sc_f" in *'"appId"'*) ;; *) return 1 ;; esac
+    sc_r=; { read -r sc_r < "$LAST_REPORT"; } 2>/dev/null
+    sc_now=$(app_of "$sc_f"); sc_heard=$(app_of "$sc_r")
+    [ "$sc_now" = "$sc_heard" ] && return 1
+    sc_why="in front: $sc_now, the last report: $sc_heard"
+    return 0
+}
+
+# Runs in the background as long as the watcher does ($1 = its pid). Every CHECK_EVERY s one question to SAM. The
+# subscription has gone quiet: SILENT_FLAG is written (the watcher counts it) and the subscription's processes (luna-send
+# and its reader: the watcher's only children while it waits) are killed; the watcher makes a new subscription. Ends
+# after SILENT_MAX restarts or once poll_loop runs.
+check_loop () {
+    cl_miss=0; cl_n=0
+    while kill -0 "$1" 2>/dev/null; do
+        $CHECK_NAP "$CHECK_EVERY"
+        kill -0 "$1" 2>/dev/null || return 0
+        [ -f "$POLLING" ] && return 0
+        [ -f "$STOPPED" ] && continue
+        if sub_check; then cl_miss=$((cl_miss + 1)); else cl_miss=0; fi
+        [ "$cl_miss" -ge "$CHECK_MISSES" ] || continue
+        cl_miss=0; cl_n=$((cl_n + 1))
+        log "the subscription has gone quiet ($sc_why; $CHECK_MISSES checks $CHECK_EVERY s apart): subscribing again ($cl_n of $SILENT_MAX)"
+        echo "$sc_why" > "$SILENT_FLAG"
+        # KILL at once (a quiet or stuck luna-send may not end on TERM): a second pass later could hit the new one
+        pkill -9 -P "$1" 2>/dev/null
+        [ "$cl_n" -ge "$SILENT_MAX" ] && return 0
     done
 }
 
@@ -713,7 +771,7 @@ if [ -f "$PIDFILE" ]; then
     fi
 fi
 echo $$ > "$PIDFILE"
-rm -f "$VLOCK" "$TLOCK" "$STANDBY_FLAG" "$STANDBY_REF"
+rm -f "$VLOCK" "$TLOCK" "$STANDBY_FLAG" "$STANDBY_REF" "$SILENT_FLAG" "$POLLING"
 # Stopping does not unfreeze LG Home: only stock.sh, stop.sh, FAILSAFE and turning the helper off do.
 trap 'pkill -P $$ 2>/dev/null; log "stopped (pid $$), LG Home is left as it is"; [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ] && rm -f "$PIDFILE"; exit 0' TERM INT
 if [ -s "$KEEP_FLAG" ]; then _kr=on; else _kr=off; fi
@@ -736,16 +794,34 @@ fi
 
 freeze_at_start
 ( wake_loop $$ </dev/null >/dev/null 2>&1 & )   # the TV turning on after standby
+if [ "$CHECK_EVERY" -gt 0 ] 2>/dev/null; then
+    ( check_loop $$ </dev/null >/dev/null 2>&1 & )   # is the subscription still heard?
+fi
 
-quick_ends=0
+quick_ends=0; silent_ends=0
 while :; do
     sub_t0=$(date +%s)
-    # the subscription in the background + wait: a kill (TERM) then works at once, not when the subscription ends
+    rm -f "$SILENT_FLAG"; : > "$LAST_REPORT"; : > "$HANDLING"
+    # the subscription in the background + wait: a kill (TERM) then works at once, not when the subscription ends.
+    # For check_loop: each report is kept in LAST_REPORT, and HANDLING holds the uptime while it is handled (builtins
+    # only: no extra process per report).
     "$LUNA" -i "$FRONT_URI" '{"subscribe":true}' 2>/dev/null | while IFS= read -r report; do
         kill -0 $$ 2>/dev/null || exit 0      # the main process was killed with kill -9: do not run on as an orphan
+        hu=; { read -r hu _r < "$UPTIME_FILE"; } 2>/dev/null; echo "${hu%%.*}" > "$HANDLING"
+        printf '%s\n' "$report" > "$LAST_REPORT"
         handle "$report"
+        : > "$HANDLING"
     done &
     wait $!
+    if [ -s "$SILENT_FLAG" ]; then
+        # check_loop ended a quiet subscription (it has logged why): a new one at once, it does not count as ending
+        rm -f "$SILENT_FLAG"; quick_ends=0; silent_ends=$((silent_ends + 1))
+        if [ "$silent_ends" -ge "$SILENT_MAX" ]; then
+            log "the subscription went quiet $silent_ends times: asking once a second instead"
+            poll_loop
+        fi
+        continue
+    fi
     if [ $(( $(date +%s) - sub_t0 )) -lt 5 ]; then quick_ends=$((quick_ends + 1)); else quick_ends=0; fi
     if [ "$quick_ends" -ge 3 ]; then
         log "the subscription keeps ending: asking once a second instead"

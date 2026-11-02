@@ -81,9 +81,25 @@ front_json () { printf '{"returnValue":true,"appId":"%s","processId":"","windowI
 case "$uri" in
     */getForegroundAppInfo)
         if [ "$sub" = 1 ]; then
+            echo sub >> "$S/subs"
             # $S/sub_ends: the subscription ends at once, without a report
             if [ -f "$S/sub_ends" ]; then echo end >> "$S/sub_ends"; exit 0; fi
-            [ -f "$S/sam_down" ] || front_json
+            # $S/sub_error_once: this subscription answers with an error and then says nothing (as a cancelled one)
+            if [ -f "$S/sub_error_once" ]; then
+                rm -f "$S/sub_error_once"
+                echo '{"returnValue":false,"errorCode":-1,"errorText":"cancelled (mock)"}'
+                exec "$(dirname "$0")/hold" subscription
+            fi
+            # $S/sub_live: a report for every change of $S/front, as SAM does
+            if [ -f "$S/sub_live" ]; then
+                last=$(cat "$S/front" 2>/dev/null); front_json || exit 0
+                while :; do
+                    sleep 0.1; cur=$(cat "$S/front" 2>/dev/null)
+                    if [ "$cur" != "$last" ]; then last=$cur; front_json || exit 0; fi
+                done
+            fi
+            # otherwise one report (none with $S/sub_mute or $S/sam_down), then nothing: a quiet subscription
+            [ -f "$S/sam_down" ] || [ -f "$S/sub_mute" ] || front_json
             exec "$(dirname "$0")/hold" subscription
         fi
         [ -f "$S/sam_down" ] && exit 1
@@ -102,6 +118,8 @@ case "$uri" in
     */launch)
         n=$(( $(cat "$S/launch_count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$S/launch_count"
         echo "launch caller=$caller home=$(home_state) $payload" >> "$S/calls"
+        # $S/launch_hang: the request never comes back (the watcher's reader stays inside handle)
+        [ -f "$S/launch_hang" ] && exec "$(dirname "$0")/hold" launch
         # the request "took" until this time (uptime): the test sees how long watch.sh says the request took
         [ -f "$S/uptime_after_launch" ] && cp "$S/uptime_after_launch" "$S/uptime"
         case "$payload" in *'"com.webos.app.home"'*)
@@ -232,9 +250,14 @@ run_env () {
         TAKEOVER_FLAG="$W/takeover-enabled" TAKEOVER_PID="$W/takeover.pid" MOUNTS="$S/mounts" \
         KEEP_FLAG="$W/keep-on" STANDBY_FLAG="$W/standby" STANDBY_REF="$W/standby-ref" WAKE_REF="$W/wake-ref" \
         LINK="$W/link" APP_QML="$W/no-such-qml" HOME_APP_DIR="$W/homeapp" SYSLOG="$W/messages" \
-        UPTIME_FILE="$S/uptime" LOADING_TOAST= NAP=true FAILSAFE=0 \
+        LAST_REPORT="$W/last-report" HANDLING="$W/handling" SILENT_FLAG="$W/silent" POLLING="$W/polling" \
+        UPTIME_FILE="$S/uptime" LOADING_TOAST= NAP=true FAILSAFE=0 CHECK_EVERY=0 \
         "$@"
 }
+# waitfor, but up to 30 s (check_loop with CHECK_EVERY=1 needs about 2 s for each quiet subscription)
+waitlong () { i=0; while [ "$i" -lt 300 ]; do "$@" && return 0; sleep 0.1; i=$((i + 1)); done; return 1; }
+subs () { count '^sub$' "$S/subs"; }
+sub_procs () { pgrep -f "$T/bin/hold subscription" 2>/dev/null | wc -l | tr -d ' '; }
 rep () { printf '{"returnValue":true,"appId":"%s","processId":"","windowId":""}\n' "$1"; }
 stdin_watch () { app="$1"; shift; rep "$app" | run_env LOG="$W/watch.log" WATCH_STDIN=1 "$@" sh "$HOOKD/watch.sh"; }
 bg_watch () { ( run_env LOG="$W/watch.log" "$@" sh "$HOOKD/watch.sh" </dev/null >/dev/null 2>&1 & ); }
@@ -265,6 +288,10 @@ check "defaults: THAW_ON_LAUNCH=0, FAILSAFE=1, THAW_ON_STANDBY=0, EMPTY_AS_HOME=
 check "defaults: EMPTY_DELAY=0.5, WAKE_SETTLE=1, WAKE_POLL_STANDBY=1, TOAST_DELAY=3" eval \
     'has "EMPTY_DELAY=\"\${EMPTY_DELAY:-0.5}\"" "$WS" && has "WAKE_SETTLE=\"\${WAKE_SETTLE:-1}\"" "$WS" && has "WAKE_POLL_STANDBY=\"\${WAKE_POLL_STANDBY:-1}\"" "$WS" && has "TOAST_DELAY=\"\${TOAST_DELAY:-3}\"" "$WS"'
 check "only one line of watch.sh ends with >/dev/null 2>&1 (diagnose.sh's self-test needs that)" eq "$(count '>/dev/null 2>&1$' "$WS")" 1
+check "defaults: CHECK_EVERY=5, CHECK_MISSES=2, HANDLE_MAX=60, SILENT_MAX=3" eval \
+    'has "CHECK_EVERY=\"\${CHECK_EVERY:-5}\"" "$WS" && has "CHECK_MISSES=\"\${CHECK_MISSES:-2}\"" "$WS" && has "HANDLE_MAX=\"\${HANDLE_MAX:-60}\"" "$WS" && has "SILENT_MAX=\"\${SILENT_MAX:-3}\"" "$WS"'
+check "check_loop's files are in /tmp/launcher-homehook-*" eval \
+    'has "LAST_REPORT=\"\${LAST_REPORT:-/tmp/launcher-homehook-last-report}\"" "$WS" && has "HANDLING=\"\${HANDLING:-/tmp/launcher-homehook-handling}\"" "$WS" && has "SILENT_FLAG=\"\${SILENT_FLAG:-/tmp/launcher-homehook-silent}\"" "$WS" && has "POLLING=\"\${POLLING:-/tmp/launcher-homehook-polling}\"" "$WS"'
 check "guard.sh: every 10 s, 2 checks in a row, at most 5 restarts" eval \
     'has "INTERVAL=\"\${INTERVAL:-10}\"" "$SRC/guard.sh" && has "CONFIRM=\"\${CONFIRM:-2}\"" "$SRC/guard.sh" && has "MAX_RESTARTS=\"\${MAX_RESTARTS:-5}\"" "$SRC/guard.sh"'
 mkdir -p "$T/fake-macos"; printf '%s\n' "$SHEBANG" 'echo Darwin' > "$T/fake-macos/uname"; chmod +x "$T/fake-macos/uname"
@@ -731,6 +758,81 @@ check "a home bar line from before the start is not acted on" eq "$(launcher_lau
 echo '2026-10-20T12:26:20Z [30.1] user.info surface-manager-starfish [] LSM NL_HOME_SHOWN {"CLOCK":30.1,"foregroundId":"com.webos.app.hdmi1","wedge_image":""}' >> "$W/messages"
 check "a new home bar line: the launcher is asked for" waitfor eval '[ "$(launcher_launches)" = 1 ]'
 check "nothing frozen, no subscription" eval 'hasnt "^-STOP" "$S/pkill.log" && no_proc "$T/bin/hold subscription"'
+stop_bg_watch
+
+# ---------- C11-C16. The subscription goes quiet (Hearth P0.6, webOS 25: no report for 35 min, LG Home left on screen) ----------
+section "C11. A quiet subscription: check_loop notices it and subscribes again; the first new report is acted on"
+reset; start_home; echo "$ID" > "$S/front"; echo 1 > "$S/appear_after"
+bg_watch NO_VERIFY=1 CHECK_EVERY=1
+check "the watcher runs, one subscription" waitfor eval 'pid_alive "$W/watch.pid" && [ "$(subs)" = 1 ]'
+P_C11=$(cat "$W/watch.pid")
+waitfor has "event: foreground $ID" "$W/watch.log"
+check "the report is kept in LAST_REPORT, HANDLING is empty again" waitfor eval 'has "\"appId\":\"$ID\"" "$W/last-report" && [ ! -s "$W/handling" ]'
+sleep 2.5
+check "the app in front is the one in the last report: nothing done (no 'gone quiet', one subscription)" eval 'hasnt "gone quiet" "$W/watch.log" && [ "$(subs)" = 1 ]'
+OLD=$(pgrep -f "$T/bin/hold subscription" | head -n 1)
+echo com.webos.app.home > "$S/front"     # LG Home comes to the front, the subscription says nothing
+check "in the log: gone quiet, with the app in front and the last report" waitfor has "the subscription has gone quiet (in front: com.webos.app.home, the last report: $ID; 2 checks 1 s apart): subscribing again (1 of 3)" "$W/watch.log"
+check "the quiet subscription's luna-send is gone (KILL)" waitfor dead "$OLD"
+check "a second subscription" waitfor eval '[ "$(subs)" -ge 2 ]'
+check "its first report (LG Home in front) is handled: the launcher is asked for" waitfor eval '[ "$(launcher_launches)" = 1 ]'
+check "in the log: event: foreground com.webos.app.home after the restart" has 'event: foreground com.webos.app.home' "$W/watch.log"
+check "the launcher in front again (no report from the quiet stand-in): one more restart, then its report freezes LG Home" waitlong has "subscribing again (2 of 3)" "$W/watch.log"
+check "the main watcher is still the same process" eq "$(cat "$W/watch.pid")" "$P_C11"
+stop_bg_watch
+check "after TERM: no watch.sh process is left (check_loop ends with the watcher)" waitlong no_proc "$HOOKD/watch.sh"
+check "and no subscription process" waitfor eval '[ "$(sub_procs)" = 0 ]'
+
+section "C12. A subscription that reports every change is left alone"
+reset; start_home; echo com.netflix.app > "$S/front"; : > "$S/sub_live"
+bg_watch NO_VERIFY=1 CHECK_EVERY=1
+waitfor has 'event: foreground com.netflix.app' "$W/watch.log"
+echo com.webos.app.hdmi1 > "$S/front"; sleep 1.3; echo youtube.leanback.v4 > "$S/front"; sleep 1.3; echo com.netflix.app > "$S/front"; sleep 3
+check "every change is reported (4 events)" eq "$(count 'event: foreground' "$W/watch.log")" 4
+check "no 'gone quiet', still one subscription" eval 'hasnt "gone quiet" "$W/watch.log" && [ "$(subs)" = 1 ]'
+stop_bg_watch
+
+section "C13. A subscription that never reports: after SILENT_MAX (3) restarts the watcher asks once a second"
+reset; start_home; echo com.webos.app.home > "$S/front"; : > "$S/sub_mute"; echo 1 > "$S/appear_after"
+bg_watch NO_VERIFY=1 CHECK_EVERY=1
+check "in the log: gone quiet, the last report: (empty)" waitlong has 'gone quiet (in front: com.webos.app.home, the last report: (empty); 2 checks 1 s apart): subscribing again (1 of 3)' "$W/watch.log"
+check "in the log: went quiet 3 times: asking once a second instead" waitlong has 'the subscription went quiet 3 times: asking once a second instead' "$W/watch.log"
+check "3 'gone quiet' lines (1, 2 and 3 of 3), 3 subscriptions" eq "$(count 'gone quiet' "$W/watch.log"),$(count '(3 of 3)' "$W/watch.log"),$(subs)" "3,1,3"
+check "the polling file is there" test -f "$W/polling"
+check "the poll sees LG Home: the launcher is asked for" waitfor eval '[ "$(launcher_launches)" = 1 ]'
+check "the launcher in front: LG Home frozen" waitfor home_frozen
+sleep 3
+check "check_loop has ended: no 4th 'gone quiet', no new subscription" eq "$(count 'gone quiet' "$W/watch.log"),$(subs)" "3,3"
+out=$(run_env LOG="$W/stop.log" sh "$HOOKD/stop.sh")
+check "stop.sh: stopped, no watch.sh process left" eval '[ "$out" = stopped ] && waitfor no_proc "$HOOKD/watch.sh"'
+
+section "C14. The subscription answers with an error: logged, then made again"
+reset; start_home; echo com.webos.app.home > "$S/front"; : > "$S/sub_error_once"; echo 1 > "$S/appear_after"
+bg_watch NO_VERIFY=1 CHECK_EVERY=1
+check "in the log: the subscription answered with an error" waitfor has 'the subscription answered with an error: {"returnValue":false,"errorCode":-1,"errorText":"cancelled (mock)"}' "$W/watch.log"
+check "gone quiet (the last report has no app) and made again" waitlong has 'gone quiet (in front: com.webos.app.home, the last report: (empty); 2 checks 1 s apart): subscribing again (1 of 3)' "$W/watch.log"
+check "the new subscription's report: the launcher is asked for" waitfor eval '[ "$(launcher_launches)" = 1 ]'
+stop_bg_watch
+
+section "C15. One report handled for HANDLE_MAX s (the reader is stuck): the subscription is made again"
+reset; start_home; echo com.webos.app.home > "$S/front"; : > "$S/launch_hang"
+bg_watch NO_VERIFY=1 CHECK_EVERY=1 HANDLE_MAX=30
+check "the launch request hangs (the reader is inside handle)" waitfor has_proc "$T/bin/hold launch"
+check "HANDLING holds the uptime (whole s) the report came at" eq "$(cat "$W/handling")" 1234
+sleep 2.5
+check "while it is handled (less than HANDLE_MAX), it is not counted as quiet" hasnt 'gone quiet' "$W/watch.log"
+echo "1300.00 999.00" > "$S/uptime"     # 66 s later
+check "in the log: one report has been handled for 66 s" waitlong has 'gone quiet (one report has been handled for 66 s; 2 checks 1 s apart): subscribing again (1 of 3)' "$W/watch.log"
+check "a second subscription" waitfor eval '[ "$(subs)" -ge 2 ]'
+rm -f "$S/launch_hang"
+stop_bg_watch
+
+section "C16. CHECK_EVERY=0: no checks"
+reset; start_home; echo "$ID" > "$S/front"
+bg_watch NO_VERIFY=1 CHECK_EVERY=0
+waitfor has "event: foreground $ID" "$W/watch.log"
+echo com.webos.app.home > "$S/front"; sleep 3
+check "no 'gone quiet', one subscription, the launcher not asked for" eval 'hasnt "gone quiet" "$W/watch.log" && [ "$(subs)" = 1 ] && [ "$(launcher_launches)" = 0 ]'
 stop_bg_watch
 
 # ---------- P. apply.sh and stock.sh, for real ----------

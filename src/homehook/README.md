@@ -12,6 +12,10 @@ boot), it asks the TV to open the launcher.
 
 - `watch.sh`: the watcher.
   - Uses the TV's "app in front" subscription; if that keeps ending at once, it asks once a second instead.
+  - The subscription can also go quiet without ending (seen on webOS 25: no report for 35 minutes, LG Home stayed on
+    screen). Every `CHECK_EVERY` (5 s) the watcher asks which app is in front; if it differs from the last report two
+    times in a row (`CHECK_MISSES`), or one report has been handled for `HANDLE_MAX` (60 s), it subscribes again, so a
+    quiet subscription is noticed within about 10 s. After `SILENT_MAX` (3) such restarts it asks once a second instead.
   - After opening the launcher it checks, once a second, that the launcher really is in front, and asks again
     (`VERIFY_TRIES`, 8). Still not there: it closes the launcher and starts it again (`RESTART_WAIT`, 30 s). Still not
     there: it opens LG Home the way the launcher's "LG Home" tile does (`FAILSAFE=1`, the default) and shows a

@@ -28,8 +28,14 @@ if running "$PIDFILE"; then echo "running, pid $(cat "$PIDFILE")"; else echo "NO
 echo "== guard"
 if running "$GUARD_PIDFILE"; then echo "running, pid $(cat "$GUARD_PIDFILE")"; else echo "NOT running (pid file: $(cat "$GUARD_PIDFILE" 2>&1))"; fi
 echo "watcher restarts by the guard since boot: $(cat /tmp/launcher-homehook-restarts 2>/dev/null || echo 0)"
-echo "-- every watch.sh / guard.sh / luna-send subscription process (more than one watch.sh is a problem):"
+echo "-- every watch.sh / guard.sh / luna-send subscription process (one watcher shows as several watch.sh: itself, the"
+echo "   reader of its subscription and its background checks; only the pid above is the watcher):"
 ps 2>&1 | grep -E "[w]atch.sh|[g]uard.sh|[g]etForegroundAppInfo"
+echo "== does the watcher still hear the subscription? (its last report should name the app in front now)"
+echo "last report: $(cut -c1-160 /tmp/launcher-homehook-last-report 2>&1)"
+echo "a report is being handled since (uptime s; empty = none): $(cat /tmp/launcher-homehook-handling 2>&1)"
+if [ -f /tmp/launcher-homehook-polling ]; then echo "asking once a second (no subscription): yes"; else echo "asking once a second (no subscription): no"; fi
+echo "the subscription went quiet and was made again, this boot: $(grep -c 'subscription has gone quiet' /tmp/launcher-homehook.log 2>/dev/null)"
 echo "== old launcher-takeover (Hearth 1.x; while it is on, watch.sh stands aside)"
 ls -l /media/developer/launcher-takeover/enabled /var/lib/webosbrew/init.d/47-launcher-takeover 2>&1
 echo "== do the scripts parse on this TV's shell?"
