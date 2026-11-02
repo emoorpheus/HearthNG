@@ -59,11 +59,12 @@ export class Tile extends Component<Props> {
 		const {model, focused, lifted, checked, dimmed} = this.props;
 		this.monoSeen = monoVersion();
 		const mono = monoIconsOn() && model.imageUrl ? monoFor(model.imageUrl, this.again) : null;
+		// HearthNG: in the one-colour styles a letter tile (no artwork) is one colour too: no app colour behind the letter, the style's tile and ink
 		const classes = ['tile', focused && 'tile--focused', lifted && 'tile--lifted', (dimmed || model.disconnected) && 'tile--dimmed', model.note && 'tile--noted'].filter(Boolean).join(' ');
 		return (
 			<div class={classes} onMouseEnter={this.hover} onClick={this.activate}>
 				<div class="tile__frame">
-				<div class="tile__box" style={model.color && !model.imageUrl ? {background: model.color} : undefined}>
+				<div class="tile__box" style={model.color && !model.imageUrl && !monoIconsOn() ? {background: model.color} : undefined}>
 					{model.imageUrl
 						? (mono ? <div class="tile__mono" style={`-webkit-mask-image:url("${mono}")`} /> : <img class="tile__image" src={model.imageUrl} alt="" />)
 						: model.sourceIcon
