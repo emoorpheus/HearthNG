@@ -28,7 +28,9 @@ export const KEY = {
 	enter: 13,
 	back: 461,          // webOS "BACK" (needs disableBackHistoryAPI in appinfo.json)
 	escape: 27,         // handy when developing in a desktop browser
-	exit: 1001          // webOS "EXIT": what the TV makes of Back held for 1 s (seen on webOS 10.3.0)
+	exit: 1001,         // webOS "EXIT": what the TV makes of Back held for 1 s (seen on webOS 10.3.0)
+	pointerShow: 1536,  // the Magic Remote pointer appeared / went (see lib/pointer.ts)
+	pointerHide: 1537
 } as const;
 
 export const TIMING = {

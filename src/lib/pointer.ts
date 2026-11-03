@@ -36,8 +36,9 @@ export const REPORT_AFTER_MS = 3000;
 export interface PointerFront {
 	/** A front event (launch, relaunch, back from the background), or Exit (a held Back) while in front. */
 	front (now: number, why?: string): void;
-	/** The TV's `cursorStateChange` report. Returns true when the pointer should be hidden again. */
-	cursor (visible: boolean, now: number): boolean;
+	/** The TV's report that the pointer appeared or went: `cursorStateChange`, or (`via` 'key') the key codes 1536 and
+	 *  1537. Returns true when the pointer should be hidden again. */
+	cursor (visible: boolean, now: number, via?: string): boolean;
 	/** The line for the log (null when nothing happened). */
 	line (): string | null;
 }
@@ -57,16 +58,17 @@ export function pointerFront (): PointerFront {
 			events = [];
 			cause = why;
 		},
-		cursor (visible, now) {
+		cursor (visible, now, via = '') {
 			if (frontAt < 0) return false;
 			const after = now - frontAt;
 			if (after > REPORT_AFTER_MS) return false;
+			const what = (via ? via + ' ' : '') + (visible ? 'shown' : 'hidden');
 			if (visible && !rehidden && after <= AUTO_SHOW_MS) {
 				rehidden = true;
-				events.push(`shown ${after} ms - hidden again`);
+				events.push(`${what} ${after} ms - hidden again`);
 				return true;
 			}
-			events.push(`${visible ? 'shown' : 'hidden'} ${after} ms`);
+			events.push(`${what} ${after} ms`);
 			return false;
 		},
 		line () { return events.length ? `pointer after ${cause}: ${events.join(', ')}` : null; }
@@ -76,11 +78,16 @@ export function pointerFront (): PointerFront {
 /** The key code of Exit. The TV turns Back held for 1 s into it, and turns the pointer on with it, like with Home
  *  (seen on OLED65M59LA, webOS 10.3.0; the launcher takes Exit, see exitkey.ts). */
 export const EXIT_KEY_CODE = 1001;
+/** The key codes the TV sends to the page in front when the Magic Remote pointer appears and when it goes (LG's own
+ *  Settings app on webOS 10.3.0 names them pointerShow 1536 and pointerHide 1537). After a held Back had closed an
+ *  app, HearthNG got these two and no `cursorStateChange` (helper log, OLED65M59LA, 2026-11-04), so both count. */
+export const POINTER_SHOWN_KEY = 1536;
+export const POINTER_HIDDEN_KEY = 1537;
 
 /** Hide the pointer on launch and every time the app comes back to the foreground (including relaunches while
- *  already running, e.g. from a remapped HOME button), and once more when the TV turns it on right after.
- *  The same for Exit (a held Back) while the app is in front. `report` gets one line about it a few seconds later.
- *  Returns an unsubscribe function. */
+ *  already running, e.g. from a remapped HOME button), and once more when the TV turns it on right after (reported
+ *  by `cursorStateChange` or the key code 1536). The same for Exit (a held Back) while the app is in front. `report`
+ *  gets one line about it a few seconds later. Returns an unsubscribe function. */
 export function hidePointerOnForeground (report?: (text: string) => void): () => void {
 	const state = pointerFront();
 	let reportTimer = 0;
@@ -92,7 +99,13 @@ export function hidePointerOnForeground (report?: (text: string) => void): () =>
 		reportTimer = window.setTimeout(() => { const line = state.line(); if (line) report(line); }, REPORT_AFTER_MS + 100);
 	};
 	const onVisible = () => { if (!document.hidden) onFront(); };
-	const onKey = (e: KeyboardEvent) => { if (e.keyCode === EXIT_KEY_CODE && !document.hidden) onFront('a held Back'); };
+	const onKey = (e: KeyboardEvent) => {
+		if (document.hidden) return;
+		if (e.keyCode === EXIT_KEY_CODE) onFront('a held Back');
+		else if (e.keyCode === POINTER_SHOWN_KEY || e.keyCode === POINTER_HIDDEN_KEY) {
+			if (state.cursor(e.keyCode === POINTER_SHOWN_KEY, Date.now(), 'key')) hidePointer();
+		}
+	};
 	// webOS: `cursorStateChange` with detail.visibility when the pointer appears or goes
 	const onCursor = (e: Event) => {
 		const detail = (e as CustomEvent<{visibility?: boolean}>).detail;
