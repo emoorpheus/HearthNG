@@ -166,5 +166,9 @@
  {
   "file": "lib/languages.ts",
   "text": "(machine translated)"
+ },
+ {
+  "file": "lib/pointer.ts",
+  "text": "pointer: the TV showed it {} ms after coming to the front, hidden again"
  }
 ]

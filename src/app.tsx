@@ -352,7 +352,7 @@ export function App () {
 
 	// Start in remote (5-way) mode: hide the Magic Remote pointer whenever we come to the
 	// front. Shaking the remote still brings it back.
-	useEffect(() => hidePointerOnForeground(), []);
+	useEffect(() => hidePointerOnForeground(logLine), []);
 	useEffect(() => { startPointerGuard(); }, []);
 	// A button maps to Hearth: make sure the key engine's own start-up link is in place (repairs TVs set up before the engine had its own link).
 	useEffect(() => {
@@ -1414,11 +1414,13 @@ export function App () {
 
 	// LG-style edit mode of a home tile: the buttons above it, what they do, and the line that says what the keys do.
 	const editVerdict = tileEdit && tileEdit.app ? uninstallVerdict(tileEdit.app) : null;
+	const editFavourite = !!tileEdit && config.favourites.indexOf(tileEdit.key) !== -1;
 	const editActions: EditAction[] = tileEdit ? [
 		{kind: 'hide', label: tt('appmenu.hideFromTheHome')},
-		// §5 (D.9): only an app that can be removed gets the bin; a greyed-out one is not shown (the reason stays in "More")
+		// §5 (D.9): only an app that can be removed gets the bin; a greyed-out one is not shown
 		...(tileEdit.app && editVerdict && editVerdict.ok ? [{kind: 'uninstall' as const, label: tt('appmenu.uninstall'), disabled: null}] : []),
-		{kind: 'more', label: tt('tileedit.more')}
+		// owner's wish (PLANS-future 4): a star instead of the old "More" list; OK adds the tile to the favourites or takes it out
+		{kind: 'favourite', label: tt(editFavourite ? 'appmenu.removeFromFavourites' : 'appmenu.addToFavourites'), on: editFavourite}
 	] : [];
 	const runEditAction = (i: number) => {
 		const a = editActions[i];
@@ -1429,8 +1431,12 @@ export function App () {
 			if (tileEdit.app) { setTileEdit(null); setMenu({key: tileEdit.key, title: tileEdit.title, app: tileEdit.app, direct: true}); }   // the confirmation starts on Cancel
 			return;
 		}
-		setTileEdit(null);
-		setMenu({key: tileEdit.key, title: tileEdit.title, app: tileEdit.app});
+		if (a.kind === 'favourite') {
+			onFavourite('', tileEdit.key);
+			// added: stays in edit mode (the star fills). Taken out: the tile may leave the favourites row on the screen, so edit mode ends
+			if (editFavourite) { setTileEdit(null); showToast(tt('tileedit.removedFromFavourites')); }
+			else showToast(tt('tileedit.addedToFavourites'));
+		}
 	};
 	const editMoves = tileEdit ? movesFor(moveGroup(orderedTiles.map((t) => t.key), config.favourites, tileEdit.key), tileEdit.key) : null;
 	const editView: TileEditView | null = tileEdit && editMoves ? {

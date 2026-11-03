@@ -196,7 +196,6 @@
     "level.medium": "Średnie",
     "level.strong": "Silne",
     "level.max": "Maksymalne",
-    "disabled.inputHook": "Aplikacja Input Hook jest zainstalowana i ma już przypisane przyciski. Hearth ich nie zmienia, więc ta opcja jest niedostępna. Usuń przypisania w Input Hook, aby skonfigurować je tutaj.",
     "disabled.rows": "Nieużywane przy włączonych ulubionych: widoczny jest tylko rząd ulubionych.",
     "disabled.homeApp": "Najpierw wyłącz „Zastąp LG Home (skrypt pomocniczy + przycisk Home)”. Można używać tylko jednej metody zastępowania LG Home naraz.",
     "disabled.replaceHome": "Najpierw wyłącz „Ustaw Hearth jako ekran główny TV”. Można używać tylko jednej metody zastępowania LG Home naraz.",

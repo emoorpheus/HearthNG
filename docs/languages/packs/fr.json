@@ -196,7 +196,6 @@
     "level.medium": "Moyen",
     "level.strong": "Fort",
     "level.max": "Max",
-    "disabled.inputHook": "L'app Input Hook est installée et a déjà des réglages de boutons. Hearth n'y touche pas, donc ceci est désactivé. Supprimez ces réglages dans l'app Input Hook pour l'utiliser ici.",
     "disabled.rows": "Inutilisé tant que des favoris sont définis : la ligne des favoris s'affiche seule.",
     "disabled.homeApp": "Désactivez d'abord « Remplacer LG Home (assistant + bouton Accueil) ». Une seule méthode de remplacement de LG Home peut être active.",
     "disabled.replaceHome": "Désactivez d'abord « Définir Hearth comme app d'accueil de la TV ». Une seule méthode de remplacement de LG Home peut être active.",

@@ -822,7 +822,7 @@ html, body {
 .tile--editing { position: relative; z-index: 3; }
 .tile-edit { position: absolute; left: 0; top: 0; width: var(--layout-tile-size); height: var(--layout-tile-size); pointer-events: none; }
 .tile-edit__icon { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.tile-edit__icon--more { stroke-width: 3.2; }
+.tile-edit__icon--on { fill: currentColor; }
 .tile-edit__arrow {
 	position: absolute;
 	top: 50%;

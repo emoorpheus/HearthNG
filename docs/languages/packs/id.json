@@ -196,7 +196,6 @@
     "level.medium": "Sedang",
     "level.strong": "Kuat",
     "level.max": "Maks",
-    "disabled.inputHook": "Aplikasi Input Hook sudah terpasang dan sudah punya pengaturan tombol. Hearth tidak mengubahnya, jadi ini nonaktif. Hapus pengaturan itu di aplikasi Input Hook untuk memakainya di sini.",
     "disabled.rows": "Tidak dipakai saat favorit diatur: baris favorit tampil sendiri.",
     "disabled.homeApp": "Matikan \"Ganti LG Home (helper + tombol Home)\" dulu. Hanya satu cara penggantian LG Home yang boleh aktif.",
     "disabled.replaceHome": "Matikan \"Jadikan Hearth aplikasi Home TV\" dulu. Hanya satu cara penggantian LG Home yang boleh aktif.",

@@ -3,16 +3,18 @@ import {useKeys, type NavKey} from '../hooks/useKeys';
 import {useOkPress} from '../hooks/useOkPress';
 
 // LG-style edit mode (hold OK on an app or input on the home screen): arrows either side of the tile move it along the
-// row, round buttons above it hide it, uninstall it (apps) or open the full menu (to the start or end, favourites).
+// row, round buttons above it hide it, uninstall it (apps that can be removed) or mark it as a favourite (a star).
 // The tile stays where it is on the row; the buttons are drawn by the tile itself (EditDecor), the keys are read here.
 
-export type EditActionKind = 'hide' | 'uninstall' | 'more';
+export type EditActionKind = 'hide' | 'uninstall' | 'favourite';
 
 export interface EditAction {
 	kind: EditActionKind;
 	label: string;
 	/** greyed out, with the reason shown when it is focused (e.g. a system app cannot be uninstalled) */
 	disabled?: string | null;
+	/** drawn filled (the star of a tile that is a favourite) */
+	on?: boolean;
 }
 
 /** What the tile being edited draws round itself. */
@@ -33,15 +35,15 @@ const PATHS: Record<EditActionKind | 'left' | 'right', string> = {
 	hide: 'M3 12s3.5-6.5 9-6.5S21 12 21 12s-3.5 6.5-9 6.5S3 12 3 12z M12 9.2a2.8 2.8 0 1 0 0 5.6a2.8 2.8 0 1 0 0-5.6z M4.5 4.5l15 15',
 	// a bin
 	uninstall: 'M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5l1 13h9l1-13 M10.5 10v6.5 M13.5 10v6.5',
-	// three dots
-	more: 'M6 12h.01 M12 12h.01 M18 12h.01',
+	// a star (filled while the tile is a favourite)
+	favourite: 'M12 3.6l2.55 5.2l5.7.83l-4.13 4.02l.98 5.68L12 16.65l-5.1 2.68l.98-5.68l-4.13-4.02l5.7-.83z',
 	left: 'M14.5 6l-6 6l6 6',
 	right: 'M9.5 6l6 6l-6 6'
 };
 
-function EditIcon ({name}: {name: keyof typeof PATHS}) {
+function EditIcon ({name, on}: {name: keyof typeof PATHS; on?: boolean}) {
 	return (
-		<svg class={`tile-edit__icon tile-edit__icon--${name}`} viewBox="0 0 24 24" aria-hidden="true">
+		<svg class={`tile-edit__icon tile-edit__icon--${name}${on ? ' tile-edit__icon--on' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
 			<path d={PATHS[name]} />
 		</svg>
 	);
@@ -59,7 +61,7 @@ export function EditDecor ({view}: {view: TileEditView}) {
 						class={`tile-edit__action${i === view.at ? ' tile-edit__action--focused' : ''}${a.disabled ? ' tile-edit__action--disabled' : ''}`}
 						onClick={(e) => { e.stopPropagation(); view.onAction(i); }}
 					>
-						<EditIcon name={a.kind} />
+						<EditIcon name={a.kind} on={a.on} />
 					</div>
 				))}
 			</div>

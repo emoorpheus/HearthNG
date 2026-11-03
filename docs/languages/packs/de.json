@@ -196,7 +196,6 @@
     "level.medium": "Mittel",
     "level.strong": "Stark",
     "level.max": "Max",
-    "disabled.inputHook": "Die App Input Hook ist installiert und hat bereits Tasteneinstellungen. Hearth lässt sie unberührt, deshalb ist dies aus. Entferne diese Einstellungen in der Input-Hook-App, um es hier zu nutzen.",
     "disabled.rows": "Wird nicht genutzt, solange Favoriten gesetzt sind: die Favoritenreihe wird allein gezeigt.",
     "disabled.homeApp": "Schalte zuerst „LG Home ersetzen (Helfer + Home-Taste)“ aus. Nur eine Art, LG Home zu ersetzen, darf aktiv sein.",
     "disabled.replaceHome": "Schalte zuerst „Hearth als Home-App des TVs festlegen“ aus. Nur eine Art, LG Home zu ersetzen, darf aktiv sein.",

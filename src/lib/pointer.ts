@@ -25,17 +25,43 @@ export function hidePointer (): void {
 	catch { /* best effort */ }
 }
 
+/** After coming to the front the TV may show the pointer again a moment later (seen on OLED65M59LA, webOS 10.3.0: the
+ *  Home button mapped through Input Hook left the pointer on every time). So it is hidden again at these times (ms). */
+export const REHIDE_MS = [400, 1200];
+/** A "pointer shown" report from the TV this soon after coming to the front is logged (helper log) and hidden again. */
+export const SHOWN_GRACE_MS = 1500;
+
 /** Hide the pointer on launch and every time the app comes back to the foreground
- *  (including relaunches while already running, e.g. from a remapped HOME button).
- *  Returns an unsubscribe function. */
-export function hidePointerOnForeground (): () => void {
-	const onVisible = () => { if (!document.hidden) hidePointer(); };
-	hidePointer();
+ *  (including relaunches while already running, e.g. from a remapped HOME button), and again shortly after.
+ *  `report` gets a line when the TV says the pointer was shown right after. Returns an unsubscribe function. */
+export function hidePointerOnForeground (report?: (text: string) => void): () => void {
+	let frontAt = 0;
+	let timers: number[] = [];
+	const hideNowAndSoon = () => {
+		frontAt = Date.now();
+		hidePointer();
+		timers.forEach((t) => window.clearTimeout(t));
+		timers = REHIDE_MS.map((ms) => window.setTimeout(hidePointer, ms));
+	};
+	const onVisible = () => { if (!document.hidden) hideNowAndSoon(); };
+	// webOS: `cursorStateChange` with detail.visibility when the pointer appears or goes
+	const onCursor = (e: Event) => {
+		const detail = (e as CustomEvent<{visibility?: boolean}>).detail;
+		if (!detail || detail.visibility !== true || document.hidden) return;
+		const after = Date.now() - frontAt;
+		if (after > SHOWN_GRACE_MS) return;
+		hidePointer();
+		if (report) report(`pointer: the TV showed it ${after} ms after coming to the front, hidden again`);
+	};
+	hideNowAndSoon();
 	document.addEventListener('visibilitychange', onVisible);
 	document.addEventListener('webOSRelaunch', onVisible);
+	document.addEventListener('cursorStateChange', onCursor);
 	return () => {
+		timers.forEach((t) => window.clearTimeout(t));
 		document.removeEventListener('visibilitychange', onVisible);
 		document.removeEventListener('webOSRelaunch', onVisible);
+		document.removeEventListener('cursorStateChange', onCursor);
 	};
 }
 
