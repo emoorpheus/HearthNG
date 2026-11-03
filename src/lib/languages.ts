@@ -4,7 +4,7 @@ export interface Language { id: string; name: string }
 import {BUNDLED_LANGUAGES} from '../config/bundledlanguages';
 
 /** English plus the languages shipped inside the app (T4; accepted packs from docs/languages/packs, loaded only when picked). */
-export const LANGUAGES: readonly Language[] = [{id: 'en', name: 'English'} as Language].concat(BUNDLED_LANGUAGES as Language[]);
+export const LANGUAGES: readonly Language[] = [{id: 'en', name: 'English'} as Language].concat(BUNDLED_LANGUAGES.map(({id, name}) => ({id, name})));
 export const isBundledLanguage = (id: string): boolean => id !== 'en' && languageOf(id).id === id;
 
 export const DEFAULT_LANGUAGE = 'en';

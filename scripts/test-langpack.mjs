@@ -76,6 +76,11 @@ eq(readFileSync(new URL('../docs/languages/en.json', import.meta.url), 'utf8') =
 store['hearth-langbundled-v1'] = JSON.stringify({code: 'xx', v: '0', strings: {'pref.theme.label': 'Bundled'}});
 m.applyLanguage('xx'); eq([m.t('pref.theme.label'), store['hearth-langactive-v1']], ['Bundled', 'xx'], 'a stored bundled language is applied (older version copy too)');
 eq(m.bundledReady('xx'), false, 'a bundled copy of another version is stale (refreshed by the app)');
+store['hearth-langbundled-v1'] = JSON.stringify({code: 'ru', v: m.bundledVersion('ru').split('+')[0], strings: {}});
+eq(m.bundledReady('ru'), false, 'a bundled copy of the same version but other texts is stale');
+store['hearth-langbundled-v1'] = JSON.stringify({code: 'ru', v: m.bundledVersion('ru'), strings: {}});
+eq(m.bundledReady('ru'), true, 'a bundled copy with the current texts is current');
+eq(/^[0-9.]+\+[0-9a-f]{10}$/.test(m.bundledVersion('ru')), true, 'the copy is stamped with the version and a hash of the texts');
 m.applyLanguage('en'); eq(m.t('pref.theme.label') !== 'Bundled', true, 'English comes back');
 const base = m.validatePack(baseFileText());
 eq([base.ok, base.missing, base.ignored], [true, 0, 0], 'the English base file is itself a valid pack');

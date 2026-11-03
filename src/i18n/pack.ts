@@ -5,6 +5,7 @@
 
 import {setStrings} from './index';
 import {HEARTH_VERSION} from '../config/version';
+import {BUNDLED_LANGUAGES} from '../config/bundledlanguages';
 
 export const PACK_KEY = 'hearth-langpack-v1';
 export const BUNDLED_KEY = 'hearth-langbundled-v1';
@@ -36,7 +37,13 @@ function readBundled (): Bundled | null {
 export function packName (): string { const k = readKept(); return k ? k.name : ''; }
 export function hasPack (): boolean { return readKept() !== null; }
 /** True when the bundled language `code` is stored and was copied by this Hearth version. */
-export function bundledReady (code: string): boolean { const b = readBundled(); return !!b && b.code === code && b.v === HEARTH_VERSION; }
+/** What a kept copy of bundled language `code` must carry to be current: the version and a hash of its texts (a new build
+ *  of the same version with changed texts fetches the copy again; seen on the TV 2026-11-03: new texts stayed English). */
+export function bundledVersion (code: string): string {
+	const l = BUNDLED_LANGUAGES.filter((x) => x.id === code)[0];
+	return HEARTH_VERSION + '+' + (l ? l.stamp : '');
+}
+export function bundledReady (code: string): boolean { const b = readBundled(); return !!b && b.code === code && b.v === bundledVersion(code); }
 
 /** Strings of language `id` (`en` = null); undefined when they are not available yet. A bundled copy from an older version is used until refreshed. */
 function stringsFor (id: string): Record<string, string> | null | undefined {
@@ -84,7 +91,7 @@ export function loadBundled (code: string): Promise<boolean> {
 		const s = document.createElement('script');
 		const done = (ok: boolean) => { w.__hearthLang = undefined; if (s.parentNode) s.parentNode.removeChild(s); resolve(ok); };
 		w.__hearthLang = (c: string, strings: Record<string, string>) => {
-			try { if (c === code && strings && typeof strings === 'object') localStorage.setItem(BUNDLED_KEY, JSON.stringify({code, v: HEARTH_VERSION, strings})); } catch (e) { /* reported as not loaded */ }
+			try { if (c === code && strings && typeof strings === 'object') localStorage.setItem(BUNDLED_KEY, JSON.stringify({code, v: bundledVersion(code), strings})); } catch (e) { /* reported as not loaded */ }
 		};
 		s.onload = () => done(bundledReady(code));
 		s.onerror = () => done(false);

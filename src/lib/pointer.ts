@@ -25,40 +25,78 @@ export function hidePointer (): void {
 	catch { /* best effort */ }
 }
 
-/** After coming to the front the TV may show the pointer again a moment later (seen on OLED65M59LA, webOS 10.3.0: the
- *  Home button mapped through Input Hook left the pointer on every time). So it is hidden again at these times (ms). */
-export const REHIDE_MS = [400, 1200];
-/** A "pointer shown" report from the TV this soon after coming to the front is logged (helper log) and hidden again. */
-export const SHOWN_GRACE_MS = 1500;
+/** The TV turns the pointer on by itself about 140–250 ms after the Home button brings the launcher to the front
+ *  (seen on OLED65M59LA, webOS 10.3.0: its compositor shows the pointer for that key, and a launch without the key
+ *  showed none). One "shown" report this soon after coming to the front is hidden again; later ones are the user's
+ *  own (shaking the remote) and are left alone. */
+export const AUTO_SHOW_MS = 600;
+/** What the pointer did after coming to the front goes to the helper log as one line this long after. */
+export const REPORT_AFTER_MS = 3000;
 
-/** Hide the pointer on launch and every time the app comes back to the foreground
- *  (including relaunches while already running, e.g. from a remapped HOME button), and again shortly after.
- *  `report` gets a line when the TV says the pointer was shown right after. Returns an unsubscribe function. */
-export function hidePointerOnForeground (report?: (text: string) => void): () => void {
-	let frontAt = 0;
-	let timers: number[] = [];
-	const hideNowAndSoon = () => {
-		frontAt = Date.now();
-		hidePointer();
-		timers.forEach((t) => window.clearTimeout(t));
-		timers = REHIDE_MS.map((ms) => window.setTimeout(hidePointer, ms));
+export interface PointerFront {
+	/** A front event (launch, relaunch, back from the background). */
+	front (now: number): void;
+	/** The TV's `cursorStateChange` report. Returns true when the pointer should be hidden again. */
+	cursor (visible: boolean, now: number): boolean;
+	/** The line for the log (null when nothing happened). */
+	line (): string | null;
+}
+
+/** The decisions, kept apart from the TV so they can be tested. */
+export function pointerFront (): PointerFront {
+	let frontAt = -1;
+	let rehidden = false;
+	let events: string[] = [];
+	return {
+		front (now) {
+			// visibilitychange and webOSRelaunch can both come for one Home press: the first one counts
+			if (frontAt >= 0 && now - frontAt < AUTO_SHOW_MS) return;
+			frontAt = now;
+			rehidden = false;
+			events = [];
+		},
+		cursor (visible, now) {
+			if (frontAt < 0) return false;
+			const after = now - frontAt;
+			if (after > REPORT_AFTER_MS) return false;
+			if (visible && !rehidden && after <= AUTO_SHOW_MS) {
+				rehidden = true;
+				events.push(`shown ${after} ms - hidden again`);
+				return true;
+			}
+			events.push(`${visible ? 'shown' : 'hidden'} ${after} ms`);
+			return false;
+		},
+		line () { return events.length ? `pointer after coming to the front: ${events.join(', ')}` : null; }
 	};
-	const onVisible = () => { if (!document.hidden) hideNowAndSoon(); };
+}
+
+/** Hide the pointer on launch and every time the app comes back to the foreground (including relaunches while
+ *  already running, e.g. from a remapped HOME button), and once more when the TV turns it on right after.
+ *  `report` gets one line about it a few seconds later. Returns an unsubscribe function. */
+export function hidePointerOnForeground (report?: (text: string) => void): () => void {
+	const state = pointerFront();
+	let reportTimer = 0;
+	const onFront = () => {
+		state.front(Date.now());
+		hidePointer();
+		if (!report) return;
+		window.clearTimeout(reportTimer);
+		reportTimer = window.setTimeout(() => { const line = state.line(); if (line) report(line); }, REPORT_AFTER_MS + 100);
+	};
+	const onVisible = () => { if (!document.hidden) onFront(); };
 	// webOS: `cursorStateChange` with detail.visibility when the pointer appears or goes
 	const onCursor = (e: Event) => {
 		const detail = (e as CustomEvent<{visibility?: boolean}>).detail;
-		if (!detail || detail.visibility !== true || document.hidden) return;
-		const after = Date.now() - frontAt;
-		if (after > SHOWN_GRACE_MS) return;
-		hidePointer();
-		if (report) report(`pointer: the TV showed it ${after} ms after coming to the front, hidden again`);
+		if (!detail || typeof detail.visibility !== 'boolean' || document.hidden) return;
+		if (state.cursor(detail.visibility, Date.now())) hidePointer();
 	};
-	hideNowAndSoon();
+	onFront();
 	document.addEventListener('visibilitychange', onVisible);
 	document.addEventListener('webOSRelaunch', onVisible);
 	document.addEventListener('cursorStateChange', onCursor);
 	return () => {
-		timers.forEach((t) => window.clearTimeout(t));
+		window.clearTimeout(reportTimer);
 		document.removeEventListener('visibilitychange', onVisible);
 		document.removeEventListener('webOSRelaunch', onVisible);
 		document.removeEventListener('cursorStateChange', onCursor);

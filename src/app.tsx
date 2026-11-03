@@ -51,6 +51,7 @@ import {applyKeepReady, readKeepList, readKeepStatus} from './lib/keepready';
 import {KEEP_WARNING, keepMessage, keepProblemText, statusMatches} from './lib/keepreadycmd';
 import {askKeepAlive, askedRecently} from './lib/keepalive';
 import {hidePointerOnForeground, startPointerGuard} from './lib/pointer';
+import {keepExitKey, logOtherKeys} from './lib/exitkey';
 import {startLogFile, writeReport, previousRunLines} from './lib/logfile';
 import {readStats, type SystemStats, getLogo, setLogo, closeLgHome} from './lib/system';
 import {getHookStatus, hookMessage, installHomeHook, launchParams, logLine, markAliveSoon, reapplyHomeHook, removeHomeHook, stockHome} from './lib/homehook';
@@ -354,6 +355,14 @@ export function App () {
 	// front. Shaking the remote still brings it back.
 	useEffect(() => hidePointerOnForeground(logLine), []);
 	useEffect(() => { startPointerGuard(); }, []);
+	// A held Back (Exit) would close the launcher: take the key (see lib/exitkey.ts)
+	useEffect(() => {
+		if (!isWebOS()) return undefined;
+		const said = keepExitKey();
+		const t = window.setTimeout(() => logLine(said), TIMING.backgroundWorkMs);
+		const stop = logOtherKeys(logLine);
+		return () => { window.clearTimeout(t); stop(); };
+	}, []);
 	// A button maps to Hearth: make sure the key engine's own start-up link is in place (repairs TVs set up before the engine had its own link).
 	useEffect(() => {
 		if (!isWebOS() || !readRecord()) return undefined;

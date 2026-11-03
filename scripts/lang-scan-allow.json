@@ -169,6 +169,22 @@
  },
  {
   "file": "lib/pointer.ts",
-  "text": "pointer: the TV showed it {} ms after coming to the front, hidden again"
+  "text": "pointer after coming to the front: {}"
+ },
+ {
+  "file": "lib/exitkey.ts",
+  "text": "exit key: setWindowProperty is not there, a held Back may close the launcher"
+ },
+ {
+  "file": "lib/exitkey.ts",
+  "text": "exit key: asked the TV to give it to the launcher"
+ },
+ {
+  "file": "lib/exitkey.ts",
+  "text": "exit key: setWindowProperty failed ({})"
+ },
+ {
+  "file": "lib/exitkey.ts",
+  "text": "keys: code {} ({}) reached the launcher"
  }
 ]
