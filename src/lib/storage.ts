@@ -338,7 +338,7 @@ export const DEFAULT_CONFIG: UserConfig = {
 	keepReady: false,
 	keepRelaunch: false,
 	takeoverHome: false,
-	screensaver: true,                // P41c: on by default (rooted TVs; a failed set-up turns it off with a message)
+	screensaver: false,               // HearthNG (owner 2026-11-03): off on a fresh install, the TV's own screen saver works; whoever wants it switches it on
 	screensaverSource: '@video',
 	screensaverInterval: 60,
 	screensaverShuffle: true,
@@ -351,7 +351,7 @@ export const DEFAULT_CONFIG: UserConfig = {
 	powerOnApp: '',
 	powerOnNetwork: false,
 	theme: 'black',
-	background: 'photo-17',           // P41f/P113: the default photo (fish); shown as "Photo: 1" (P107, P113: labels and list order swapped, ids and files unchanged; photo-20 is now "Photo: 17")
+	background: 'theme',              // HearthNG (owner 2026-11-03): plain black (the black theme's own) on a fresh install and after the visual reset, for OLED; Hearth had the fish photo (photo-17, "Photo: 1")
 	iconScale: RANGES.iconScale.def,
 	iconOpacity: RANGES.iconOpacity.def,
 	iconGap: RANGES.iconGap.def,
@@ -493,6 +493,12 @@ export function dropPrefsBackup (): void {
 	try { localStorage.removeItem(BACKUP_KEY); } catch { /* ignore */ }
 	backupSeen = false;
 }
+
+/** HearthNG: nothing saved yet when the app started (a fresh install, or its data was removed): the language is then taken
+ *  from the TV's menu. Read once when this module loads, before anything is saved. */
+export const FIRST_START: boolean = (() => {
+	try { return typeof localStorage !== 'undefined' && !localStorage.getItem(STORAGE_KEY); } catch { return false; }
+})();
 
 export function loadConfig (): UserConfig {
 	try {

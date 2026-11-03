@@ -61,9 +61,10 @@ import {cleanupMessage, removeTakeover} from './lib/takeover';
 import {t as tt} from './i18n';
 import {applyLanguage, removePack, bundledReady, loadBundled, reapply} from './i18n/pack';
 import {loadPackFile} from './lib/langpack';
-import {PACK_ID, isBundledLanguage} from './lib/languages';
+import {DEFAULT_LANGUAGE, PACK_ID, isBundledLanguage, languageFromLocale} from './lib/languages';
+import {readMenuLocale} from './lib/tvlanguage';
 import {applyPref, disabledReason, findPref, GROUP_PREFIX, optionsFor, resetLook, type Press, type PrefTab, type SystemInfo} from './lib/prefs';
-import {loadConfig, saveConfig, isMonoStyle, effectiveIconStyle, hasLightTile, toggleId, DEFAULT_WALLPAPER, withBackedUpLook, dropPrefsBackup, type UserConfig} from './lib/storage';
+import {FIRST_START, loadConfig, saveConfig, isMonoStyle, effectiveIconStyle, hasLightTile, toggleId, DEFAULT_WALLPAPER, withBackedUpLook, dropPrefsBackup, type UserConfig} from './lib/storage';
 import {readLastOpened, writeLastOpened} from './lib/homefocus';
 import {checkColdBoot, markOpened, openedThisPage} from './lib/coldstart';
 import {applyTheme, THEMES} from './theme/tokens';
@@ -281,6 +282,22 @@ export function App () {
 		if (kind === 'error') log('Problem shown: ' + text);
 		setToast({text, kind});
 		toastTimer.current = window.setTimeout(() => setToast(null), TIMING.toastMs);
+	}, []);
+
+	// HearthNG: on a fresh install the interface language follows the TV's menu (English when it is not one of ours). Every start
+	// writes the TV's menu language to the helper log, so it can be checked that it is read; only the first start changes anything.
+	useEffect(() => {
+		if (!isWebOS()) return undefined;
+		let live = true;
+		const run = () => readMenuLocale().then(({locale, via}) => {
+			if (!live) return;
+			const id = languageFromLocale(locale);
+			logLine(FIRST_START ? `TV menu language: ${locale} (${via}), first start: language ${id}` : `TV menu language: ${locale} (${via}), not a first start: the saved language stays`);
+			if (!FIRST_START || id === DEFAULT_LANGUAGE) return;
+			setConfig((c) => { if (c.language !== DEFAULT_LANGUAGE) return c; const next = {...c, language: id}; saveConfig(next); return next; });
+		}, (e: unknown) => { if (live) logLine(`TV menu language not read: ${e instanceof Error ? e.message : String(e)}`); });
+		const timer = window.setTimeout(run, FIRST_START ? 0 : TIMING.backgroundWorkMs);
+		return () => { live = false; window.clearTimeout(timer); };
 	}, []);
 
 	// T4: a bundled language is copied from the app folder the first time it is picked (and once after an update); no root needed.

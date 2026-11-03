@@ -103,7 +103,7 @@ eq([p.applyPref(c0, 'iconStyle', 'ok').minimal, p.applyPref(c0, 'iconStyle', 'ok
 eq([p.applyPref(p.applyPref(c0, 'iconStyle', 'ok'), 'iconStyle', 'ok').iconStyle, p.applyPref(p.applyPref(c0, 'iconStyle', 'ok'), 'iconStyle', 'ok').minimal], ['mono', false], 'then Dark mono clears it');
 eq(p.optionsFor('look', {...c0, minimal: true}).find((o) => o.id === 'iconStyle').valueText, 'Minimal', 'a saved minimal setting reads as Minimal');
 eq(p.resetLook({...c0, minimal: true}).minimal, false, 'reset clears minimal');
-eq(p.resetLook({...c0, background: 'theme', wallpaper: {...c0.wallpaper, mode: 'image', path: '/x.jpg'}, theme: 'forest'}).background, 'photo-17', 'P108: reset puts the default photo (Photo: 1) back');
+eq(p.resetLook({...c0, background: 'photo-05', wallpaper: {...c0.wallpaper, mode: 'image', path: '/x.jpg'}, theme: 'forest'}).background, 'theme', 'P108, HearthNG: reset puts the default background back (plain black, the theme\'s own)');
 eq(p.resetLook({...c0, wallpaper: {...c0.wallpaper, mode: 'folder', path: '/x'}, theme: 'forest'}).wallpaper.mode, 'gradient', 'P108: reset ends an own picture or slideshow');
 eq(p.resetLook({...c0, theme: 'forest'}).theme, 'black', 'P108: reset puts OLED black back');
 store[KEY] = JSON.stringify({defaultsV: 1, iconStyle: 'mono'}); eq(s.loadConfig().iconStyle, 'mono', 'the dark mono icon style is read back');
@@ -183,22 +183,24 @@ eq([c0.weather.on, c0.weather.city && c0.weather.city.name, c0.weather.showCity,
 const mess2 = p.resetLook({...c0, iconOpacity: 40, weather: {...c0.weather, on: false, city: null, showRange: true}});
 eq([mess2.weather.on, mess2.weather.city.name, mess2.weather.showRange, mess2.iconOpacity], [false, 'Delhi', false, 100], 'reset also restores the weather (off since P41c) and the icon opacity');
 // widget colour, opacity, ranges, reset row
-const wall = p.optionsFor('wallpaper', c0).map((o) => o.id).join(',');
+const cPhoto = {...c0, background: 'photo-17'};      // HearthNG: a fresh install has no photo (plain black), so the photo rows are checked with one
+const wall = p.optionsFor('wallpaper', cPhoto).map((o) => o.id).join(',');
 eq(wall, 'wallpaper,wallpaperFit,wallpaperOpacity,fadeStrength', 'without a slideshow the Wallpaper tab has no shuffle or timer, and no separate built-in row');
 const folderCfg = {...c0, wallpaper: {...c0.wallpaper, mode: 'folder', path: '/media/x/Pics'}};
 eq(p.optionsFor('wallpaper', folderCfg).map((o) => o.id).join(','), 'wallpaper,wallpaperFit,interval,shuffle,wallpaperOpacity,fadeStrength', 'a folder slideshow shows the timer and shuffle');
 // 2.0.2: picture size Fit/Fill for wallpapers
 eq(p.optionsFor('wallpaper', {...c0, background: 'theme'}).map((o) => o.id).includes('wallpaperFit'), false, 'plain background: no picture size row');
 const fitRow = (c) => p.optionsFor('wallpaper', c).find((o) => o.id === 'wallpaperFit');
-eq([fitRow(c0).valueText, p.applyPref(c0, 'wallpaperFit', 'ok').wallpaper.fit, p.applyPref({...c0, wallpaper: {...c0.wallpaper, fit: 'fit'}}, 'wallpaperFit', 'ok').wallpaper.fit], ['Fill the screen (cropped)', 'fit', 'fill'], 'picture size toggles Fill <-> Fit, Fill is the default');
+eq([fitRow(cPhoto).valueText, p.applyPref(cPhoto, 'wallpaperFit', 'ok').wallpaper.fit, p.applyPref({...cPhoto, wallpaper: {...c0.wallpaper, fit: 'fit'}}, 'wallpaperFit', 'ok').wallpaper.fit], ['Fill the screen (cropped)', 'fit', 'fill'], 'picture size toggles Fill <-> Fit, Fill is the default');
 store[KEY] = JSON.stringify({defaultsV: 1, wallpaper: {mode: 'gradient', path: '', fit: 'fit'}});
 eq(s.loadConfig().wallpaper.fit, 'fit', 'a saved Fit is kept');
 store[KEY] = JSON.stringify({defaultsV: 1, wallpaper: {mode: 'gradient', path: ''}});
 eq(s.loadConfig().wallpaper.fit, 'fill', 'a saved wallpaper from 2.0.1 (no fit) reads as Fill');
 eq(p.optionsFor('wallpaper', {...c0, wallpaper: {...c0.wallpaper, mode: 'image', path: '/media/x/a.jpg'}}).map((o) => o.id).includes('shuffle'), false, 'a single picture has no shuffle');
-const w0 = p.optionsFor('wallpaper', c0)[0];
+const w0 = p.optionsFor('wallpaper', cPhoto)[0];
 eq([w0.valueText, w0.stepper], ['Built-in: Photo: 1', true], 'the first row shows the built-in background (photo 17 = Photo: 1, P113) and has arrows');
-eq(p.applyPref(c0, 'wallpaper', 'right').background, 'photo-02', 'the right arrow steps to the next built-in background (the photos come first)');
+eq(p.applyPref(cPhoto, 'wallpaper', 'right').background, 'photo-02', 'the right arrow steps to the next built-in background (the photos come first)');
+eq(p.optionsFor('wallpaper', c0)[0].valueText, 'Built-in: The theme\'s own', 'HearthNG: a fresh install shows the theme\'s own background (plain black)');
 eq(p.applyPref({...c0, background: 'theme'}, 'wallpaper', 'left').background, 'theme', 'and stops at the first');
 const toBuiltIn = p.applyPref({...folderCfg, background: 'ocean'}, 'wallpaper', 'right');
 eq([toBuiltIn.wallpaper.mode, toBuiltIn.wallpaper.path, toBuiltIn.background, toBuiltIn.wallpaper.intervalSec === folderCfg.wallpaper.intervalSec], ['gradient', '', 'ocean', true], 'an arrow on a picture or slideshow goes back to the built-in background, keeping the timer');

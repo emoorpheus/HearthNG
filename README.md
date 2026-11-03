@@ -94,7 +94,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
 | | |
 |---|---|
 | ![Dark mono icons](docs/screenshots/home-dark-mono.jpg) | ![Clouds wallpaper](docs/screenshots/home-clouds.jpg) |
-| ![Fish photo, the starting wallpaper](docs/screenshots/home-fish.jpg) | ![Warm graphite theme](docs/screenshots/home-warm.jpg) |
+| ![Fish photo, one of the built-in wallpapers](docs/screenshots/home-fish.jpg) | ![Warm graphite theme](docs/screenshots/home-warm.jpg) |
 | ![Teal theme](docs/screenshots/home-teal.jpg) | ![Lava wallpaper](docs/screenshots/home-lava.jpg) |
 | ![Ocean wallpaper](docs/screenshots/home-ocean.jpg) | ![Misty mountains wallpaper](docs/screenshots/home-mist.jpg) |
 | ![Hold OK on an app for its menu](docs/screenshots/app-menu.jpg) | ![Home with the weather line](docs/screenshots/home-weather.jpg) |
@@ -440,7 +440,7 @@ The weather comes from [Open-Meteo](https://open-meteo.com) (free, no account).
 
 ### Screen saver (rooted, experimental)
 
-*Settings, Screen saver, Custom Screen Saver (Photo, GIF, Video or Slideshow).* It is **on by default with a built-in video**; a failed set-up turns it off with a message.
+*Settings, Screen saver, Custom Screen Saver (Photo, GIF, Video or Slideshow).* It is **off on a fresh install** (the TV's own screen saver works); switched on, it starts with a built-in video; a failed set-up turns it off with a message.
 
 Under *Pictures* you can choose:
 

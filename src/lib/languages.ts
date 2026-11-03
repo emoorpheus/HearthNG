@@ -9,6 +9,24 @@ export const isBundledLanguage = (id: string): boolean => id !== 'en' && languag
 
 export const DEFAULT_LANGUAGE = 'en';
 
+/** HearthNG: the interface language for the TV's menu language (its locale, e.g. "ru-RU"): the language part when it is one of
+ *  the languages above, otherwise English. Pure. */
+export function languageFromLocale (locale: unknown): string {
+	if (typeof locale !== 'string') return DEFAULT_LANGUAGE;
+	const code = locale.trim().toLowerCase().split(/[-_]/)[0];
+	return code && LANGUAGES.some((l) => l.id === code) ? code : DEFAULT_LANGUAGE;
+}
+
+/** The TV's menu language out of a settingsservice getSystemSettings {keys: ['localeInfo']} reply (settings.localeInfo.locales.UI,
+ *  "ru-RU" on OLED65M59LA, webOS 10.3.0), or null. Accepts the reply as an object or as the text luna-send prints. */
+export function menuLocaleOf (reply: unknown): string | null {
+	let r: unknown = reply;
+	if (typeof r === 'string') { try { r = JSON.parse(r); } catch { return null; } }
+	const settings = r && typeof r === 'object' ? (r as {settings?: {localeInfo?: {locales?: {UI?: unknown}}}}).settings : undefined;
+	const ui = settings && settings.localeInfo && settings.localeInfo.locales ? settings.localeInfo.locales.UI : undefined;
+	return typeof ui === 'string' && /^[A-Za-z]{2,3}([-_][A-Za-z0-9]+)*$/.test(ui) ? ui : null;
+}
+
 /** T2b: the id saved while the user's own language file is the language in use (the name shown comes from `lib/langpack.ts`). */
 export const PACK_ID = 'pack';
 export const languageId = (id: string): string => (id === PACK_ID ? PACK_ID : languageOf(id).id);
