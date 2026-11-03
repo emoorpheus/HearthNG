@@ -10,7 +10,7 @@ import {APP_ID} from '../config/constants';
 import {appExists} from './launch';
 import {log} from './log';
 import {isWebOS} from './luna';
-import {LG_HOME_ID, homeSettingCommand} from './system';
+import {LG_HOME_ID, writeHomeSetting} from './system';
 import {
 	FULL_HOME_ID, READ_PARAMS, REMOVE_GUARD_COMMAND, SAVED_COMMAND, SETTINGS_SERVICE, guardSteps, homeAppMessage, isAppId,
 	parseHomeSetting, parseSaved, type HomeAppResult
@@ -31,7 +31,7 @@ export function readHomeApp (): Promise<string | null> {
 
 /** Sets the Home app, and reads it back. Resolves true once the TV names it. */
 function writeHomeApp (appId: string): Promise<boolean> {
-	return exec(homeSettingCommand(appId), 6000)
+	return writeHomeSetting(appId)
 		.then(() => readHomeApp())
 		.then((now) => now === appId, () => false);
 }

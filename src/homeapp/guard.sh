@@ -37,7 +37,11 @@ check () {
         *"\"home\":\"$LAUNCHER_ID\""*)
             previous=$(cat "$DIR/previous" 2>/dev/null)
             case "$previous" in ""|"$LAUNCHER_ID"|*[!A-Za-z0-9._-]*) previous=com.webos.app.home ;; esac
-            "$LUNA" -n 1 "$SETTINGS/setSystemSettings" "{\"category\":\"general\",\"settings\":{\"defaultApps\":{\"home\":\"$previous\"}}}" >/dev/null 2>&1
+            # setSystemSettings replaces the whole defaultApps object: keep its other entries (webOS 25: MembershipApp)
+            apps=$(printf '%s' "$reply" | sed -n 's/.*"defaultApps":\({[^{}]*}\).*/\1/p' | sed "s/\"home\":\"[^\"]*\"/\"home\":\"$previous\"/")
+            case "$apps" in *'"home":"'"$previous"'"'*) ;; *) apps="{\"home\":\"$previous\"}" ;; esac
+            case "$apps" in *[!A-Za-z0-9._:,\"{}-]*) apps="{\"home\":\"$previous\"}" ;; esac
+            "$LUNA" -n 1 "$SETTINGS/setSystemSettings" "{\"category\":\"general\",\"settings\":{\"defaultApps\":$apps}}" >/dev/null 2>&1
             log "Hearth is not installed: the Home button opens $previous again"
             echo "restored $previous"
             ;;

@@ -38,7 +38,7 @@ export interface SystemInfo {
 	/** K2: the TV has a memory list that Keep Hearth ready can change (false: none; null/undefined: unknown) */
 	keepList?: boolean | null;
 	/** the hand-over watcher: running, and whether it starts at boot (null while unknown) */
-	homeHook: {running: boolean; linked: boolean; stopped?: boolean} | null;
+	homeHook: {running: boolean; linked: boolean; stopped?: boolean; frozenHome?: boolean} | null;
 	/** the launcher is in the TV's input list (null while unknown) */
 	tvInput?: boolean | null;
 	/** "When the TV turns on, open...": what is on the TV (null while unknown or not readable) */
@@ -53,8 +53,6 @@ export interface SystemInfo {
 	homeKey?: number | null;
 	/** the app the TV's Home button opens (its Home app setting): '' when the TV has no such setting (null while unknown) */
 	homeApp?: string | null;
-	/** P61i: Input Hook is installed and holds button settings that are not Hearth's (greys out the Remote control rows) */
-	inputHook?: boolean;
 	/** free memory in MB (-1: could not be read; undefined: not read yet) */
 	/** what the TV said when it could not (shown under a greyed-out row) */
 	rootDetail?: string;
@@ -82,7 +80,6 @@ export function disabledReason (id: string, info?: SystemInfo, config?: UserConf
 	// the Home app setting and the helper + Home button are two ways of replacing LG Home: only one at a time (a row that is on stays usable, so it can be switched off)
 	if (id === 'homeApp' && !homeAppIsOn(info, config) && helperIsOn(info, config)) return td('disabled.homeApp');
 	if (id === 'replaceHome' && !helperIsOn(info, config) && homeAppIsOn(info, config)) return td('disabled.replaceHome');
-	if ((id === 'homeKey' || id === 'remap') && info && info.inputHook) return td('disabled.inputHook');
 	if (id === 'powerOnApp' && info && info.powerOn && !info.powerOn.supported) return td('disabled.powerOn');
 	// K2: no memory list on this TV: Keep cannot work (a row that is on stays usable, so it can be switched off)
 	if ((id === 'keepReady' || id === 'keepRelaunch') && info && info.keepList === false && config && !config.keepReady && !config.keepRelaunch) return td('disabled.keepList');

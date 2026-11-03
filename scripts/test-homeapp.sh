@@ -10,7 +10,9 @@ check "guard.sh is valid shell" "$(sh -n "$S/guard.sh" && echo ok)" "ok"
 cat > "$T/luna.sh" <<'LUNA'
 #!/bin/sh
 case "$*" in
-  *getSystemSettings*) [ -f "$T/down" ] && exit 1; printf '{\n    "settings": {\n        "defaultApps": {\n            "home": "%s"\n        }\n    },\n    "returnValue": true\n}\n' "$(cat "$T/home")" ;;
+  *getSystemSettings*) [ -f "$T/down" ] && exit 1
+    if [ -f "$T/extra" ]; then extra=',\n            "MembershipApp": "com.webos.app.overlaymembership"'; else extra=''; fi
+    printf "{\\n    \"settings\": {\\n        \"defaultApps\": {\\n            \"home\": \"%s\"$extra\\n        }\\n    },\\n    \"returnValue\": true\\n}\\n" "$(cat "$T/home")" ;;
   *setSystemSettings*) printf '%s\n' "$*" >> "$T/sets"; sed 's/.*"home":"\([^"]*\)".*/\1/' <<EOF > "$T/home"
 $*
 EOF
@@ -19,7 +21,7 @@ esac
 LUNA
 chmod +x "$T/luna.sh"
 export T
-reset () { rm -rf "$T/dir" "$T/launcher" "$T/sets" "$T/down" "$T/log"; mkdir -p "$T/dir" "$T/launcher" "$T/init.d"; : > "$T/init.d/46-launcher-homeapp"; echo '{}' > "$T/launcher/appinfo.json"; }
+reset () { rm -rf "$T/dir" "$T/launcher" "$T/sets" "$T/down" "$T/log" "$T/extra"; mkdir -p "$T/dir" "$T/launcher" "$T/init.d"; : > "$T/init.d/46-launcher-homeapp"; echo '{}' > "$T/launcher/appinfo.json"; }
 guard () { DIR="$T/dir" LINK="$T/init.d/46-launcher-homeapp" LAUNCHER="$T/launcher" LUNA_SEND="$T/luna.sh" NAP=true TRIES=3 LOG="$T/log" sh "$S/guard.sh" check; }
 sets () { if [ -f "$T/sets" ]; then wc -l < "$T/sets" | tr -d ' '; else echo 0; fi; }
 linked () { [ -e "$T/init.d/46-launcher-homeapp" ] && echo yes || echo no; }
@@ -35,6 +37,11 @@ check "the setting now names it" "$(cat "$T/home")" "com.webos.app.fullhome"
 check "the check removes its start-up link" "$(linked)" "no"
 check "and its folder" "$([ -d "$T/dir" ] && echo yes || echo no)" "no"
 check "and says so in the log" "$(grep -c 'opens com.webos.app.fullhome again' "$T/log")" "1"
+
+reset; echo com.hearthng.launcher > "$T/home"; echo com.webos.app.fullhome > "$T/dir/previous"; rm -rf "$T/launcher"; : > "$T/extra"
+check "the TV has other defaultApps entries (webOS 25): the app from before is put back" "$(guard)" "restored com.webos.app.fullhome"
+check "and the other entry is kept (setSystemSettings replaces the whole object)" "$(grep -c '"MembershipApp":"com.webos.app.overlaymembership"' "$T/sets")" "1"
+check "and home is the app from before" "$(grep -c '"defaultApps":{"home":"com.webos.app.fullhome","MembershipApp"' "$T/sets")" "1"
 
 reset; echo com.hearthng.launcher > "$T/home"; rm -rf "$T/launcher"; rm -f "$T/dir/previous"
 check "nothing saved: LG Home (com.webos.app.home) is put back" "$(guard)" "restored com.webos.app.home"

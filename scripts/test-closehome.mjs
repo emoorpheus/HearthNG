@@ -4,7 +4,7 @@ import {execSync, spawn} from 'child_process';
 const out = new URL('../node_modules/.cache-system-test.mjs', import.meta.url).pathname;
 await build({entryPoints: [new URL('../src/lib/system.ts', import.meta.url).pathname], bundle: true, format: 'esm', outfile: out, platform: 'node', logLevel: 'error',
   plugins: [{name: 'stub', setup(b) { b.onResolve({filter: /\.\/(apps|luna)$/}, (a) => ({path: a.path, namespace: 'stub'})); b.onLoad({filter: /.*/, namespace: 'stub'}, () => ({contents: 'export const exec = () => Promise.resolve(""); export const isWebOS = () => false;', loader: 'js'})); }}]});
-const {CLOSE_HOME_COMMAND, homeSettingCommand, parseHomeApp} = await import(out);
+const {CLOSE_HOME_COMMAND, homeSettingCommand, parseHomeApp, parseDefaultApps} = await import(out);
 let fail = 0;
 const eq = (a, b, m) => { const ok = a === b; if (!ok) fail++; console.log(ok ? 'ok  ' : 'FAIL', m, ok ? '' : `(${a} != ${b})`); };
 const start = (name) => { const p = spawn('bash', ['-c', `exec -a "${name}" sleep 60`], {stdio: 'ignore', detached: true}); p.unref(); return p; };
@@ -47,5 +47,14 @@ let rejected = 0; for (const bad of ["x'; reboot; '", 'a b', '', 'a"b', '$(id)']
 eq(rejected, 5, 'anything that is not a plain app id is refused (no shell injection)');
 eq(parseHomeApp('{\n "returnValue": true,\n "settings": {"defaultApps": {"home": "com.hearthng.launcher"}}\n}'), 'com.hearthng.launcher', 'reads the home app out of the reply');
 eq(parseHomeApp('{"returnValue": false}'), null, 'no home app in the reply -> null');
+// webOS 25 (OLED65M59LA, webOS 10.3.0, 2026-11-03): defaultApps has a second entry, and setSystemSettings replaces the object
+const tvReply = '{\n    "subscribed": false,\n    "category": "general",\n    "method": "getSystemSettings",\n    "returnValue": true,\n    "settings": {\n        "defaultApps": {\n            "home": "com.webos.app.home",\n            "MembershipApp": "com.webos.app.overlaymembership"\n        }\n    }\n}';
+const apps = parseDefaultApps(tvReply);
+eq(JSON.stringify(apps), '{"home":"com.webos.app.home","MembershipApp":"com.webos.app.overlaymembership"}', 'reads the whole defaultApps object');
+eq(homeSettingCommand('com.hearthng.launcher', apps).includes('"defaultApps":{"home":"com.hearthng.launcher","MembershipApp":"com.webos.app.overlaymembership"}'), true, 'the new home keeps the other entry');
+eq(JSON.stringify(parseDefaultApps('{"settings":{"defaultApps":{"home":"com.webos.app.home","x y":"a","Bad":"$(id)","n":5}}}')), '{"home":"com.webos.app.home"}', 'entries that are not plain ids are dropped');
+eq(homeSettingCommand('com.webos.app.home', {MembershipApp: "x'; reboot; '"}).includes('reboot'), false, 'a bad value in the current object never reaches the command');
+eq(parseDefaultApps('{"returnValue": false}'), null, 'no defaultApps in the reply -> null');
+eq(homeSettingCommand('com.webos.app.home', null).includes('"defaultApps":{"home":"com.webos.app.home"}'), true, 'nothing read: only home');
 for (const p of [home, homeEnd, connect, other, web]) { try { process.kill(p.pid); } catch {} }
 process.exit(fail ? 1 : 0);

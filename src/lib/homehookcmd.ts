@@ -33,6 +33,9 @@ export interface HookStatus {
 	linked: boolean;
 	/** the emergency exit (stop.sh) is on */
 	stopped?: boolean;
+	/** LG Home is a Flutter app here (webOS 25): the helper freezes it, so without a Home button setting the Home button
+	 *  opens nothing. Only present when true. */
+	frozenHome?: boolean;
 }
 
 const RESULTS: HookResult[] = ['applied', 'stopped', 'launcher-missing', 'files-missing'];
@@ -138,8 +141,12 @@ export const STOCK_COMMAND = `[ -f '${HOOK_DIR}/stock.sh' ] && sh '${HOOK_DIR}/s
  *  and unfreezes LG Home. */
 export const REMOVE_COMMAND = `${STOP_WATCHER}; rm -f '${ALLOW_FILE}' '${ALIVE_FILE}' '${HOOK_LINK}'; while grep -q ' ${APP_QML} ' /proc/mounts; do umount '${APP_QML}' || break; done; rm -rf '${HOOK_DIR}'; pkill -CONT -f '${HOME_PROC_PATTERN}' 2>/dev/null; echo removed`;
 export const VERSION_COMMAND = `cat '${HOOK_DIR}/version' 2>/dev/null; true`;
-export const STATUS_COMMAND = `if [ -f '${PID_FILE}' ] && kill -0 "$(cat '${PID_FILE}')" 2>/dev/null; then echo running; fi; if [ -L '${HOOK_LINK}' ]; then echo linked; fi; if [ -f '${STOPPED_FILE}' ]; then echo stopped; fi; true`;
+/** LG Home's Flutter files (webOS 25; seen on webOS 10.3.0): where they are, LG Home runs as its own process that the helper freezes. */
+export const FLUTTER_HOME_DIR = '/usr/palm/applications/com.webos.app.home/data/flutter_assets';
+export const STATUS_COMMAND = `if [ -f '${PID_FILE}' ] && kill -0 "$(cat '${PID_FILE}')" 2>/dev/null; then echo running; fi; if [ -L '${HOOK_LINK}' ]; then echo linked; fi; if [ -f '${STOPPED_FILE}' ]; then echo stopped; fi; if [ -d '${FLUTTER_HOME_DIR}' ]; then echo flutterhome; fi; true`;
 
 export function parseHookStatus (output: string): HookStatus {
-	return {running: /^running$/m.test(output), linked: /^linked$/m.test(output), stopped: /^stopped$/m.test(output)};
+	const status: HookStatus = {running: /^running$/m.test(output), linked: /^linked$/m.test(output), stopped: /^stopped$/m.test(output)};
+	if (/^flutterhome$/m.test(output)) status.frozenHome = true;
+	return status;
 }

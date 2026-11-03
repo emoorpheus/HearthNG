@@ -321,6 +321,8 @@
     "app.nothingIsReplacedNow": "Сейчас ничего не заменяется. Открывает настройку кнопки Home",
     "app.replaceLgHomeWithout": "Заменить LG Home без назначения кнопки Home",
     "app.lgHomeMayFlash": "LG Home иногда может мелькать",
+    "app.homeKeyNeededText": "На этом ТВ помощник замораживает LG Home, чтобы он не появлялся поверх Hearth. Без назначения кнопка Home тогда ничего не открывает. Сначала назначьте кнопку Home на Hearth (Настройки, Система, Пульт ДУ, Назначить кнопку Home).",
+    "app.homeKeyWontWork": "Кнопка Home ничего не будет открывать",
     "app.removingHearthFromThe": "Убираем Hearth из входов…",
     "app.removedFromTheTv": "Убран из входов ТВ",
     "app.theTvAcceptedThat": "ТВ принял изменение, но пока его не показывает. Проверьте список входов ТВ",

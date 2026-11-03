@@ -114,6 +114,8 @@ eq(existsSync(hook + '/watch.sh.new') || existsSync(hook + '/apply.sh.new'), fal
 sh(h.REMOVE_COMMAND);
 eq([existsSync(hook), existsSync(link), existsSync(root + '/tmp/launcher-allow-stock-home')].join(','), 'false,false,false', 'remove deletes the folder, the boot link and the stand-down flag');
 eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":false,"stopped":false}', 'status: off after removal');
+eq(st('linked\nflutterhome\n'), '{"running":false,"linked":true,"stopped":false,"frozenHome":true}', 'status: LG Home is a Flutter app (frozen by the helper)');
+eq(h.STATUS_COMMAND.includes(h.FLUTTER_HOME_DIR), true, 'status command looks for LG Home\'s Flutter files');
 eq(h.REMOVE_COMMAND.includes("pkill -CONT -f '[f]lutter-client -i com\\.webos\\.app\\.home([^A-Za-z0-9._-]|$)'"), true, 'removal unfreezes LG Home (exact process pattern)');
 eq(h.REMOVE_COMMAND.indexOf('pkill -CONT') > h.REMOVE_COMMAND.indexOf('[l]auncher-homehook/watch.sh'), true, 'only after the watcher is stopped');
 eq(h.parseHookResult(sh(h.APPLY_COMMAND)), 'files-missing', 'apply after removal does nothing');

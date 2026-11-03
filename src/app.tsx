@@ -53,7 +53,6 @@ import {askKeepAlive, askedRecently} from './lib/keepalive';
 import {hidePointerOnForeground, startPointerGuard} from './lib/pointer';
 import {startLogFile, writeReport, previousRunLines} from './lib/logfile';
 import {readStats, type SystemStats, getLogo, setLogo, closeLgHome} from './lib/system';
-import {readInputHookInUse} from './lib/hookguard';
 import {getHookStatus, hookMessage, installHomeHook, launchParams, logLine, markAliveSoon, reapplyHomeHook, removeHomeHook, stockHome} from './lib/homehook';
 import {SAVER_PHOTOS, SAVER_VIDEO} from './lib/saverconfig';
 import {installSaver, reapplySaver, removeSaver, saverMessage, saverSettings, showSaver} from './lib/screensaver';
@@ -583,9 +582,9 @@ export function App () {
 					log(`settings: root check answered +${since()} ms`);
 					if (!live) return undefined;
 					if (root === 'no') { setSystemInfo({homeApp: null, homeHook: null, logo: null, powerOn: null, root, rootDetail}); return undefined; }
-					return Promise.all([getHookStatus(), getLogo(), readPowerOn(), readHomeApp(), readInputHookInUse(), root === 'yes' ? readHomebrewVersion() : Promise.resolve(undefined)]).then(([homeHook, logo, powerOn, homeApp, inputHook, homebrew]) => {
+					return Promise.all([getHookStatus(), getLogo(), readPowerOn(), readHomeApp(), root === 'yes' ? readHomebrewVersion() : Promise.resolve(undefined)]).then(([homeHook, logo, powerOn, homeApp, homebrew]) => {
 						if (!live) return;
-						setSystemInfo((previous) => ({homeApp, homeHook, logo, powerOn, root, rootDetail, inputHook, keepList: previous.keepList}));
+						setSystemInfo((previous) => ({homeApp, homeHook, logo, powerOn, root, rootDetail, keepList: previous.keepList}));
 						readKeepList().then((keepList) => { if (live && keepList !== null) setSystemInfo((previous) => ({...previous, keepList})); });     // K2: apart, so the other rows never wait for it
 						if (homebrew) setVersions((p) => ({...p, homebrew}));
 						log(`settings: status reads done +${since()} ms`);
@@ -1146,12 +1145,14 @@ export function App () {
 					};
 					readBinds().then((read) => (read.ok ? hearthCodes(read.binds).length > 0 : false), () => false).then((bound) => {
 						if (bound) { proceed(); return; }
+						// §7: where the helper freezes LG Home (webOS 25), the Home button opens nothing without a binding (seen on webOS 10.3.0)
+						const frozen = !!(systemInfo.homeHook && systemInfo.homeHook.frozenHome);
 						setNotice({
 							title: tt('app.replaceLgHomeAnyway'),
-							text: tt('app.hearthWillOpenInstead'),
+							text: tt(frozen ? 'app.homeKeyNeededText' : 'app.hearthWillOpenInstead'),
 							buttons: [
 								{label: tt('app.bindHomeKeyTo'), detail: tt('app.nothingIsReplacedNow'), tone: 'light', run: () => { setNotice(null); setScreen('homekey'); }},
-								{label: tt('app.replaceLgHomeWithout'), detail: tt('app.lgHomeMayFlash'), tone: 'danger', run: proceed}
+								{label: tt('app.replaceLgHomeWithout'), detail: tt(frozen ? 'app.homeKeyWontWork' : 'app.lgHomeMayFlash'), tone: 'danger', run: proceed}
 							],
 							onBack: () => setNotice(null)
 						});
@@ -1415,7 +1416,8 @@ export function App () {
 	const editVerdict = tileEdit && tileEdit.app ? uninstallVerdict(tileEdit.app) : null;
 	const editActions: EditAction[] = tileEdit ? [
 		{kind: 'hide', label: tt('appmenu.hideFromTheHome')},
-		...(tileEdit.app ? [{kind: 'uninstall' as const, label: tt('appmenu.uninstall'), disabled: editVerdict && !editVerdict.ok ? editVerdict.reason : null}] : []),
+		// §5 (D.9): only an app that can be removed gets the bin; a greyed-out one is not shown (the reason stays in "More")
+		...(tileEdit.app && editVerdict && editVerdict.ok ? [{kind: 'uninstall' as const, label: tt('appmenu.uninstall'), disabled: null}] : []),
 		{kind: 'more', label: tt('tileedit.more')}
 	] : [];
 	const runEditAction = (i: number) => {

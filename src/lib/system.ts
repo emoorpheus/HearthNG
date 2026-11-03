@@ -16,14 +16,35 @@ export function closeLgHome (): Promise<void> {
 
 // ---------- which app the Home button (and leaving an app with Back) opens ----------
 // webOS keeps this in a system setting, defaultApps.home. LG's default is com.webos.app.home.
+// defaultApps holds more than home (webOS 25: "MembershipApp": "com.webos.app.overlaymembership"), and setSystemSettings
+// replaces the whole object: a call with home alone deleted MembershipApp on a webOS 10.3 TV (2026-11-03). So the object
+// is read first and only home is changed.
 
 export const LG_HOME_ID = 'com.webos.app.home';
 const APP_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+const KEY_PATTERN = /^[A-Za-z0-9_]+$/;
 
-/** The shell command that sets the home app. Throws for anything that isn't a plain app id. */
-export function homeSettingCommand (appId: string): string {
+/** The TV's whole defaultApps object out of getSystemSettings' reply (only entries whose name and value are plain ids),
+ *  or null when the reply has none. */
+export function parseDefaultApps (output: string): Record<string, string> | null {
+	const match = /"defaultApps"\s*:\s*(\{[^{}]*\})/.exec(output);
+	if (!match) return null;
+	let parsed: unknown;
+	try { parsed = JSON.parse(match[1]); } catch { return null; }
+	if (!parsed || typeof parsed !== 'object') return null;
+	const apps: Record<string, string> = {};
+	const all = parsed as Record<string, unknown>;
+	Object.keys(all).forEach((k) => { const v = all[k]; if (KEY_PATTERN.test(k) && typeof v === 'string' && APP_ID_PATTERN.test(v)) apps[k] = v; });
+	return apps;
+}
+
+/** The shell command that sets the home app and keeps the other entries of `current` (what the TV has now). Throws for
+ *  anything that isn't a plain app id. */
+export function homeSettingCommand (appId: string, current: Record<string, string> | null = null): string {
 	if (!APP_ID_PATTERN.test(appId)) throw new Error('Invalid app id');
-	return `luna-send -n 1 -f luna://com.webos.settingsservice/setSystemSettings '{"category":"general","settings":{"defaultApps":{"home":"${appId}"}}}'`;
+	const apps: Record<string, string> = {home: appId};
+	if (current) Object.keys(current).forEach((k) => { if (k !== 'home' && KEY_PATTERN.test(k) && APP_ID_PATTERN.test(current[k])) apps[k] = current[k]; });
+	return `luna-send -n 1 -f luna://com.webos.settingsservice/setSystemSettings '{"category":"general","settings":{"defaultApps":${JSON.stringify(apps)}}}'`;
 }
 
 const GET_HOME_COMMAND = `luna-send -n 1 -f luna://com.webos.settingsservice/getSystemSettings '{"category":"general","keys":["defaultApps"]}'`;
@@ -39,10 +60,15 @@ export function getHomeApp (): Promise<string | null> {
 	return exec(GET_HOME_COMMAND, 6000).then(parseHomeApp).catch(() => null);
 }
 
+/** Sets the home app, keeping the other defaultApps entries the TV has. Resolves with the TV's reply. */
+export function writeHomeSetting (appId: string): Promise<string> {
+	return exec(GET_HOME_COMMAND, 6000).then(parseDefaultApps, () => null).then((current) => exec(homeSettingCommand(appId, current), 6000));
+}
+
 /** Sets the home app. Resolves true when the TV accepted it. */
 export function setHomeApp (appId: string): Promise<boolean> {
 	if (!isWebOS()) return Promise.resolve(false);
-	return exec(homeSettingCommand(appId), 6000).then((out) => /"returnValue"\s*:\s*true/.test(out)).catch(() => false);
+	return writeHomeSetting(appId).then((out) => /"returnValue"\s*:\s*true/.test(out)).catch(() => false);
 }
 
 // ---------- the LG logo when the TV starts ----------

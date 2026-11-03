@@ -325,6 +325,8 @@
     "app.nothingIsReplacedNow": "Nothing is replaced now. Opens the Home button setting",
     "app.replaceLgHomeWithout": "Replace LG Home without Home key binding",
     "app.lgHomeMayFlash": "LG Home may flash now and then",
+    "app.homeKeyNeededText": "On this TV the helper freezes LG Home so that it cannot come back over Hearth. Without a Home button binding the Home button then opens nothing. Bind the Home button to Hearth first (Settings, System, Remote control, Map home button).",
+    "app.homeKeyWontWork": "The Home button will open nothing",
     "app.addingHearthToThe": "Adding Hearth to the inputs…",
     "app.addedToTheTv": "Added to the TV's inputs",
     "app.removingHearthFromThe": "Removing Hearth from the inputs…",
