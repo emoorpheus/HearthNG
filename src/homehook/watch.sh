@@ -99,7 +99,7 @@ case "$TOAST_MS" in ''|*[!0-9]*) TOAST_MS=2000 ;; esac
 FRONT_TOAST_TRIES="${FRONT_TOAST_TRIES:-4}"   # own notification reported in front: front() asks again this many times, 1 s apart
 TLOCK="${TLOCK:-/tmp/launcher-toast-lock}"   # the notification helper is running (holds the uptime it started at)
 ALIVE="${ALIVE:-/tmp/launcher-alive}"        # touched by the launcher whenever it becomes visible
-EMPTY_DELAY="${EMPTY_DELAY:-0.5}"     # the foreground must stay empty this many s (a sleep without fractions waits 1 s)
+EMPTY_DELAY="${EMPTY_DELAY:-0.2}"     # the foreground must stay empty this many s (a sleep without fractions waits 1 s)
 GONE_DELAY="${GONE_DELAY:-5}"         # launcher not found: look again after this many s (files vanish during an update)
 ALLOW_MAX_S="${ALLOW_MAX_S:-30}"      # ALLOW is dropped if LG Home did not come to the front within this time
 VERIFY_TRIES="${VERIFY_TRIES:-8}"     # asks again this many times, then closes the launcher and starts it again
@@ -298,7 +298,7 @@ wake_loop () {
 }
 
 # The foreground is empty for a split second between two apps and when the TV goes to standby.
-# A sleep that does not take "0.5" (an error) waits 1 s instead.
+# A sleep that does not take "0.2" (an error) waits 1 s instead.
 empty_for_real () {
     $NAP "$EMPTY_DELAY" 2>/dev/null || $NAP 1
     is_empty "$(front)" && tv_active

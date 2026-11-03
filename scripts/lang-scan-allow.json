@@ -169,7 +169,7 @@
  },
  {
   "file": "lib/pointer.ts",
-  "text": "pointer after coming to the front: {}"
+  "text": "pointer after {}: {}"
  },
  {
   "file": "lib/exitkey.ts",
@@ -186,5 +186,13 @@
  {
   "file": "lib/exitkey.ts",
   "text": "keys: code {} ({}) reached the launcher"
+ },
+ {
+  "file": "lib/pointer.ts",
+  "text": "coming to the front"
+ },
+ {
+  "file": "lib/pointer.ts",
+  "text": "a held Back"
  }
 ]

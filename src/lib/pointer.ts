@@ -34,8 +34,8 @@ export const AUTO_SHOW_MS = 600;
 export const REPORT_AFTER_MS = 3000;
 
 export interface PointerFront {
-	/** A front event (launch, relaunch, back from the background). */
-	front (now: number): void;
+	/** A front event (launch, relaunch, back from the background), or Exit (a held Back) while in front. */
+	front (now: number, why?: string): void;
 	/** The TV's `cursorStateChange` report. Returns true when the pointer should be hidden again. */
 	cursor (visible: boolean, now: number): boolean;
 	/** The line for the log (null when nothing happened). */
@@ -47,13 +47,15 @@ export function pointerFront (): PointerFront {
 	let frontAt = -1;
 	let rehidden = false;
 	let events: string[] = [];
+	let cause = 'coming to the front';
 	return {
-		front (now) {
+		front (now, why = 'coming to the front') {
 			// visibilitychange and webOSRelaunch can both come for one Home press: the first one counts
 			if (frontAt >= 0 && now - frontAt < AUTO_SHOW_MS) return;
 			frontAt = now;
 			rehidden = false;
 			events = [];
+			cause = why;
 		},
 		cursor (visible, now) {
 			if (frontAt < 0) return false;
@@ -67,24 +69,30 @@ export function pointerFront (): PointerFront {
 			events.push(`${visible ? 'shown' : 'hidden'} ${after} ms`);
 			return false;
 		},
-		line () { return events.length ? `pointer after coming to the front: ${events.join(', ')}` : null; }
+		line () { return events.length ? `pointer after ${cause}: ${events.join(', ')}` : null; }
 	};
 }
 
+/** The key code of Exit. The TV turns Back held for 1 s into it, and turns the pointer on with it, like with Home
+ *  (seen on OLED65M59LA, webOS 10.3.0; the launcher takes Exit, see exitkey.ts). */
+export const EXIT_KEY_CODE = 1001;
+
 /** Hide the pointer on launch and every time the app comes back to the foreground (including relaunches while
  *  already running, e.g. from a remapped HOME button), and once more when the TV turns it on right after.
- *  `report` gets one line about it a few seconds later. Returns an unsubscribe function. */
+ *  The same for Exit (a held Back) while the app is in front. `report` gets one line about it a few seconds later.
+ *  Returns an unsubscribe function. */
 export function hidePointerOnForeground (report?: (text: string) => void): () => void {
 	const state = pointerFront();
 	let reportTimer = 0;
-	const onFront = () => {
-		state.front(Date.now());
+	const onFront = (why?: string) => {
+		state.front(Date.now(), why);
 		hidePointer();
 		if (!report) return;
 		window.clearTimeout(reportTimer);
 		reportTimer = window.setTimeout(() => { const line = state.line(); if (line) report(line); }, REPORT_AFTER_MS + 100);
 	};
 	const onVisible = () => { if (!document.hidden) onFront(); };
+	const onKey = (e: KeyboardEvent) => { if (e.keyCode === EXIT_KEY_CODE && !document.hidden) onFront('a held Back'); };
 	// webOS: `cursorStateChange` with detail.visibility when the pointer appears or goes
 	const onCursor = (e: Event) => {
 		const detail = (e as CustomEvent<{visibility?: boolean}>).detail;
@@ -95,11 +103,13 @@ export function hidePointerOnForeground (report?: (text: string) => void): () =>
 	document.addEventListener('visibilitychange', onVisible);
 	document.addEventListener('webOSRelaunch', onVisible);
 	document.addEventListener('cursorStateChange', onCursor);
+	window.addEventListener('keydown', onKey, true);
 	return () => {
 		window.clearTimeout(reportTimer);
 		document.removeEventListener('visibilitychange', onVisible);
 		document.removeEventListener('webOSRelaunch', onVisible);
 		document.removeEventListener('cursorStateChange', onCursor);
+		window.removeEventListener('keydown', onKey, true);
 	};
 }
 

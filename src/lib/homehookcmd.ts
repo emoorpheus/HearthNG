@@ -9,7 +9,7 @@
 // (guard.sh) starts it again if it stops. stop.sh is the emergency exit (run by hand over SSH).
 
 /** Bump when the scripts change: the launcher then rewrites the installed copy and restarts the watcher. */
-export const HOOK_VERSION = '18-ng2';
+export const HOOK_VERSION = '18-ng3';
 export const HOOK_DIR = '/media/developer/launcher-homehook';
 export const HOOK_LINK = '/var/lib/webosbrew/init.d/48-launcher-homehook';
 export const APP_QML = '/usr/palm/applications/com.webos.app.home/qml';

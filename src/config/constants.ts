@@ -27,7 +27,8 @@ export const KEY = {
 	left: 37, up: 38, right: 39, down: 40,
 	enter: 13,
 	back: 461,          // webOS "BACK" (needs disableBackHistoryAPI in appinfo.json)
-	escape: 27          // handy when developing in a desktop browser
+	escape: 27,         // handy when developing in a desktop browser
+	exit: 1001          // webOS "EXIT": what the TV makes of Back held for 1 s (seen on webOS 10.3.0)
 } as const;
 
 export const TIMING = {

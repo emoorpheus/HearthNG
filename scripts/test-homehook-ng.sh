@@ -203,7 +203,7 @@ printf '%s\n' "$SHEBANG" 'n=$(( $(cat "$MOCK_STATE/nap_n" 2>/dev/null || echo 0)
     '[ -f "$MOCK_STATE/step.$n" ] && . "$MOCK_STATE/step.$n"' 'exit 0' > "$T/bin/nap-steps"
 # WAKE_NAP for the wake_loop step: writes the length of each pause to $S/wake_naps and waits 0.2 s
 printf '%s\n' "$SHEBANG" 'echo "$1" >> "$MOCK_STATE/wake_naps"' 'sleep 0.2' > "$T/bin/nap-log"
-# a NAP that, like a sleep without fractions, refuses "0.5" (an error) and writes every pause to $S/naps
+# a NAP that, like a sleep without fractions, refuses "0.2" (an error) and writes every pause to $S/naps
 printf '%s\n' "$SHEBANG" 'case "$1" in *.*) echo "bad $1" >> "$MOCK_STATE/naps"; echo "sleep: invalid number" >&2; exit 1 ;; esac' \
     'echo "nap $1" >> "$MOCK_STATE/naps"' > "$T/bin/nap-int"
 chmod +x "$T/bin/"*
@@ -300,8 +300,8 @@ done
 check "diagnose.sh: the launcher is $ID" hasline "LAUNCHER_ID=$ID" "$SRC/diagnose.sh"
 check "defaults: THAW_ON_LAUNCH=0, FAILSAFE=1, THAW_ON_STANDBY=0, EMPTY_AS_HOME=auto, TOAST_LANG=auto" eval \
     'has "THAW_ON_LAUNCH=\"\${THAW_ON_LAUNCH:-0}\"" "$WS" && has "FAILSAFE=\"\${FAILSAFE:-1}\"" "$WS" && has "THAW_ON_STANDBY=\"\${THAW_ON_STANDBY:-0}\"" "$WS" && has "EMPTY_AS_HOME=\"\${EMPTY_AS_HOME:-auto}\"" "$WS" && has "TOAST_LANG=\"\${TOAST_LANG:-auto}\"" "$WS"'
-check "defaults: EMPTY_DELAY=0.5, WAKE_SETTLE=1, WAKE_POLL_STANDBY=1, TOAST_DELAY=3" eval \
-    'has "EMPTY_DELAY=\"\${EMPTY_DELAY:-0.5}\"" "$WS" && has "WAKE_SETTLE=\"\${WAKE_SETTLE:-1}\"" "$WS" && has "WAKE_POLL_STANDBY=\"\${WAKE_POLL_STANDBY:-1}\"" "$WS" && has "TOAST_DELAY=\"\${TOAST_DELAY:-3}\"" "$WS"'
+check "defaults: EMPTY_DELAY=0.2, WAKE_SETTLE=1, WAKE_POLL_STANDBY=1, TOAST_DELAY=3" eval \
+    'has "EMPTY_DELAY=\"\${EMPTY_DELAY:-0.2}\"" "$WS" && has "WAKE_SETTLE=\"\${WAKE_SETTLE:-1}\"" "$WS" && has "WAKE_POLL_STANDBY=\"\${WAKE_POLL_STANDBY:-1}\"" "$WS" && has "TOAST_DELAY=\"\${TOAST_DELAY:-3}\"" "$WS"'
 check "only one line of watch.sh ends with >/dev/null 2>&1 (diagnose.sh's self-test needs that)" eq "$(count '>/dev/null 2>&1$' "$WS")" 1
 check "defaults: CHECK_EVERY=5, CHECK_MISSES=2, HANDLE_MAX=60, SILENT_MAX=3" eval \
     'has "CHECK_EVERY=\"\${CHECK_EVERY:-5}\"" "$WS" && has "CHECK_MISSES=\"\${CHECK_MISSES:-2}\"" "$WS" && has "HANDLE_MAX=\"\${HANDLE_MAX:-60}\"" "$WS" && has "SILENT_MAX=\"\${SILENT_MAX:-3}\"" "$WS"'
@@ -599,17 +599,17 @@ check "3 launches (1 + 1 try + 1 after the restart), all with keepAlive, each af
 check "the note in the log for the try and for the restart" eval 'has "(try 1 of 1, the request took 0.00 s; Keep Hearth ready: Hearth is not in memory, keepAlive launch)" "$W/watch.log" && has "Hearth started again (the request took 0.00 s; Keep Hearth ready: Hearth is not in memory, keepAlive launch)" "$W/watch.log"'
 check "no SIGCONT, LG Home frozen" eval 'home_frozen && no_thaw'
 
-section "B21. EMPTY_DELAY=0.5; a sleep that refuses fractions waits 1 s instead"
+section "B21. EMPTY_DELAY=0.2; a sleep that refuses fractions waits 1 s instead"
 reset; start_home; freeze_now; echo "" > "$S/front"
 stdin_watch "" NO_VERIFY=1 NAP="$T/bin/nap-int"
-check "first 0.5 (an error), then 1" eq "$(cat "$S/naps" 2>/dev/null | tr '\n' ' ')" "bad 0.5 nap 1 "
+check "first 0.2 (an error), then 1" eq "$(cat "$S/naps" 2>/dev/null | tr '\n' ' ')" "bad 0.2 nap 1 "
 check "the launcher is asked for (still empty, the TV Active)" eq "$(launcher_launches)" 1
 reset; start_home; freeze_now; echo "" > "$S/front"
 stdin_watch "" NO_VERIFY=1 NAP="$T/bin/nap-int" EMPTY_DELAY=1
 check "EMPTY_DELAY=1: one pause of 1 s" eq "$(cat "$S/naps" 2>/dev/null | tr '\n' ' ')" "nap 1 "
 reset; start_home; freeze_now; echo "" > "$S/front"
 out=$(rep "" | run_env LOG="$W/watch.log" WATCH_STDIN=1 NO_VERIFY=1 NAP=sleep sh "$HOOKD/watch.sh" 2>&1)
-check "the real sleep 0.5: no error output, the launcher asked for" eval '[ -z "$out" ] && [ "$(launcher_launches)" = 1 ]'
+check "the real sleep 0.2: no error output, the launcher asked for" eval '[ -z "$out" ] && [ "$(launcher_launches)" = 1 ]'
 
 section "B21a. EMPTY_AS_HOME: when does an empty foreground count as LG Home?"
 reset; echo "" > "$S/front"
@@ -692,7 +692,7 @@ bg_watch
 check "the watcher runs (pid file)" waitfor pid_alive "$W/watch.pid"
 check "LG Home frozen at start (another app in front)" waitfor home_frozen
 check "in the log: start: LG Home frozen" waitfor has 'watcher: start: LG Home frozen' "$W/watch.log"
-check "the started line: HearthNG, the id, the settings, Keep Hearth ready: off" has "started (pid [0-9]*, HearthNG $ID, THAW_ON_LAUNCH=0, FAILSAFE=0, THAW_ON_STANDBY=0, EMPTY_DELAY=0.5, EMPTY_AS_HOME=auto, Keep Hearth ready: off)" "$W/watch.log"
+check "the started line: HearthNG, the id, the settings, Keep Hearth ready: off" has "started (pid [0-9]*, HearthNG $ID, THAW_ON_LAUNCH=0, FAILSAFE=0, THAW_ON_STANDBY=0, EMPTY_DELAY=0.2, EMPTY_AS_HOME=auto, Keep Hearth ready: off)" "$W/watch.log"
 check "the luna-send subscription runs" waitfor has_proc "$T/bin/hold subscription"
 P=$(cat "$W/watch.pid"); : > "$S/pkill.log"
 kill -TERM "$P"
