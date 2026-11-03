@@ -77,7 +77,15 @@ home_state () {
     p=$(cat "$S/home_pid" 2>/dev/null)
     [ -n "$p" ] && sed -n 's/^State:[[:space:]]*\([A-Za-z]\).*/\1/p' "/proc/$p/status" 2>/dev/null
 }
-front_json () { printf '{"returnValue":true,"appId":"%s","processId":"","windowId":""}\n' "$(cat "$S/front" 2>/dev/null)"; }
+front_json () {
+    # $S/front_toast_n: that many answers name HearthNG's own notification window (com.hearthng.toast) instead
+    ftn=$(cat "$S/front_toast_n" 2>/dev/null)
+    if [ "${ftn:-0}" -gt 0 ]; then
+        echo $((ftn - 1)) > "$S/front_toast_n"; echo "fronttoast" >> "$S/calls"
+        printf '{"returnValue":true,"appId":"com.hearthng.toast","processId":"","windowId":""}\n'; return
+    fi
+    printf '{"returnValue":true,"appId":"%s","processId":"","windowId":""}\n' "$(cat "$S/front" 2>/dev/null)"
+}
 case "$uri" in
     */getForegroundAppInfo)
         if [ "$sub" = 1 ]; then
@@ -116,6 +124,13 @@ case "$uri" in
             echo '{"returnValue":true,"running":[{"id":"com.webos.app.home","processid":"1001"}]}'
         fi ;;
     */launch)
+        # HearthNG's own notification app: counted apart ("owntoast"); $S/owntoast_deny: the launch is refused
+        case "$payload" in *'"com.hearthng.toast"'*)
+            echo "owntoast caller=$caller $payload" >> "$S/calls"
+            if [ -f "$S/owntoast_deny" ]; then echo '{"returnValue":false,"errorCode":-101,"errorText":"not found (mock)"}'
+            else echo '{"returnValue":true,"processId":"","instanceId":"t1"}'; fi
+            exit 0 ;;
+        esac
         n=$(( $(cat "$S/launch_count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$S/launch_count"
         echo "launch caller=$caller home=$(home_state) $payload" >> "$S/calls"
         # $S/launch_hang: the request never comes back (the watcher's reader stays inside handle)
@@ -251,7 +266,7 @@ run_env () {
         KEEP_FLAG="$W/keep-on" STANDBY_FLAG="$W/standby" STANDBY_REF="$W/standby-ref" WAKE_REF="$W/wake-ref" \
         LINK="$W/link" APP_QML="$W/no-such-qml" HOME_APP_DIR="$W/homeapp" SYSLOG="$W/messages" \
         LAST_REPORT="$W/last-report" HANDLING="$W/handling" SILENT_FLAG="$W/silent" POLLING="$W/polling" \
-        UPTIME_FILE="$S/uptime" LOADING_TOAST= NAP=true FAILSAFE=0 CHECK_EVERY=0 \
+        UPTIME_FILE="$S/uptime" LOADING_TOAST= NAP=true FAILSAFE=0 CHECK_EVERY=0 TOAST_APP="$W/toastapp" \
         "$@"
 }
 # waitfor, but up to 30 s (check_loop with CHECK_EVERY=1 needs about 2 s for each quiet subscription)
@@ -1133,6 +1148,80 @@ waitfor has 'start: LG Home frozen' "$W/watch.log"
 stop_bg_watch
 sleep 2.5
 check "no watch.sh process left" no_proc "$HOOKD/watch.sh"
+
+section "N1. Own notifications: the defaults in watch.sh and guard.sh"
+for f in watch guard; do
+    check "$f.sh: TOAST_STYLE=auto, TOAST_MS=2000, the app com.hearthng.toast" eval \
+        'hasline "TOAST_APP_ID=\"\${TOAST_APP_ID:-com.hearthng.toast}\"" "$SRC/$f.sh" && has "TOAST_STYLE=\"\${TOAST_STYLE:-auto}\"" "$SRC/$f.sh" && has "TOAST_MS=\"\${TOAST_MS:-2000}\"" "$SRC/$f.sh"'
+done
+check "watch.sh: the last report naming the own notification is not compared (check_loop)" has 'is_toast_app "$sc_r" && return 1' "$WS"
+own_app () { mkdir -p "$W/toastapp"; echo '{}' > "$W/toastapp/appinfo.json"; }
+
+section "N2. Loading notification with the app installed: own, 2000 ms, no system notification"
+reset; start_home; own_app
+stdin_watch com.webos.app.home NO_VERIFY=1 LOADING_TOAST=auto TOAST_DELAY=1
+check "own notification launched with the text and ms 2000" waitfor has 'owntoast caller= {"id":"com.hearthng.toast","params":{"text":"Домашний экран загружается…","ms":2000}}' "$S/calls"
+check "in the log: own toast shown" waitfor has 'own toast shown' "$W/watch.log"
+check "TLOCK removed; no createToast, no closeToast" eval 'waitfor gone "$W/tlock" && [ "$(calls "^toast"),$(calls "^closetoast")" = "0,0" ]'
+check "the launcher is asked for once (the own notification is not a launcher launch)" eq "$(launcher_launches)" 1
+
+section "N3. TOAST_STYLE=system: the TV's notification even with the app installed"
+reset; start_home; own_app
+stdin_watch com.webos.app.home NO_VERIFY=1 LOADING_TOAST=auto TOAST_DELAY=1 TOAST_HOLD=1 TOAST_STYLE=system
+check "createToast as webosbrew" waitfor has 'toast caller=webosbrew .*Домашний экран загружается…' "$S/calls"
+check "no own notification" eval 'waitfor gone "$W/tlock" && [ "$(calls "^owntoast")" = 0 ]'
+
+section "N4. The app not installed (auto): the TV's notification, as before"
+reset; start_home
+stdin_watch com.webos.app.home NO_VERIFY=1 LOADING_TOAST=auto TOAST_DELAY=1 TOAST_HOLD=1
+check "createToast, no own notification" eval 'waitfor has "toast caller=webosbrew .*Домашний экран загружается…" "$S/calls" && waitfor gone "$W/tlock" && [ "$(calls "^owntoast")" = 0 ]'
+
+section "N5. The launch of the own notification is refused: the TV's notification instead"
+reset; start_home; own_app; touch "$S/owntoast_deny"
+stdin_watch com.webos.app.home NO_VERIFY=1 LOADING_TOAST=auto TOAST_DELAY=1 TOAST_HOLD=1
+check "one try of the own one, then createToast" eval 'waitfor has "toast caller=webosbrew .*Домашний экран загружается…" "$S/calls" && [ "$(calls "^owntoast")" = 1 ]'
+check "in the log: refused, with the answer" waitfor has 'own toast "Домашний экран загружается…" refused: {"returnValue":false,"errorCode":-101,"errorText":"not found (mock)"}: the TV.s notification instead' "$W/watch.log"
+
+section "N6. TOAST_MS: a number is passed on, anything else is 2000"
+reset; start_home; own_app
+rep com.webos.app.home | run_env LOG="$W/watch.log" WATCH_TOAST="x" TOAST_MS=1500 sh "$HOOKD/watch.sh"
+check "ms 1500" has '"ms":1500}}' "$S/calls"
+: > "$S/calls"
+rep com.webos.app.home | run_env LOG="$W/watch.log" WATCH_TOAST="x" TOAST_MS=abc sh "$HOOKD/watch.sh"
+check "TOAST_MS=abc: ms 2000" has '"ms":2000}}' "$S/calls"
+
+section "N7. WATCH_TOAST: one notification and exit, nothing else runs"
+reset; start_home; freeze_now; own_app
+run_env LOG="$W/watch.log" WATCH_TOAST="Проверка" sh "$HOOKD/watch.sh" </dev/null
+check "one own notification with that text" eq "$(calls '^owntoast.*"text":"Проверка"')" 1
+check "no subscription, no pid file, no launch of the launcher, LG Home left frozen" eval 'gone "$S/subs" && gone "$W/watch.pid" && [ "$(launcher_launches)" = 0 ] && home_frozen && no_thaw'
+check "in the log: own toast with the time the request took" has 'watcher: own toast "Проверка" (2000 ms, the request took [0-9.]* s): {"returnValue":true' "$W/watch.log"
+rm -rf "$W/toastapp"; : > "$S/calls"
+run_env LOG="$W/watch.log" WATCH_TOAST="Проверка" sh "$HOOKD/watch.sh" </dev/null
+check "without the app: one createToast as webosbrew" eq "$(calls '^owntoast'),$(calls '^toast caller=webosbrew .*"Проверка"')" "0,1"
+
+section "N8. A report naming the own notification window: ignored"
+reset; start_home; freeze_now; own_app
+stdin_watch com.hearthng.toast
+check "no launch, no notification, LG Home left frozen" eval '[ "$(calls "^launch"),$(calls "^owntoast"),$(calls "^toast")" = "0,0,0" ] && home_frozen && no_thaw'
+check "the event is in the log, nothing else happened" eval 'has "event: foreground com.hearthng.toast" "$W/watch.log" && hasnt "opened the launcher" "$W/watch.log"'
+
+section "N9. The check after a launch: SAM names the own notification twice, then LG Home: the check goes on"
+reset; start_home; freeze_now; echo 2 > "$S/front_toast_n"
+stdin_watch com.webos.app.home VERIFY_TRIES=1 RESTART_WAIT=1
+check "the check has ended" waitfor gone "$W/vlock"
+check "both answers naming the notification were asked past" eq "$(calls '^fronttoast')" 2
+check "the launcher asked for again (verify did not stop at the notification): 3 launches = 1 + 1 try + 1 restart" eq "$(launcher_launches)" 3
+
+section "N10. guard gives up: own notification when the app is installed"
+reset; start_home; freeze_now; echo 5 > "$W/restarts"; own_app
+grun 2
+check "LG Home unfrozen" waitfor home_running
+check "one own notification (2000 ms), no createToast" eq "$(calls '^owntoast.*Помощник HearthNG несколько раз останавливался: LG Home снова работает.*"ms":2000'),$(calls '^toast')" "1,0"
+check "in the log: own toast" has 'guard: own toast "Помощник HearthNG' "$W/guard.log"
+reset; start_home; freeze_now; echo 5 > "$W/restarts"; own_app; touch "$S/owntoast_deny"
+grun 2
+check "refused: createToast instead" eq "$(calls '^owntoast'),$(calls '^toast caller=webosbrew .*Помощник HearthNG')" "1,1"
 
 cleanup_procs
 echo

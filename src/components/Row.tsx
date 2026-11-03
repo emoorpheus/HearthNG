@@ -2,6 +2,7 @@ import {useRef} from 'preact/hooks';
 import {LAYOUT} from '../theme/tokens';
 import {clamp} from '../hooks/useKeys';
 import {Tile, type TileModel} from './Tile';
+import type {TileEditView} from './TileEdit';
 import {hoverMayselect} from '../lib/pointer';
 import {t as tt} from '../i18n';
 
@@ -19,11 +20,13 @@ interface Props {
 	viewportWidth?: number;
 	/** left and right margin of this row, px (the favourites row has its own); undefined: the container's */
 	sideMargin?: number;
+	/** the tile being edited (hold OK on the home screen), if it is on this row */
+	edit?: TileEditView | null;
 }
 
 /** Horizontal strip of tiles. Centred when it fits; otherwise a carousel that keeps
  *  the selected tile in the middle (clamped at the ends). */
-export function Row ({label, items, focused, selected, emptyText, onSelect, onActivate, tileSize = LAYOUT.tileSize, tileGap = LAYOUT.tileGap, viewportWidth = LAYOUT.screenWidth - 2 * LAYOUT.edgePadding, sideMargin}: Props) {
+export function Row ({label, items, focused, selected, emptyText, onSelect, onActivate, tileSize = LAYOUT.tileSize, tileGap = LAYOUT.tileGap, viewportWidth = LAYOUT.screenWidth - 2 * LAYOUT.edgePadding, sideMargin, edit}: Props) {
 	const step = tileSize + tileGap;
 	const total = items.length * step - tileGap;
 	const fits = total <= viewportWidth;
@@ -49,6 +52,7 @@ export function Row ({label, items, focused, selected, emptyText, onSelect, onAc
 								key={item.key}
 								model={item}
 								focused={focused && i === selected}
+								edit={edit && edit.key === item.key ? edit : undefined}
 								onHover={() => { if (hoverMayselect()) onSelect(i); }}
 								onActivate={() => onActivate(i)}
 							/>

@@ -2,6 +2,7 @@ import {log} from '../lib/log';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {Clock} from '../components/Clock';
 import {Row} from '../components/Row';
+import type {TileEditView} from '../components/TileEdit';
 import type {TileModel} from '../components/Tile';
 import {useKeys, type NavKey} from '../hooks/useKeys';
 import {useOkPress} from '../hooks/useOkPress';
@@ -75,6 +76,8 @@ interface Props {
 	focus?: {key: string; seq: number};
 	/** the weather line under the date, when it is on and known */
 	weather?: WeatherView | null;
+	/** LG-style edit mode of one tile (hold OK): drawn by that tile; the keys are read by TileEditKeys */
+	edit?: TileEditView | null;
 }
 
 /** OLED shift: the offset (px at 1080p) of the clock and the apps, changed once a minute through a small cycle. null = off. */
@@ -93,7 +96,7 @@ function useShift (on: boolean): {x: number; y: number} | null {
 /** The home screen: a clock and the tiles along the bottom, in one row or two.
  *  Left/Right move along a row, Up/Down change row (two rows), OK opens, holding OK opens the app's menu.
  *  Back opens the Recent apps panel. */
-export function Home ({items: allItems, favourites, timeFormat, appearance, active, paused, onActivate, onLongPress, onBack, wake, homeKey, focus, weather}: Props) {
+export function Home ({items: allItems, favourites, timeFormat, appearance, active, paused, onActivate, onLongPress, onBack, wake, homeKey, focus, weather, edit}: Props) {
 	const now = useClock(paused);
 	const [position, setPosition] = useState<RowsPosition>(initialPosition);
 	// Favourites: with any chosen, the first row holds them alone; Down brings up a second row with everything else, Up hides it again.
@@ -264,10 +267,10 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 	const sideOf = (r: number) => (favN > 0 && r === 0 ? appearance.favSideMargin : appearance.sideMargin);
 	const rowStyle = [`left:${favN > 0 ? 0 : appearance.sideMargin}px`, `right:${favN > 0 ? 0 : appearance.sideMargin}px`, `bottom:${bottom}px`, rowVars.css].filter(Boolean).join(';');
 	const shiftVars = varScope('shift', shift ? {'--shift-x': `${shift.x}px`, '--shift-y': `${shift.y}px`} : {});
-	const classes = [rowVars.cls, 'rows', !appearance.showLabels && 'rows--no-labels', sizes.length > 1 && 'rows--multi', favN > 0 && 'rows--fav', favN > 0 && open && 'rows--fav-open', favN > 0 && !open && everOpen.current && 'rows--fav-shut', appearance.iconOpacity < 100 && 'rows--dim', quiet && 'rows--quiet', labelColorValue(appearance.labelColor) && 'rows--label-color', appearance.labelFont !== 'default' && 'rows--label-font', appearance.labelWeight !== 400 && 'rows--label-weight', appearance.tileShape !== 'rounded' && `rows--shape-${appearance.tileShape}`].filter(Boolean).join(' ');
+	const classes = [rowVars.cls, 'rows', !appearance.showLabels && 'rows--no-labels', sizes.length > 1 && 'rows--multi', favN > 0 && 'rows--fav', favN > 0 && open && 'rows--fav-open', favN > 0 && !open && everOpen.current && 'rows--fav-shut', appearance.iconOpacity < 100 && 'rows--dim', quiet && 'rows--quiet', labelColorValue(appearance.labelColor) && 'rows--label-color', appearance.labelFont !== 'default' && 'rows--label-font', appearance.labelWeight !== 400 && 'rows--label-weight', appearance.tileShape !== 'rounded' && `rows--shape-${appearance.tileShape}`, edit && 'rows--editing'].filter(Boolean).join(' ');
 
 	return (
-		<div class={`screen${active ? '' : ' screen--away'}${shift ? ' screen--shift' : ''}${shiftVars.cls ? ' ' + shiftVars.cls : ''}`} style={shiftVars.css || undefined}>
+		<div class={`screen${active || edit ? '' : ' screen--away'}${shift ? ' screen--shift' : ''}${shiftVars.cls ? ' ' + shiftVars.cls : ''}`} style={shiftVars.css || undefined}>
 			{appearance.clock.show && <Clock now={now} format={timeFormat} config={appearance.clock} weather={weather} />}
 			<div class={classes} style={rowStyle}>
 				{sizes.map((size, r) => {
@@ -284,6 +287,7 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 							tileGap={tileGap}
 							viewportWidth={LAYOUT.screenWidth - 2 * sideOf(r)}
 							sideMargin={favN > 0 ? sideOf(r) : undefined}
+							edit={edit}
 						/>
 					);
 				})}

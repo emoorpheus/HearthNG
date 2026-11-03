@@ -33,12 +33,27 @@ CONFIRM="${CONFIRM:-2}"
 MAX_RESTARTS="${MAX_RESTARTS:-5}"
 MAX_LOOPS="${MAX_LOOPS:-0}"           # 0 = no end
 TOAST_URI="luna://com.webos.notification/createToast"
+LAUNCH_URI="luna://com.webos.applicationManager/launch"
+TOAST_STYLE="${TOAST_STYLE:-auto}"    # as in watch.sh: auto = HearthNG's own notification when installed; own; system
+TOAST_APP_ID="${TOAST_APP_ID:-com.hearthng.toast}"
+TOAST_APP="${TOAST_APP:-/media/developer/apps/usr/palm/applications/$TOAST_APP_ID}"
+TOAST_MS="${TOAST_MS:-2000}"
+case "$TOAST_MS" in ''|*[!0-9]*) TOAST_MS=2000 ;; esac
 
 uptime_now () { _up=; read -r _up _rest 2>/dev/null < "$UPTIME_FILE"; echo "${_up:-0}"; }
 log () { echo "$(uptime_now) guard: $*" >> "$LOG"; }
 thaw_home () { pkill -CONT -f "$HOME_PROC" 2>/dev/null; }
 alive () { p=$(cat "$1" 2>/dev/null); [ -n "$p" ] && kill -0 "$p" 2>/dev/null; }
+# A notification: HearthNG's own (com.hearthng.toast, TOAST_MS ms, as in watch.sh), else the TV's.
 toast () {
+    case "$TOAST_STYLE" in system) ot=no ;; own) ot=yes ;; *) if [ -f "$TOAST_APP/appinfo.json" ]; then ot=yes; else ot=no; fi ;; esac
+    if [ "$ot" = yes ]; then
+        r=$("$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$TOAST_APP_ID\",\"params\":{\"text\":\"$1\",\"ms\":$TOAST_MS}}" 2>&1)
+        case "$r" in
+            *'"returnValue":true'*|*'"returnValue": true'*) log "own toast \"$1\" ($TOAST_MS ms): $(echo "$r" | tr -d '\n' | tr -s ' ' | cut -c1-200)"; return 0 ;;
+        esac
+        log "own toast \"$1\" refused: $(echo "${r:-no reply}" | tr -d '\n' | tr -s ' ' | cut -c1-200): the TV's notification instead"
+    fi
     r=$("$LUNA" -n 1 -a webosbrew "$TOAST_URI" "{\"sourceId\":\"webosbrew\",\"message\":\"$1\"}" 2>&1)
     log "toast \"$1\": ${r:-no reply}"
 }

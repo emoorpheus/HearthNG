@@ -810,6 +810,82 @@ html, body {
 }
 .toast--error { color: var(--color-danger); }
 
+/* LG-style edit mode (hold OK on a home tile, components/TileEdit.tsx): arrows either side of the tile, round buttons
+   above it, the other tiles dimmed, a line at the top saying what the keys do. The focused row gets room above and at
+   the sides inside its clipping box (the negative margins keep the row where it was). */
+.rows--editing .row--focused .row__viewport {
+	padding: 150px 96px 16px;
+	margin: -150px -96px -16px;
+}
+.rows--editing .tile { transition: opacity var(--motion-focus-ms) ease-out; }
+.rows--editing .tile:not(.tile--editing) { opacity: 0.4; }
+.tile--editing { position: relative; z-index: 3; }
+.tile-edit { position: absolute; left: 0; top: 0; width: var(--layout-tile-size); height: var(--layout-tile-size); pointer-events: none; }
+.tile-edit__icon { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tile-edit__icon--more { stroke-width: 3.2; }
+.tile-edit__arrow {
+	position: absolute;
+	top: 50%;
+	width: 52px; height: 52px;
+	margin-top: -26px;
+	border-radius: 50%;
+	display: flex; align-items: center; justify-content: center;
+	background: rgba(0, 0, 0, 0.72);
+	box-shadow: 0 0 0 2px var(--color-tile-border-focus);
+	color: var(--color-text-primary);
+	pointer-events: auto;
+	transition: opacity var(--motion-focus-ms) ease-out;
+}
+.tile-edit__arrow--left { left: -76px; }
+.tile-edit__arrow--right { right: -76px; }
+.tile-edit__arrow--off { opacity: 0.2; }
+.tile-edit:not(.tile-edit--on-tile) .tile-edit__arrow { opacity: 0.35; }
+.tile-edit:not(.tile-edit--on-tile) .tile-edit__arrow--off { opacity: 0.12; }
+.tile-edit__actions {
+	position: absolute;
+	left: 50%;
+	bottom: 100%;
+	margin-bottom: 34px;
+	transform: translateX(-50%);
+	display: flex;
+	white-space: nowrap;
+	pointer-events: auto;
+}
+.tile-edit__action {
+	width: 68px; height: 68px;
+	margin: 0 9px;
+	border-radius: 50%;
+	display: flex; align-items: center; justify-content: center;
+	background: rgba(0, 0, 0, 0.72);
+	box-shadow: 0 0 0 2px var(--color-tile-border);
+	color: var(--color-text-secondary);
+	transform: scale(1);
+	transition: transform var(--motion-focus-ms) ease-out, background var(--motion-focus-ms) ease-out;
+}
+.tile-edit__action--focused {
+	background: #f2f2f2;
+	box-shadow: 0 0 0 3px #f2f2f2;
+	color: #111111;
+	transform: scale(1.12);
+}
+.tile-edit__action--disabled { opacity: 0.45; }
+.tile-edit__action--disabled.tile-edit__action--focused { opacity: 0.7; }
+.tile-edit__hint {
+	position: absolute;
+	z-index: 4;
+	left: 50%;
+	top: 72px;
+	transform: translateX(-50%);
+	padding: 12px 26px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.78);
+	box-shadow: 0 0 0 1px var(--color-tile-border);
+	font-size: var(--font-toast);
+	color: var(--color-text-secondary);
+	white-space: nowrap;
+	pointer-events: none;
+}
+
 /* P61c: remote drawing on the Remote control pages */
 .remote-draw { position: absolute; right: 70px; top: 90px; height: 880px; width: 300px; }
 .remote-draw__body { fill: var(--color-tile-bg); stroke: var(--color-tile-border); stroke-width: 3; }

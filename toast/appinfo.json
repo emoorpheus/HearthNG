@@ -1,0 +1,21 @@
+{
+  "id": "com.hearthng.toast",
+  "version": "1.0.0",
+  "vendor": "HearthNG",
+  "type": "web",
+  "main": "index.html",
+  "title": "HearthNG notifications",
+  "appDescription": "HearthNG's own short notifications, drawn over whatever is on screen without taking the remote.",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "visible": false,
+  "transparent": true,
+  "defaultWindowType": "card",
+  "handlesRelaunch": true,
+  "noSplashOnLaunch": true,
+  "spinnerOnLaunch": false,
+  "disableBackHistoryAPI": true,
+  "supportTouchMode": "none",
+  "requiredACG": [],
+  "resolution": "1920x1080"
+}

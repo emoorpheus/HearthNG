@@ -18,6 +18,11 @@
 #    Home, nothing or the launcher is in front, the launcher is opened (wake_loop); another app (HDMI, a cast) is left.
 #  - A "Home screen is loading" notification is shown only if the launcher is not in front TOAST_DELAY s after it was
 #    asked for, and closed as soon as it (or another app) is in front.
+#  - Notifications: HearthNG's own small app (com.hearthng.toast, TOAST_STYLE=auto when it is installed) shows them for
+#    TOAST_MS ms in a window that floats over the screen and does not take the remote; the TV's own notifications stay
+#    on screen for several seconds. Not installed, TOAST_STYLE=system, or its launch refused: the TV's notification.
+#    That window is not an app the person opened: while SAM reports it in front, the reports are ignored and front()
+#    asks again. WATCH_TOAST="text": show one notification this way and exit (for tests on the TV).
 #  - The emergency exit file ($HOOK/stopped, made by stop.sh) exists: it does not start.
 #  - webOS 4.x: com.webos.app.fullhome counts as LG Home. webOS 3 (no LG Home app): the home bar is seen in the
 #    system log instead. If the "app in front" subscription keeps ending at once, it asks once a second instead.
@@ -86,6 +91,12 @@ TOAST_LANG="${TOAST_LANG:-auto}"      # ru, en, or auto (the TV's menu language:
 TOAST_DELAY="${TOAST_DELAY:-3}"       # notify only if the launcher is not in front this many s after it was asked for
 TOAST_HOLD="${TOAST_HOLD:-60}"        # wait this many s for the launcher (or another app) to close the notification
 TOAST_NAP="${TOAST_NAP:-sleep}"
+TOAST_STYLE="${TOAST_STYLE:-auto}"    # auto = HearthNG's own notifications when com.hearthng.toast is installed; own; system
+TOAST_APP_ID="${TOAST_APP_ID:-com.hearthng.toast}"
+TOAST_APP="${TOAST_APP:-/media/developer/apps/usr/palm/applications/$TOAST_APP_ID}"
+TOAST_MS="${TOAST_MS:-2000}"          # how long an own notification stays on screen, ms (500-10000)
+case "$TOAST_MS" in ''|*[!0-9]*) TOAST_MS=2000 ;; esac
+FRONT_TOAST_TRIES="${FRONT_TOAST_TRIES:-4}"   # own notification reported in front: front() asks again this many times, 1 s apart
 TLOCK="${TLOCK:-/tmp/launcher-toast-lock}"   # the notification helper is running (holds the uptime it started at)
 ALIVE="${ALIVE:-/tmp/launcher-alive}"        # touched by the launcher whenever it becomes visible
 EMPTY_DELAY="${EMPTY_DELAY:-0.5}"     # the foreground must stay empty this many s (a sleep without fractions waits 1 s)
@@ -105,6 +116,7 @@ POWER_URI="luna://com.webos.service.tvpower/power/getPowerState"
 CLOSE_URI="luna://com.webos.applicationManager/closeByAppId"
 TOAST_URI="luna://com.webos.notification/createToast"
 CLOSE_TOAST_URI="luna://com.webos.notification/closeToast"
+LAUNCH_URI="luna://com.webos.applicationManager/launch"
 
 # Seconds since boot with hundredths: /proc/uptime does not depend on the TV's clock.
 uptime_now () { _up=; read -r _up _rest 2>/dev/null < "$UPTIME_FILE"; echo "${_up:-0}"; }
@@ -146,11 +158,27 @@ sam_answered () {
     case "$1" in *'"returnValue":true'*|*'"returnValue": true'*) return 0 ;; esac
     return 1
 }
+# HearthNG's own notification window (com.hearthng.toast): never an app the person opened.
+is_toast_app () {
+    case "$1" in *"\"appId\":\"$TOAST_APP_ID\""*|*"\"appId\": \"$TOAST_APP_ID\""*) return 0 ;; esac
+    return 1
+}
 
 freeze_home () { pkill -STOP -f "$HOME_PROC" 2>/dev/null; }
 thaw_home () { pkill -CONT -f "$HOME_PROC" 2>/dev/null; }
 
-front () { "$LUNA" -n 1 "$FRONT_URI" '{}' 2>/dev/null; }
+# What is in front. While SAM names HearthNG's own notification window, it asks again once a second (FRONT_TOAST_TRIES
+# times; the window closes itself after TOAST_MS), so the checks below see the app under it.
+front () {
+    f_r=$("$LUNA" -n 1 "$FRONT_URI" '{}' 2>/dev/null)
+    f_n=0
+    while is_toast_app "$f_r" && [ "$f_n" -lt "$FRONT_TOAST_TRIES" ]; do
+        f_n=$((f_n + 1))
+        $NAP 1
+        f_r=$("$LUNA" -n 1 "$FRONT_URI" '{}' 2>/dev/null)
+    done
+    echo "$f_r"
+}
 
 # The TV is on and not turning off. No answer, or no "state" in it: taken as on.
 tv_active () {
@@ -288,8 +316,28 @@ takeover_active () {
     [ -n "$tp" ] && kill -0 "$tp" 2>/dev/null
 }
 
-# A system notification (as the Homebrew Channel's own tools send them). The answer goes to the log.
+# Use HearthNG's own notifications? (TOAST_STYLE: system = never, own = always, auto = when the app is installed)
+own_toast_ready () {
+    case "$TOAST_STYLE" in system) return 1 ;; own) return 0 ;; esac
+    [ -f "$TOAST_APP/appinfo.json" ]
+}
+# HearthNG's own notification: com.hearthng.toast shows $1 for TOAST_MS ms over the screen, without taking the remote.
+# 1 = the launch was refused (the caller then shows the TV's notification). The answer goes to the log.
+own_toast () {
+    ot_t0=$(uptime_now)
+    ot_r=$("$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$TOAST_APP_ID\",\"params\":{\"text\":\"$1\",\"ms\":$TOAST_MS}}" 2>&1)
+    ot_ok=1; sam_answered "$ot_r" && ot_ok=0
+    ot_r=$(echo "$ot_r" | tr -d '\n' | tr -s ' ' | cut -c1-200)
+    if [ "$ot_ok" = 0 ]; then
+        log "own toast \"$1\" ($TOAST_MS ms, the request took $(elapsed "$ot_t0") s): $ot_r"
+        return 0
+    fi
+    log "own toast \"$1\" refused: ${ot_r:-no reply}: the TV's notification instead"
+    return 1
+}
+# A notification: HearthNG's own (own_toast_ready), else the TV's (as the Homebrew Channel's own tools send them).
 toast () {
+    if own_toast_ready && own_toast "$1"; then return 0; fi
     r=$("$LUNA" -n 1 -a webosbrew "$TOAST_URI" "{\"sourceId\":\"webosbrew\",\"message\":\"$1\"}" 2>&1)
     log "toast \"$1\": ${r:-no reply}"
 }
@@ -321,6 +369,11 @@ loading_toast () {
     if [ -f "$ALLOW" ] || [ -f "$STOPPED" ]; then return 0; fi
     if ! tv_active; then log "loading toast: the TV is not Active: no toast"; return 0; fi
     lt_txt="$LOADING_TOAST"; [ "$lt_txt" = auto ] && lt_txt=$(msg loading)
+    # HearthNG's own notification closes itself after TOAST_MS: nothing to hold or close here
+    if own_toast_ready && own_toast "$lt_txt"; then
+        log "Hearth is not in front $TOAST_DELAY s after the request (foreground $(app_of "$lt_f")): own toast shown"
+        return 0
+    fi
     r=$("$LUNA" -n 1 -a webosbrew "$TOAST_URI" "{\"sourceId\":\"webosbrew\",\"message\":\"$lt_txt\"}" 2>&1)
     lt_id=$(echo "$r" | tr -d '\n' | sed -n 's/.*"toastId": *"\([^"]*\)".*/\1/p')
     log "Hearth is not in front $TOAST_DELAY s after the request (foreground $(app_of "$lt_f")): toast \"$lt_txt\": ${r:-no reply}"
@@ -615,6 +668,8 @@ handle () {
     if [ "$EVENT_LOG" = 1 ]; then
         if [ -f "$STANDBY_FLAG" ]; then log "event: foreground $(app_of "$line") ($(power_line))"; else log "event: foreground $(app_of "$line")"; fi
     fi
+    # HearthNG's own notification window: nothing changes (when it closes, SAM reports what is in front again)
+    if is_toast_app "$line"; then return; fi
     # no LG Home process to freeze (EMPTY_AS_HOME=auto) or EMPTY_AS_HOME=0: an empty foreground is left alone, as in
     # Hearth's own helper
     if is_empty "$line" && ! empty_counts; then return; fi
@@ -703,6 +758,7 @@ sub_check () {
     sc_f=$(front)
     case "$sc_f" in *'"appId"'*) ;; *) return 1 ;; esac
     sc_r=; { read -r sc_r < "$LAST_REPORT"; } 2>/dev/null
+    is_toast_app "$sc_r" && return 1     # the last report was HearthNG's own notification: nothing to compare
     sc_now=$(app_of "$sc_f"); sc_heard=$(app_of "$sc_r")
     [ "$sc_now" = "$sc_heard" ] && return 1
     sc_why="in front: $sc_now, the last report: $sc_heard"
@@ -744,6 +800,11 @@ freeze_at_start () {
     log "start: LG Home frozen"
 }
 
+# WATCH_TOAST="text": one notification the way the helper shows them (own or the TV's), then exit. Nothing else runs.
+if [ -n "$WATCH_TOAST" ]; then
+    toast "$WATCH_TOAST"
+    exit 0
+fi
 # Test modes (a line "TIME n" sets the clock of the home bar test).
 if [ -n "$WATCH_STDIN" ]; then
     while IFS= read -r report; do handle "$report"; done

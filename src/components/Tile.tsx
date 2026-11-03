@@ -2,6 +2,7 @@ import {Component} from 'preact';
 import {CheckMark, Glyph, SourceGlyph, type GlyphName} from './Glyph';
 import {iconPath} from '../lib/sourceicons';
 import {monoFor, monoIconsOn, monoVersion} from '../lib/monoicon';
+import {EditDecor, type TileEditView} from './TileEdit';
 
 /** Everything a tile needs to draw itself; rows and grids build these from app/input data. */
 export interface TileModel {
@@ -34,6 +35,8 @@ interface Props {
 	checked?: boolean;
 	/** greyed out (settings picker: not on the home screen) */
 	dimmed?: boolean;
+	/** being edited (hold OK on the home screen): arrows either side, buttons above */
+	edit?: TileEditView;
 	onHover?: () => void;
 	onActivate?: () => void;
 }
@@ -48,7 +51,7 @@ export class Tile extends Component<Props> {
 		const a = this.props.model;
 		const b = next.model;
 		if (this.monoSeen !== monoVersion()) return true;
-		return this.props.focused !== next.focused || this.props.lifted !== next.lifted || this.props.checked !== next.checked || this.props.dimmed !== next.dimmed ||
+		return this.props.focused !== next.focused || this.props.lifted !== next.lifted || this.props.checked !== next.checked || this.props.dimmed !== next.dimmed || this.props.edit !== next.edit ||
 			a !== b && (a.key !== b.key || a.label !== b.label || a.imageUrl !== b.imageUrl || a.glyphImageUrl !== b.glyphImageUrl || a.sourceIcon !== b.sourceIcon || a.glyph !== b.glyph || a.color !== b.color || a.disconnected !== b.disconnected || a.pending !== b.pending || a.note !== b.note);
 	}
 
@@ -56,11 +59,11 @@ export class Tile extends Component<Props> {
 	private activate = () => { if (this.props.onActivate) this.props.onActivate(); };
 
 	render () {
-		const {model, focused, lifted, checked, dimmed} = this.props;
+		const {model, focused, lifted, checked, dimmed, edit} = this.props;
 		this.monoSeen = monoVersion();
 		const mono = monoIconsOn() && model.imageUrl ? monoFor(model.imageUrl, this.again) : null;
 		// HearthNG: in the one-colour styles a letter tile (no artwork) is one colour too: no app colour behind the letter, the style's tile and ink
-		const classes = ['tile', focused && 'tile--focused', lifted && 'tile--lifted', (dimmed || model.disconnected) && 'tile--dimmed', model.note && 'tile--noted'].filter(Boolean).join(' ');
+		const classes = ['tile', focused && 'tile--focused', lifted && 'tile--lifted', (dimmed || model.disconnected) && 'tile--dimmed', model.note && 'tile--noted', edit && 'tile--editing'].filter(Boolean).join(' ');
 		return (
 			<div class={classes} onMouseEnter={this.hover} onClick={this.activate}>
 				<div class="tile__frame">
@@ -79,6 +82,7 @@ export class Tile extends Component<Props> {
 				<div class="tile__ring" />
 				</div>
 				<div class="tile__label">{model.label}{model.note && <span class="tile__note">{model.note}</span>}</div>
+				{edit && <EditDecor view={edit} />}
 			</div>
 		);
 	}

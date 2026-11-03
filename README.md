@@ -109,7 +109,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
   - Pick a city from a list of about 75, search for any place over the internet, or add your own cities with a custom theme
   - A live preview sits beside the Widget settings
 - **Your apps and inputs in one row.**
-  - Choose what is shown, re-order, or hold OK on an app for *Move*, *Add to favourites*, *Hide* and *Uninstall*
+  - Choose what is shown, re-order, or hold OK on an app to move it the LG way: Left/Right move it, Up gives *Hide*, *Uninstall* and *More* (to the start or end, favourites)
   - **Favourites** make a short row of your most used apps (Down shows all the others)
   - **Order by last opened** keeps recent apps first
   - Back on the home row opens the **Recent apps** panel (rooted TVs)
@@ -291,7 +291,7 @@ To remove Hearth, turn off *Replace LG Home (helper)*, the screen saver and *Map
 |---|---|---|
 | Home | ← → | Move along the row (the row loops) |
 | Home | OK | Open the app. With the *LG Home* and *System Settings* tiles switched on, they open LG's own screens; the last tile is **Hearth Settings** |
-| Home | hold OK | The app's menu: move it, favourite it, hide it, uninstall it |
+| Home | hold OK | Edit the tile: Left/Right move it; Up: Hide, Uninstall, More (to the start or end, favourites); OK or Back: done |
 | Home | Back | Open the Recent apps panel (OK opens an app, hold OK closes it, ↑ Close all) |
 | Home | ↓ / ↑ | With favourites: show or hide the row of all other apps |
 | Settings | ← → on the tab bar | Apps & Sources · Look · Widget · Wallpaper · Screen saver · System |

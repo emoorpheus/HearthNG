@@ -1,7 +1,7 @@
 // Uninstalling an app from the launcher (hold OK on a tile). It runs through the Homebrew Channel's
 // root shell, so it is careful about WHAT it will remove: only apps that look user-installed, and
-// never the launcher itself, LG Home, the Homebrew Channel (which the launcher needs to run commands)
-// or system apps. The shell command is built only from an app ID that has passed a strict check.
+// never the launcher itself, LG Home, the Homebrew Channel (which the launcher needs to run commands),
+// the original Hearth (tld.my.customlauncher) or system apps. The shell command is built only from an app ID that has passed a strict check.
 
 import {APP_ID} from '../config/constants';
 import {exec} from './apps';
@@ -15,7 +15,9 @@ const ID_PATTERN = /^[A-Za-z0-9._-]+$/;
 const PROTECTED: Record<string, () => string> = {
 	[APP_ID]: () => tt('uninstall.thisIsTheLauncherItself'),
 	'com.webos.app.home': () => tt('uninstall.lgHomeIsPartOfThe'),
-	'org.webosbrew.hbchannel': () => tt('uninstall.theLauncherNeedsTheHomebrew')
+	'org.webosbrew.hbchannel': () => tt('uninstall.theLauncherNeedsTheHomebrew'),
+	// HearthNG: the original Hearth (and its helper files) stays; removing it is the user's own step, outside HearthNG
+	'tld.my.customlauncher': () => tt('uninstall.hearthIsKept')
 };
 const SYSTEM_PREFIXES = ['com.webos.', 'com.palm.', 'com.lge.'];
 /** Where apps installed by the user live (developer-mode apps, and apps from the LG Content Store). */

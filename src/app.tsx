@@ -82,6 +82,7 @@ import {buttonLabel, setButton, type RemapAction, type RemapConfig} from './lib/
 import {noteRecent, orderByRecent, readRecent, writeRecent} from './lib/recency';
 import {addTvInput, removeTvInput, TV_INPUT_LOG} from './lib/tvinput';
 import {uninstallApp, uninstallVerdict, UNINSTALL_LOG} from './lib/uninstall';
+import {TileEditKeys, type EditAction, type TileEditView} from './components/TileEdit';
 import {appTile, inputTile, pickInOrder} from './lib/tiles';
 import {moveGroup, moveKey, movesFor, orderTiles, orderUpdate, reslot, type MoveAction} from './lib/tileorder';
 import {APP_ID, TIMING, WALLPAPER} from './config/constants';
@@ -128,6 +129,7 @@ export function App () {
 	const [themeRev, setThemeRev] = useState(0);          // P81: bumped when the theme's pictures change, so the tiles are drawn again
 	const [notice, setNotice] = useState<{title: string; text: string; buttons: NoticeButton[]; onBack?: () => void} | null>(null);       // a pop-up (warning or question)
 	const [menu, setMenu] = useState<{key: string; title: string; app: AppEntry | null; direct?: boolean} | null>(null);   // the tile whose Move / Hide / Uninstall menu is open
+	const [tileEdit, setTileEdit] = useState<{key: string; title: string; app: AppEntry | null; at: number} | null>(null);   // LG-style edit mode of one home tile (hold OK); at: -1 = the tile, 0.. = a button above it
 	const [focus, setFocus] = useState<{key: string; seq: number} | undefined>(undefined);               // asks Home to follow a moved tile
 	const bootFirst = useRef(false);                                   // H1: this page started with the TV: the highlight starts on the first app
 	const keyedSinceStart = useRef(false);
@@ -1222,11 +1224,12 @@ export function App () {
 		showToast(tt('app.weatherSetTo', {name: city.name}));
 	}, [config, showToast]);
 
-	// Hold OK on an app or input: its Move / Hide (/ Uninstall) menu. LG Home and Settings have no menu.
+	// Hold OK on an app or input: LG-style edit mode (arrows either side move it, buttons above hide it, uninstall it, or
+	// open the full Move / Favourite / Hide / Uninstall menu). LG Home and Settings have none.
 	const onLongPress = useCallback((item: TileModel) => {
 		if (item.key === MISC.lgHome || item.key === MISC.settings || item.key === MISC.system) return;
 		const app = apps.find((a) => a.id === item.key) || null;
-		setMenu({key: item.key, title: item.label, app});
+		setTileEdit({key: item.key, title: item.label, app, at: -1});
 	}, [apps]);
 
 	const hideTile = useCallback((tile: {key: string; title: string; app: AppEntry | null}) => {
@@ -1408,12 +1411,54 @@ export function App () {
 	const menuBlocked = menuVerdict && !menuVerdict.ok ? menuVerdict.reason : null;
 	const menuMoves = menu ? movesFor(moveGroup(orderedTiles.map((t) => t.key), config.favourites, menu.key), menu.key) : {start: false, left: false, right: false, end: false};
 
+	// LG-style edit mode of a home tile: the buttons above it, what they do, and the line that says what the keys do.
+	const editVerdict = tileEdit && tileEdit.app ? uninstallVerdict(tileEdit.app) : null;
+	const editActions: EditAction[] = tileEdit ? [
+		{kind: 'hide', label: tt('appmenu.hideFromTheHome')},
+		...(tileEdit.app ? [{kind: 'uninstall' as const, label: tt('appmenu.uninstall'), disabled: editVerdict && !editVerdict.ok ? editVerdict.reason : null}] : []),
+		{kind: 'more', label: tt('tileedit.more')}
+	] : [];
+	const runEditAction = (i: number) => {
+		const a = editActions[i];
+		if (!tileEdit || !a) return;
+		if (a.kind === 'hide') { setTileEdit(null); hideTile(tileEdit); return; }
+		if (a.kind === 'uninstall') {
+			if (a.disabled) { showToast(a.disabled, 'error'); return; }       // stays in edit mode
+			if (tileEdit.app) { setTileEdit(null); setMenu({key: tileEdit.key, title: tileEdit.title, app: tileEdit.app, direct: true}); }   // the confirmation starts on Cancel
+			return;
+		}
+		setTileEdit(null);
+		setMenu({key: tileEdit.key, title: tileEdit.title, app: tileEdit.app});
+	};
+	const editMoves = tileEdit ? movesFor(moveGroup(orderedTiles.map((t) => t.key), config.favourites, tileEdit.key), tileEdit.key) : null;
+	const editView: TileEditView | null = tileEdit && editMoves ? {
+		key: tileEdit.key,
+		left: !config.orderByRecent && editMoves.left,
+		right: !config.orderByRecent && editMoves.right,
+		actions: editActions,
+		at: tileEdit.at,
+		onMove: (dir) => moveTile(tileEdit.key, dir),
+		onAction: runEditAction
+	} : null;
+	const editFocused = tileEdit && tileEdit.at >= 0 ? editActions[tileEdit.at] : null;
+	const editHint = !tileEdit || toast ? ''
+		: editFocused ? `${editFocused.disabled ? `${editFocused.label}: ${editFocused.disabled}` : editFocused.label} · ${tt('tileedit.backToTile')}`
+			: config.orderByRecent ? tt('tileedit.hintBlocked', {why: tt('app.theRowFollowsTheLast')}) : tt('tileedit.hint');
+	const setEditAt = useCallback((at: number) => setTileEdit((e) => (e ? {...e, at} : e)), []);
+	const endEdit = useCallback(() => setTileEdit(null), []);
+	// Home pressed, another screen, or the tile is gone (uninstalled, hidden elsewhere): edit mode ends.
+	useEffect(() => { setTileEdit(null); }, [wakes]);
+	useEffect(() => {
+		if (tileEdit && (screen !== 'home' || !orderedTiles.some((t) => t.key === tileEdit.key))) setTileEdit(null);
+	}, [tileEdit, screen, orderedTiles]);
+
 	return (
 		<>
 			{wallpaperOn && photoShow && <PhotoShow fit={config.wallpaper.fit === 'fit'} intervalSec={config.wallpaper.intervalSec} shuffle={config.wallpaper.shuffle} paused={asleep} />}
 			{wallpaperOn && !photoShow && <Wallpaper config={config.wallpaper} opacity={config.wallpaperOpacity} onProblem={(text) => showToast(text, 'error')} />}
 			{/* Home stays mounted under the other screens so it keeps its focus position. */}
-			<Home items={homeItems} favourites={config.favourites} timeFormat={timeFormat} appearance={appearance} active={screen === 'home' && !menu && !recents && !notice} paused={asleep} onActivate={onActivate} onLongPress={onLongPress} onBack={openRecents} wake={wakes} homeKey={config.homeFocus === 'last' && !homeFirst.current && !bootFirst.current ? lastOpened.current : null} focus={focus} weather={weatherLine} />
+			<Home items={homeItems} favourites={config.favourites} timeFormat={timeFormat} appearance={appearance} active={screen === 'home' && !menu && !recents && !notice && !tileEdit} paused={asleep} onActivate={onActivate} onLongPress={onLongPress} onBack={openRecents} wake={wakes} homeKey={config.homeFocus === 'last' && !homeFirst.current && !bootFirst.current ? lastOpened.current : null} focus={focus} weather={weatherLine} edit={screen === 'home' ? editView : null} />
+			{editView && screen === 'home' && !menu && !recents && !notice && <TileEditKeys view={editView} setAt={setEditAt} onDone={endEdit} hint={editHint} />}
 			{recents && screen === 'home' && <Recents icons={recentIcons} edits={config.appEdits} inputs={allInputs} sourceEdits={config.sourceEdits} width={config.recentsW} height={config.recentsH} onClose={closeRecents} onOpen={noteOpened} onToast={showToast} />}
 			{menu && <AppMenu title={menu.title} moves={menuMoves} moveBlocked={config.orderByRecent ? tt('app.theRowFollowsTheLast') : undefined} hideDetail={menu.app ? tt('app.youCanAddItBack') : tt('app.youCanAddItBack2')} showUninstall={!!menu.app} blockedReason={menuBlocked} isFavourite={config.favourites.indexOf(menu.key) !== -1} onFavourite={() => { onFavourite('', menu.key); setMenu(null); }} onMove={(action) => moveTile(menu.key, action)} onHide={() => hideTile(menu)} onUninstall={() => { if (menu.app) removeApp(menu.app); }} startAtConfirm={!!menu.direct} onClose={() => setMenu(null)} />}
 			{/* Settings stays mounted under the picker so it keeps its tab. */}

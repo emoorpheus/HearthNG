@@ -11,3 +11,11 @@ mkdir -p build
 rm -f build/*.ipk
 npx ares-package dist services/com.hearthng.launcher.ssap --no-minify -o build
 echo "Packaged: $(ls build/*.ipk)"
+# HearthNG's own notifications (toast/, com.hearthng.toast): a second small package, installed next to the launcher.
+# The helper uses it only when it is installed; without it the TV's own notifications are shown.
+mkdir -p build/toast
+rm -f build/toast/*.ipk
+cp LICENSE toast/LICENSE.txt
+npx ares-package toast --no-minify -o build/toast
+rm -f toast/LICENSE.txt
+echo "Packaged: $(ls build/toast/*.ipk)"

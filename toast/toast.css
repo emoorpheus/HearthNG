@@ -1,0 +1,33 @@
+/* HearthNG notifications: the same pill as the launcher's own notification (src/theme/global.css .toast, the
+   standard theme), on a transparent window. Written for old Chrome: no flex gap, no inset. */
+html, body {
+	margin: 0;
+	width: 1920px;
+	height: 1080px;
+	overflow: hidden;
+	background: transparent;
+}
+.toast {
+	position: absolute;
+	left: 50%;
+	top: 72px;
+	max-width: 1500px;
+	transform: translateX(-50%);
+	padding: 14px 28px;
+	border-radius: 999px;
+	background: #000000;
+	box-shadow: 0 0 0 1px #2A2A2A;
+	font-family: sans-serif;
+	font-size: 24px;
+	line-height: 1.35;
+	color: #A8A8A8;
+	text-align: center;
+	white-space: pre-line;
+	opacity: 0;
+	transition: opacity 150ms ease-out;
+	pointer-events: none;
+}
+.toast--error { color: #EF7A73; }
+.toast--show { opacity: 1; }
+/* long texts (the emergency exit command) wrap into a rounded box instead of a pill */
+.toast--long { border-radius: 24px; }
