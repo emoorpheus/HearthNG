@@ -47,20 +47,21 @@ eq([o.showLabels, o.labelsOnFocus], [true, true], 'OLED: names only under the se
 eq([o.clock.shadow, o.clock.opacity, o.clock.weight, 'ink' in o.clock], [false, 80, 300, false], 'OLED: thinner widget without shadow at 80 %, a theme\'s widget ink is dropped');
 eq([o.quietSec, o.quietDimSec, o.quietDimLevel, o.oledShift], [20, 20, 50, true], 'OLED: quiet mode hides the apps after 20 s, dims 50 % after 20 s more; OLED shift on');
 eq([o.iconScale, o.labelSize, o.clock.size, o.clock.align, o.clock.top], [120, 120, 200, photo.clock.align, photo.clock.top], 'OLED: sizes and places are left alone');
-eq(press(o, 'right') && text(press(o, 'right')), 'Night', '→ from OLED: Night');
-eq(text(press(o, 'right', 3)), 'Gallery', '→ three times from OLED: Gallery (the last one)');
+eq(text(press(o, 'right')), 'OLED (minimal)', '→ from OLED: OLED (minimal)');
+eq(text(press(o, 'right', 2)), 'Night', '→ twice from OLED: Night');
+eq(text(press(o, 'right', 4)), 'Gallery', '→ four times from OLED: Gallery (the last one)');
 eq(text(press(o, 'right', 9)), 'Gallery', '→ stops at the last preset');
-eq(text(press(press(d, 'right', 4), 'ok')), 'Standard', 'OK wraps round from Gallery to Standard (no own look kept)');
-eq(text(press(press(o, 'right', 3), 'ok')), 'Your own', 'with an own look kept (the photo look above), OK wraps round from Gallery to Your own');
-const n = press(o, 'right');
+eq(text(press(press(d, 'right', 5), 'ok')), 'Standard', 'OK wraps round from Gallery to Standard (no own look kept)');
+eq(text(press(press(o, 'right', 4), 'ok')), 'Your own', 'with an own look kept (the photo look above), OK wraps round from Gallery to Your own');
+const n = press(o, 'right', 2);
 eq([n.iconStyle, n.iconOpacity, n.labelColor, n.clock.color, n.clock.opacity, n.quietSec, n.quietDimLevel], ['soft', 70, 'grey', 'grey', 60, 10, 70], 'Night: Soft mono at 70 %, grey names and widget at 60 %, quiet after 10 s, 70 % darker');
-const m = press(o, 'right', 2);
+const m = press(o, 'right', 3);
 eq([m.theme, m.background, m.iconStyle, m.minimal, m.showLabels], ['graphite', 'theme', 'original', true, false], 'Minimal: graphite background, original artwork without borders, no names');
-const g = press(o, 'right', 3);
+const g = press(o, 'right', 4);
 eq([g.background, g.wallpaper.mode, g.iconStyle, g.quietSec, g.quietDimSec], ['photo-show', 'gradient', 'original', 10, 0], 'Gallery: the built-in photos as a slideshow, apps hide after 10 s, no dimming');
 
 // every preset's values are values the Settings rows can show (no hidden or out-of-range value)
-const presets = ['standard', 'oled', 'night', 'minimal', 'gallery'];
+const presets = ['standard', 'oled', 'oledMinimal', 'night', 'minimal', 'gallery'];
 for (const id of presets) {
 	const c = ps.choosePreset(d, id);
 	const inRange = ['wallpaperOpacity', 'fadeStrength', 'fadeHeight', 'iconOpacity', 'quietSec', 'quietDimSec', 'quietDimLevel'].every((k) => s.rangeValues(k).indexOf(c[k]) !== -1)
@@ -118,6 +119,55 @@ eq(s.loadConfig().presetStash, null, 'a broken kept look is dropped');
 store['customlauncher-config-v1'] = JSON.stringify({defaultsV: 1, theme: 'grey', presetStash: {theme: 'neon', iconOpacity: 7, quietSec: 999, wallpaper: {mode: 'folder', path: ''}, clock: {weight: 1, color: 'x'}}});
 const bad = s.loadConfig().presetStash;
 eq([bad.theme, bad.iconOpacity, bad.quietSec, bad.wallpaper.mode, bad.clock.weight, bad.clock.color], ['black', 30, 60, 'gradient', 400, 'white'], 'wrong values in a kept look fall back by the same rules as saved settings');
+
+// ---- 6. OLED (minimal): the OLED look plus four settings outside it (icon size, widget, weather, Hearth's screen saver), put back when left ----
+const city = {name: 'Moscow', lat: 55.75, lon: 37.62};
+const mine = {...d, iconScale: 110, screensaver: true, clock: {...d.clock, show: true}, weather: {...d.weather, on: true, city}};
+const extras = (c) => [c.iconScale, c.clock.show, c.weather.on, c.screensaver];
+eq(text(mine), 'Standard', 'icon size, widget, weather and screen saver are not part of the other presets: Standard still');
+const om = press(mine, 'right', 2);
+eq(text(om), 'OLED (minimal)', '→ twice from Standard: OLED (minimal)');
+eq(extras(om), [70, false, false, false], 'OLED (minimal): icons at 70 %, no widget, no weather, Hearth\'s screen saver off');
+const lookNoWall = (c) => { const l = s.lookOf(c); delete l.wallpaper; return l; };
+eq(lookNoWall(om), lookNoWall(press(mine, 'right')), 'OLED (minimal) has the OLED look');
+eq(om.presetExtras && om.presetExtras.was, {iconScale: 110, clockShow: true, weatherOn: true, screensaver: true}, 'what the four were is noted');
+eq([om.clock.size, om.iconGap, om.labelSize], [mine.clock.size, mine.iconGap, mine.labelSize], 'other sizes are left alone');
+const toOled = press(om, 'left');
+eq(text(toOled), 'OLED', '← from OLED (minimal): OLED');
+eq([...extras(toOled), toOled.presetExtras], [110, true, true, true, null], 'leaving it for OLED puts back icon size, widget, weather and screen saver');
+eq(extras(press(om, 'right')), [110, true, true, true], 'leaving it for Night puts them back too');
+eq(text(press(om, 'right')), 'Night', '→ from OLED (minimal): Night');
+const ownM = {...mine, theme: 'teal'};
+const om2 = ps.choosePreset(ownM, 'oledMinimal');
+eq(text(om2), 'OLED (minimal)', 'chosen from a look of your own');
+const ownBack = ps.choosePreset(om2, 'custom');
+eq([ownBack.theme, ...extras(ownBack), ownBack.presetStash, ownBack.presetExtras], ['teal', 110, true, true, true, null, null], 'Your own brings back the look and the four settings');
+eq(text(press(om2, 'left', 9)), 'Your own', 'many ← from it end on Your own');
+eq(extras(press(om2, 'left', 9)), [110, true, true, true], 'and the four settings are back there too');
+const changed = {...om, iconScale: 80};
+eq(text(changed), 'OLED', 'icon size changed afterwards: the OLED look without all four reads OLED');
+eq(extras(ps.choosePreset(changed, 'standard')), [80, true, true, true], 'leaving it keeps an icon size changed since and puts back the rest');
+eq(extras(ps.choosePreset(ps.choosePreset(changed, 'oledMinimal'), 'standard')), [110, true, true, true], 'chosen again before leaving: the first noted values come back');
+const lost = {...om, weather: {...om.weather, city: null}};
+eq(ps.choosePreset(lost, 'standard').weather.on, false, 'the weather is not put back on without a city');
+const oledD = press(d, 'right');
+const hand = {...oledD, iconScale: 70, screensaver: false, clock: {...oledD.clock, show: false}, weather: {...oledD.weather, on: false}};
+eq(text(hand), 'OLED (minimal)', 'the OLED look with the four set by hand reads OLED (minimal)');
+eq(extras(ps.choosePreset(hand, 'standard')), [70, false, false, false], 'set by hand (nothing noted): leaving it keeps them');
+eq(text({...hand, screensaver: true}), 'OLED', 'with Hearth\'s screen saver on it is OLED');
+store['customlauncher-config-v1'] = JSON.stringify(om);
+const rbm = s.loadConfig();
+eq([text(rbm), rbm.presetExtras], ['OLED (minimal)', om.presetExtras], 'saved and read back with what it noted');
+eq(extras(press(rbm, 'left')), [110, true, true, true], 'and still puts them back after a restart');
+store['customlauncher-config-v1'] = JSON.stringify({...om, presetExtras: {was: {iconScale: 'x'}, set: 5}});
+eq(s.loadConfig().presetExtras, null, 'a broken note is dropped (nothing is put back)');
+store['customlauncher-config-v1'] = JSON.stringify({...om, presetExtras: {was: {iconScale: 999, clockShow: true, weatherOn: false, screensaver: true}, set: {iconScale: 73, clockShow: false, weatherOn: false, screensaver: false}}});
+const clamp = s.loadConfig().presetExtras;
+eq([clamp.was.iconScale, clamp.set.iconScale], [140, 70], 'icon sizes in the note are read by the Icon size row\'s rules');
+const rs = p.resetLook(om);
+eq([rs.presetExtras, rs.iconScale, rs.clock.show, rs.weather.on], [null, 90, true, false], 'Reset visual settings: default icon size and widget, no weather, nothing put back later');
+eq(text(rs), 'Standard', 'and it reads Standard');
+eq(row(om, 'preset').valueText, 'OLED (minimal)', 'the row shows OLED (minimal)');
 
 if (fail) { console.log(`\n${fail} FAILED`); process.exit(1); }
 console.log('\nall presets tests passed');

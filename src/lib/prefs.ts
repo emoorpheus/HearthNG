@@ -203,6 +203,7 @@ export function resetLook (c: UserConfig): UserConfig {
 		minimal: false,
 		tileFrame: true,
 		labelsOnFocus: false,
+		presetExtras: null,        // HearthNG: the reset sets icon size, widget and weather itself; nothing is put back later
 		rows: 1,
 		sideMargin: RANGES.sideMargin.def,
 		bottomMargin: RANGES.bottomMargin.def,

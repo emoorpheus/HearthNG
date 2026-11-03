@@ -247,6 +247,9 @@ export interface UserConfig {
 	labelsOnFocus: boolean;
 	/** HearthNG: the user's own look, kept when a preset replaced it (Settings -> Look -> Preset -> Your own brings it back); null = none */
 	presetStash: PresetLook | null;
+	/** HearthNG: what a preset set outside the look (OLED (minimal): icon size, widget, weather, Hearth's screen saver) and what those
+	 *  were before it; leaving that preset puts back each one not changed since (lib/presets.ts); null = nothing set */
+	presetExtras: {was: PresetExtras; set: PresetExtras} | null;
 	/** the LG Home and System Settings tiles at the end of the row (Hearth's own Settings tile is always there) */
 	showLgHome: boolean;
 	/** inputs with nothing plugged in are greyed out and HDMI-CEC device names are shown (P62, PR #16) */
@@ -381,6 +384,7 @@ export const DEFAULT_CONFIG: UserConfig = {
 	tileFrame: true,
 	labelsOnFocus: false,
 	presetStash: null,
+	presetExtras: null,
 	showLgHome: false,                // P41c: hidden on a fresh install (saved settings keep theirs)
 	inputStatus: true,
 	showSystem: false,                // P41c: same
@@ -406,6 +410,17 @@ export const PRESET_KEYS = ['theme', 'themeSel', 'background', 'wallpaperOpacity
 export const PRESET_CLOCK_KEYS = ['color', 'shadow', 'shadowStrength', 'opacity', 'weight'] as const;
 export type PresetKey = typeof PRESET_KEYS[number];
 export type PresetClockKey = typeof PRESET_CLOCK_KEYS[number];
+/** HearthNG: the settings outside the look that a preset may also set (only OLED (minimal) does). */
+export interface PresetExtras {
+	iconScale: number;
+	/** the whole widget (clock.show) */
+	clockShow: boolean;
+	/** the weather line (weather.on; on only with a city) */
+	weatherOn: boolean;
+	/** Hearth's own screen saver (UserConfig.screensaver) */
+	screensaver: boolean;
+}
+
 /** A look as a preset sees it; the kept copy of the user's own look also holds the wallpaper and the widget's theme ink. */
 export type PresetLook = Pick<UserConfig, PresetKey | 'wallpaper'> & {clock: Pick<ClockConfig, PresetClockKey> & {ink?: string}};
 
@@ -523,7 +538,22 @@ export function loadConfig (): UserConfig {
 	}
 }
 
-type Saved = Partial<UserConfig> & {wallpaper?: Partial<WallpaperConfig>; clock?: Partial<ClockConfig>; weather?: Partial<WeatherConfig>; presetStash?: unknown};
+type Saved = Partial<UserConfig> & {wallpaper?: Partial<WallpaperConfig>; clock?: Partial<ClockConfig>; weather?: Partial<WeatherConfig>; presetStash?: unknown; presetExtras?: unknown};
+
+function extrasValues (value: unknown): PresetExtras | null {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+	const e = value as Record<string, unknown>;
+	if (typeof e.clockShow !== 'boolean' || typeof e.weatherOn !== 'boolean' || typeof e.screensaver !== 'boolean') return null;
+	return {iconScale: ranged(e.iconScale, 'iconScale'), clockShow: e.clockShow, weatherOn: e.weatherOn, screensaver: e.screensaver};
+}
+
+/** HearthNG: what a preset set outside the look, read back; anything broken is dropped (then nothing is put back). */
+function extrasFrom (value: unknown): UserConfig['presetExtras'] {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+	const v = value as Record<string, unknown>;
+	const was = extrasValues(v.was), set = extrasValues(v.set);
+	return was && set ? {was, set} : null;
+}
 
 /** HearthNG: the kept own look, checked by the same rules as the settings themselves (anything wrong in it falls back like a saved value would). */
 function stashFrom (parsed: Saved): PresetLook | null {
@@ -610,6 +640,7 @@ function fromSaved (parsed: Saved): UserConfig {
 		tileFrame: parsed.tileFrame !== false,
 		labelsOnFocus: parsed.labelsOnFocus === true,
 		presetStash: null,
+		presetExtras: extrasFrom(parsed.presetExtras),
 		showLgHome: parsed.showLgHome !== false,
 		inputStatus: parsed.inputStatus !== false,   // P41c: a saved setting without the field (updaters) reads as On; an explicit Off stays
 		showSystem: parsed.showSystem !== false,

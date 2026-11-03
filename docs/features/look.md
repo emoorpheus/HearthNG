@@ -6,17 +6,20 @@ Everything in **Settings, Look**. Changes show at once on the home screen.
 
 ## Preset
 
-**Preset** is the first row of *Look*. It sets the colours and decorations of the home screen in one go: theme, background, icon style, icon outline, names, the widget's colour, shadow and thickness, the bottom fade and quiet mode. It never changes sizes or places (icon size and gap, name size and font, widget size, place and font, margins, rows) and never touches your apps or the weather.
+**Preset** is the first row of *Look*. It sets the colours and decorations of the home screen in one go: theme, background, icon style, icon outline, names, the widget's colour, shadow and thickness, the bottom fade and quiet mode. It does not change sizes or places (icon size and gap, name size and font, widget size, place and font, margins, rows), your apps or the weather; only *OLED (minimal)* also sets four settings outside the look (below).
 
 | Preset | What it sets | Why |
 |---|---|---|
 | **Standard** | The values of a fresh install. *Reset Hearth visual settings to default* also reads Standard. | A known starting point. |
 | **OLED** | OLED black theme on a flat black background (no photo, no gradient, no bottom fade), *Dark mono* grey icons, no icon outline (the selected icon keeps its ring), the name only under the selected icon, widget without shadow, thinner (300) and at 80 %, quiet mode after 20 s and dimmed by 50 % after 20 s more, OLED shift on. | On OLED a black pixel is off, so only what you need is lit: one-colour icons, one name, no glow. |
+| **OLED (minimal)** | The OLED look, plus four settings outside it: icons at 70 %, no widget (clock, date and weather), the weather off and Hearth's screen saver off (the TV's own screen saver still works). | As little lit as possible: only the apps, smaller, and at idle the TV's own screen saver. |
 | **Night** | Like OLED, but dimmer: *Soft mono* icons at 70 %, grey names, a grey widget at 60 %, quiet mode after 10 s and dimmed by 70 %. | For a dark room. |
 | **Minimal** | The *Warm graphite* theme's own background, the original pictures in the *Minimal* icon style (no borders), no names, no bottom fade, widget without shadow and thinner. | Calm and plain, in colour. |
 | **Gallery** | The bundled photos as a slideshow, the original pictures, apps hide after 10 s without a key and the screen is not dimmed, widget with a full shadow and thicker (500). | The TV as a picture frame. |
 
 When your look matches no preset, the row reads **Your own**. Choosing a preset keeps a copy of your own look (with its wallpaper); stepping back to **Your own** brings that copy back. If you change something after choosing a preset, the row reads *Your own* again and that new look is the one kept next time.
+
+*OLED (minimal)* notes what its four settings were. Leaving it (for another preset or *Your own*) puts each of them back, except one you changed since: that one stays. Hearth's screen saver is turned off and on again the way its own row (*Custom Screen Saver*) does it, through the TV; if turning it on again fails, it stays off and a notification says why. *Reset Hearth visual settings to default* drops the note (icon size, widget and weather go back to their defaults; Hearth's screen saver stays as it is).
 
 ## Theme
 

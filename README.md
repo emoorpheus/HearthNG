@@ -116,7 +116,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
   - Inputs with nothing plugged in are greyed out and a connected device's name shows under its input (rooted TVs)
 - **Your own names and icons.** Hold OK on an app or input in Settings to rename it and pick a different icon, or use your own picture from a USB drive or the TV's storage (rooted TVs).
 - **Looks.**
-  - Presets: Standard, OLED (pure black, grey one-colour icons, no outline, the name only under the selected icon), Night, Minimal, Gallery; *Your own* brings back your look (see [Look](docs/features/look.md#preset))
+  - Presets: Standard, OLED (pure black, grey one-colour icons, no outline, the name only under the selected icon), OLED (minimal) (the OLED look with icons at 70 %, no widget, no weather and no Hearth screen saver), Night, Minimal, Gallery; *Your own* brings back your look (see [Look](docs/features/look.md#preset))
   - Six dark themes: OLED black, Calm blue-grey, Midnight blue, Deep forest, Deep teal, Warm graphite
   - Seven icon styles with dark or light tiles, icon colour and opacity (see *Icon styles* below)
   - One or two rows, margins, app-name font and size
@@ -306,7 +306,7 @@ To remove Hearth, turn off *Replace LG Home (helper)*, the screen saver and *Map
   - their order, favourites, names and icons
   - **Refresh list** looks for newly installed apps
 - **Look:**
-  - *Preset*: Standard, OLED, Night, Minimal, Gallery, Your own
+  - *Preset*: Standard, OLED, OLED (minimal), Night, Minimal, Gallery, Your own
   - *Theme*: *Current theme*, *Export theme base*, *Save this theme*, *Delete this theme*
   - *Icons*: size, shape, style, tile, colour, outline, spacing, opacity
   - *Home row*: rows, scroll speed, when Home is pressed, margins, input status, LG Home and System tiles

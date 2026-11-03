@@ -1208,7 +1208,20 @@ export function App () {
 			return;
 		}
 		const next = applyPref(config, optionId, press);
-		if (next !== config) updateConfig(next);
+		if (next === config) return;
+		// HearthNG: OLED (minimal) turns Hearth's screen saver off, and leaving it can turn it on again: both through the TV, as the
+		// Screen saver row does (lib/presets.ts only sets the value)
+		if (optionId === 'preset' && next.screensaver !== config.screensaver) {
+			if (!next.screensaver) { updateConfig(next); removeSaver().then(() => showToast(tt('app.turnedOffTheTv'))); return; }
+			updateConfig({...next, screensaver: false});
+			showToast(tt('app.settingUp'));
+			installSaver(next).then(({result, detail}) => {
+				if (result === 'applied') setConfig((c) => { const on = {...c, screensaver: true}; saveConfig(on); return on; });
+				showToast(saverMessage(result, detail), result === 'applied' ? 'info' : 'error');
+			});
+			return;
+		}
+		updateConfig(next);
 	}, [config, showToast, systemInfo, tvInput, openGroups]);
 
 	const onRefresh = useCallback(() => {
