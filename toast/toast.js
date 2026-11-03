@@ -4,12 +4,15 @@
  *     '{"id":"com.hearthng.toast","params":{"text":"Home screen is loading…","ms":2000}}'
  * The window floats over whatever is on screen and does not take the remote: _WEBOS_WINDOW_TYPE_FLOATING, needFocus
  * false, an empty input region (the technique of eArcNG and of Nikolay1243's eARC Volume Overlay, checked there on an
- * OLED65M59LA). It closes itself `ms` after it appears (500-10000, default 2000). A launch while it is on screen
- * (relaunch) puts the new text up and starts the time again; {"close":true} closes it at once.
- * Written for old Chrome (ES5). */
+ * OLED65M59LA). It closes itself `ms` after it appears (500-10000, default 2000). The window comes up some time after
+ * this script starts (OLED65M59LA, webOS 10.3.0: the surface manager showed it 1.32-1.34 s after the launch request,
+ * the script runs 0.23 s after it), so on a cold launch the time counts from the script start plus `appearMs`
+ * (0-5000, default 1100). A launch while it is on screen (relaunch) puts the new text up and starts `ms` again;
+ * {"close":true} closes it at once. No CSS transform in toast.css: with one the window came up only ~8 s after the
+ * launch. Written for old Chrome (ES5). */
 (function () {
   'use strict';
-  var CFG = { ms: 2000, minMs: 500, maxMs: 10000, fade: 150, longText: 70 };
+  var CFG = { ms: 2000, minMs: 500, maxMs: 10000, fade: 150, longText: 70, appear: 1100, maxAppear: 5000 };
   var box = document.getElementById('toast');
   var timers = {};
   var shown = false;
@@ -62,11 +65,13 @@
       }, 60);
       later('show', function () { box.className += ' toast--show'; }, 20);
     }
+    var delay = num(p.ms, CFG.minMs, CFG.maxMs, CFG.ms);
+    if (!shown) delay += num(p.appearMs, 0, CFG.maxAppear, CFG.appear);   // cold launch: the window is not up yet
     shown = true;
     later('hide', function () {
       box.className = box.className.replace(/ toast--show/g, '');
       later('close', closeNow, CFG.fade);
-    }, num(p.ms, CFG.minMs, CFG.maxMs, CFG.ms));
+    }, delay);
   }
 
   function handle(input) {

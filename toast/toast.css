@@ -1,5 +1,5 @@
 /* HearthNG notifications: the same pill as the launcher's own notification (src/theme/global.css .toast, the
-   standard theme), on a transparent window. Written for old Chrome: no flex gap, no inset. */
+   standard theme), on a transparent window. Written for old Chrome: no flex gap, no inset, no transform. */
 html, body {
 	margin: 0;
 	width: 1920px;
@@ -7,12 +7,20 @@ html, body {
 	overflow: hidden;
 	background: transparent;
 }
-.toast {
+/* Centred without a CSS transform: with "transform: translateX(-50%)" on the pill the TV put the window on screen only
+   ~8 s after the launch (OLED65M59LA, webOS 10.3.0, the surface manager's NL_VSC in /var/log/messages), so a 2 s
+   notification was never seen; without it the window is there ~1.3 s after the launch. */
+.bar {
 	position: absolute;
-	left: 50%;
+	left: 0;
 	top: 72px;
+	width: 1920px;
+	text-align: center;
+	pointer-events: none;
+}
+.toast {
+	display: inline-block;
 	max-width: 1500px;
-	transform: translateX(-50%);
 	padding: 14px 28px;
 	border-radius: 999px;
 	background: #000000;
