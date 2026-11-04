@@ -45,7 +45,7 @@ import {Notice, type NoticeButton} from './components/Notice';
 import {Preload} from './screens/Preload';
 import {homeAppMessage, readHomeApp, restoreHomeApp, setHearthAsHome} from './lib/homeapp';
 import {clearPowerOnApp, powerOnMessage, readPowerOn, restartTv, setPowerOnApp} from './lib/poweron';
-import {needsRestart, powerOnName} from './lib/poweroncmd';
+import {needsRestart, notInstalled, powerOnName} from './lib/poweroncmd';
 import {applyPreload} from './lib/preload';
 import {applyKeepReady, readKeepList, readKeepStatus} from './lib/keepready';
 import {KEEP_WARNING, keepMessage, keepProblemText, statusMatches} from './lib/keepreadycmd';
@@ -915,6 +915,13 @@ export function App () {
 		const choice = powerOnChoices.filter((c) => c.id === id)[0];
 		return choice ? choice.label : id;
 	}, [powerOnChoices]);
+	// the chosen app is not installed any more (removed while chosen): listed with that, so the list shows what is chosen
+	const powerOnPickerChoices: PowerOnChoice[] = useMemo(() => {
+		const status = systemInfo.powerOn;
+		const chosen = status ? status.chosen : '';
+		if (!chosen || !notInstalled(status, chosen) || powerOnChoices.some((c) => c.id === chosen)) return powerOnChoices;
+		return powerOnChoices.slice(0, 2).concat([{id: chosen, label: chosen, detail: tt('app.powerOnNotInstalled')}], powerOnChoices.slice(2));
+	}, [powerOnChoices, systemInfo.powerOn]);
 	const powerOnNames = useMemo(() => {
 		const status = systemInfo.powerOn;
 		return {chosen: powerOnTitle(status ? status.chosen : config.powerOnApp), loaded: powerOnTitle(status ? status.loaded : '')};
@@ -1149,7 +1156,9 @@ export function App () {
 			}
 			else if (optionId === 'replaceHome') {
 				const refresh = () => getHookStatus().then((homeHook) => setSystemInfo((previous) => ({...previous, homeHook})));
-				const running = !!(systemInfo.homeHook && systemInfo.homeHook.running);
+				const hook = systemInfo.homeHook;
+				// another launcher's helper running in the folder is not HearthNG's: OK puts HearthNG's in its place (below)
+				const running = !!(hook && hook.running && !hook.foreign);
 				if (running) {
 					// off: only the helper goes; the Home button mapping is separate (System -> Remote control -> Map home button)
 					removeHomeHook().then(() => {
@@ -1169,7 +1178,7 @@ export function App () {
 							showToast(tt('app.lgHomeIsReplaced'));
 						});
 					};
-					readBinds().then((read) => (read.ok ? hearthCodes(read.binds).length > 0 : false), () => false).then((bound) => {
+					const checkBinding = () => readBinds().then((read) => (read.ok ? hearthCodes(read.binds).length > 0 : false), () => false).then((bound) => {
 						if (bound) { proceed(); return; }
 						// §7: where the helper freezes LG Home (webOS 25), the Home button opens nothing without a binding (seen on webOS 10.3.0)
 						const frozen = !!(systemInfo.homeHook && systemInfo.homeHook.frozenHome);
@@ -1183,6 +1192,21 @@ export function App () {
 							onBack: () => setNotice(null)
 						});
 					});
+					// §10: the original Hearth uses the same helper folder: when it opens with its own helper on, it writes over this one
+					// and LG Home comes back until HearthNG opens again (seen 2026-11-03). Said before anything is written.
+					if (hook && (hook.foreign || hook.hearth)) {
+						setNotice({
+							title: tt(hook.foreign ? 'app.anotherHelperIsThere' : 'app.originalHearthInstalled'),
+							text: tt(hook.foreign ? 'app.anotherHelperText' : 'app.originalHearthText'),
+							buttons: [
+								{label: tt('app.switchTheHelperOn'), detail: tt(hook.foreign ? 'app.replacesTheOtherHelper' : 'app.originalHearthMayWrite'), tone: 'danger', run: () => { setNotice(null); checkBinding(); }},
+								{label: tt('app.close'), run: () => setNotice(null)}
+							],
+							onBack: () => setNotice(null)
+						});
+						return;
+					}
+					checkBinding();
 				}
 			}
 			else if (optionId === 'tvInput') {
@@ -1551,12 +1575,13 @@ export function App () {
 			})} />}
 			{screen === 'poweron' && (
 				<PowerOnPicker
-					choices={powerOnChoices}
+					choices={powerOnPickerChoices}
 					chosen={systemInfo.powerOn ? systemInfo.powerOn.chosen : config.powerOnApp}
 					network={powerOnNetwork}
 					networkKeys
 					restartNeeded={needsRestart(systemInfo.powerOn)}
 					untilRestart={systemInfo.powerOn ? powerOnName(systemInfo.powerOn.loaded, powerOnNames.loaded) : powerOnName('')}
+					untilRestartMissing={!!systemInfo.powerOn && notInstalled(systemInfo.powerOn, systemInfo.powerOn.loaded)}
 					busy={powerOnBusy}
 					onChoose={onPowerOnChoose}
 					onNetwork={onPowerOnNetwork}

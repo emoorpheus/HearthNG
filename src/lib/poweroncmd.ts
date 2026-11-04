@@ -10,7 +10,8 @@
 // writable copy LG left for debugging). This method writes that copy: LG's own file with those three reasons pointed
 // at the chosen app. Every other reason (a phone casting, HDMI-CEC, Wake-on-LAN, timers) is left as LG has it, so the
 // TV still goes where those ask. The app opens behind LG's start-up cover, so nothing else is drawn first. If the app
-// cannot be opened (uninstalled), the TV falls back to its last input as usual.
+// cannot be opened (uninstalled), webOS 4.5 falls back to its last input as usual; webOS 10.3.0 opened LG's Apps store
+// instead (see README). The status names such an app (`missing`), so Settings can say it is not installed.
 //
 // bootd reads the file only when it starts, which is a full restart of the TV (not waking it from standby), so a
 // change starts working after the TV has restarted once. A small start-up check notes what bootd loaded (so Hearth can
@@ -99,6 +100,9 @@ export interface PowerOnStatus {
 	foreign: boolean;
 	/** LG's table has the network wake-up keys (not on webOS 7.6: then the network choice is not offered) */
 	networkKeys: boolean;
+	/** of the loaded app and the copy's app, the ones the TV says are not installed (getAppLoadStatus: exist false).
+	 *  Only present when there is one: an app that cannot be checked is not listed */
+	missing?: string[];
 }
 
 const SEPARATOR = '--- start-up file ---';
@@ -108,6 +112,12 @@ const SEPARATOR = '--- start-up file ---';
  *  else's. An empty copy (a power cut right after writing) is never valid, so it counts as Hearth's to clean up. */
 const OURS = `{ [ -f '${OVERRIDE_FILE}' ] && { [ ! -s '${OVERRIDE_FILE}' ] || grep -qx "$(md5sum '${OVERRIDE_FILE}' | cut -d ' ' -f 1)" '${POWER_ON_DIR}/override.md5' 2>/dev/null; }; }`;
 
+/** Shell: "missing=<app>" for the app bootd loaded and for the copy's power-button app, when the TV says it is not
+ *  installed. An app removed while the copy names it is still what the power button opens (until the second restart:
+ *  the start-up check runs after bootd has read the copy); on webOS 10.3.0 the TV then opened LG's Apps store, which
+ *  showed error -102 (2026-11-04). Only a clear "exist":false counts: no answer lists nothing. */
+const MISSING_CHECK = `for a in $(cut -d+ -f1 '${LOADED_FILE}' 2>/dev/null) $(sed -n 's/.*"remoteKey": *"\\([A-Za-z0-9._-]*\\)".*/\\1/p' '${OVERRIDE_FILE}' 2>/dev/null | head -n 1); do [ "$a" = stock ] && continue; r=$(luna-send -n 1 luna://com.webos.applicationManager/getAppLoadStatus "{\\"appId\\":\\"$a\\"}" 2>/dev/null); case "$r" in *'"exist":false'*) echo "missing=$a" ;; esac; done`;
+
 /** One command for everything Settings shows. Lines of key=value, then the copy itself after SEPARATOR. */
 export const STATUS_COMMAND = [
 	`if grep -q '${OVERRIDE_FILE}' '${BOOTD_BIN}' 2>/dev/null && grep -q firstAppByPowerOnReason '${BOOTD_FILE}' 2>/dev/null; then echo support=yes; else echo support=no; fi`,
@@ -115,6 +125,7 @@ export const STATUS_COMMAND = [
 	`if ${OURS}; then echo ours=yes; else echo ours=no; fi`,
 	`echo "loaded=$(cat '${LOADED_FILE}' 2>/dev/null)"`,
 	`if grep -q wakeOnWiFi '${BOOTD_FILE}' 2>/dev/null; then echo networkkeys=yes; else echo networkkeys=no; fi`,
+	MISSING_CHECK,
 	`echo '${SEPARATOR}'`,
 	`cat '${OVERRIDE_FILE}' 2>/dev/null; true`
 ].join('; ');
@@ -124,9 +135,14 @@ export function parseStatus (output: string): PowerOnStatus | null {
 	const at = output.indexOf(SEPARATOR);
 	if (at === -1) return null;
 	const fields: Record<string, string> = {};
+	const missing: string[] = [];
 	output.slice(0, at).split('\n').forEach((line) => {
 		const eq = line.indexOf('=');
-		if (eq > 0) fields[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+		if (eq <= 0) return;
+		const key = line.slice(0, eq).trim();
+		const value = line.slice(eq + 1).trim();
+		if (key !== 'missing') fields[key] = value;
+		else if (isAppId(value) && missing.indexOf(value) === -1) missing.push(value);
 	});
 	if (!fields.support) return null;
 	const override = fields.override === 'yes';
@@ -136,7 +152,7 @@ export function parseStatus (output: string): PowerOnStatus | null {
 	const loaded = isAppId(loadedApp) && loadedApp !== 'stock' ? loadedApp : '';
 	const file = output.slice(at + SEPARATOR.length);
 	const chosen = ours ? overrideApp(file) : '';
-	return {
+	const status: PowerOnStatus = {
 		supported: fields.support === 'yes',
 		chosen,
 		network: !!chosen && overrideNetwork(file),
@@ -145,6 +161,13 @@ export function parseStatus (output: string): PowerOnStatus | null {
 		foreign: override && !ours,
 		networkKeys: fields.networkkeys === 'yes'
 	};
+	if (missing.length) status.missing = missing;
+	return status;
+}
+
+/** The TV said `appId` is not installed (see MISSING_CHECK). */
+export function notInstalled (status: PowerOnStatus | null | undefined, appId: string): boolean {
+	return !!status && !!appId && !!status.missing && status.missing.indexOf(appId) !== -1;
 }
 
 /** A restart is still needed before the TV does what was chosen. */
@@ -223,7 +246,7 @@ export type PowerOnResult = 'applied' | 'removed' | 'unsupported' | 'foreign' | 
 
 /** A friendly name for what the TV opens. */
 export function powerOnName (appId: string, title?: string): string {
-	if (!appId) return 'Live TV or the last input';
+	if (!appId) return tt('poweroncmd.liveTvOrTheLastInput');
 	return title || appId;
 }
 

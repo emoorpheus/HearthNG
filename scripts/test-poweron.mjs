@@ -2,7 +2,7 @@
 // install / remove commands run against a fake TV folder.   Run: npm test
 import {build} from 'esbuild';
 import {execSync} from 'child_process';
-import {existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync} from 'fs';
+import {chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync} from 'fs';
 import {tmpdir} from 'os';
 
 const out = new URL('../node_modules/.cache-poweroncmd-test.mjs', import.meta.url).pathname;
@@ -156,5 +156,45 @@ eq(sh(h.REMOVE_COMMAND).trim(), 'kept', 'and switching off never removes it');
 eq(readFileSync(root + '/prefs/bootd.json', 'utf8'), '{"someone":"else"}', 'it is left exactly as it was');
 writeFileSync(root + '/bootd', 'ELF without the copy');
 eq(read().supported, false, 'a boot daemon that does not read the copy: not supported');
+
+// ---- an app the TV says is not installed (webOS 10.3.0, 2026-11-04: a removed app the copy still named made the TV
+// open LG's Apps store, error -102). A stand-in luna-send: gone.app is not installed, every other app is.
+writeFileSync(root + '/bootd', `ELF ... ${root}/prefs/bootd.json ...`);
+rmSync(root + '/prefs/bootd.json', {force: true});
+const bin = root + '/bin';
+mkdirSync(bin);
+writeFileSync(bin + '/luna-send', '#!/bin/sh\necho "$*" >> "$(dirname "$0")/calls"\ncase "$*" in\n  *getAppLoadStatus*gone.app*) echo \'{"returnValue":true,"exist":false}\' ;;\n  *getAppLoadStatus*) echo \'{"returnValue":true,"exist":true}\' ;;\n  *) exit 1 ;;\nesac\n');
+chmodSync(bin + '/luna-send', 0o755);
+const readLuna = () => h.parseStatus(execSync(onTv(h.STATUS_COMMAND), {shell: '/bin/sh', env: {...process.env, PATH: bin + ':' + process.env.PATH}}).toString());
+const calls = () => (existsSync(bin + '/calls') ? readFileSync(bin + '/calls', 'utf8').trim().split('\n').length : 0);
+writeFileSync(root + '/loaded', 'gone.app\n');
+let now = readLuna();
+eq(JSON.stringify(now.missing), '["gone.app"]', 'missing: the app bootd loaded is not installed (the case of the -102 error)');
+eq(h.notInstalled(now, now.loaded) && !h.notInstalled(now, now.chosen), true, 'notInstalled() names it, and not the TV default');
+writeFileSync(root + '/loaded', 'gone.app+network\n');
+eq(JSON.stringify(readLuna().missing), '["gone.app"]', 'also when network wake-ups were loaded with it');
+writeFileSync(root + '/loaded', 'youtube.leanback.v4\n');
+eq(readLuna().missing, undefined, 'an installed app is not listed (and the status has no "missing" then)');
+writeFileSync(root + '/loaded', 'stock\n');
+const before = calls();
+eq(readLuna().missing, undefined, 'nothing loaded ("stock"): nothing is listed');
+eq(calls(), before, 'and the TV is not even asked');
+for (const step of h.writeSteps(guardSh, h.buildOverride(stock, 'gone.app'), 'gone.app')) sh(step.command);
+sh(h.finishCommand('gone.app'));
+writeFileSync(root + '/loaded', 'youtube.leanback.v4\n');
+now = readLuna();
+eq(now.chosen + ' ' + JSON.stringify(now.missing), 'gone.app ["gone.app"]', 'the chosen app (the copy\'s power button) is checked too');
+eq(h.notInstalled(now, now.chosen) && !h.notInstalled(now, now.loaded), true, 'and only it is named');
+writeFileSync(root + '/loaded', 'gone.app\n');
+eq(JSON.stringify(readLuna().missing), '["gone.app"]', 'loaded and chosen the same: named once');
+sh(h.REMOVE_COMMAND);
+writeFileSync(root + '/prefs/bootd.json', h.buildOverride(stock, 'gone.app').replace(/gone\.app/g, '{LAST_APP}'));
+writeFileSync(root + '/loaded', 'stock\n');
+const before2 = calls();
+eq(readLuna().missing, undefined, 'a copy whose power button has no app ({LAST_APP}): nothing to check');
+eq(calls(), before2, '(and nothing is asked)');
+rmSync(root + '/prefs/bootd.json', {force: true});
+eq(read().missing, undefined, 'no answer from the TV (no luna-send here): nothing is listed, so no false warning');
+eq(JSON.stringify(h.parseStatus("support=yes\nmissing=x'; reboot\nmissing=a.b\nmissing=a.b\n--- start-up file ---\n").missing), '["a.b"]', 'parseStatus: only plain app ids, each once');
 rmSync(root, {recursive: true, force: true});
 process.exit(fail ? 1 : 0);

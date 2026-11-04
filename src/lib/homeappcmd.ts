@@ -47,6 +47,17 @@ export function isMissing (errorText: unknown): boolean {
 	return typeof errorText === 'string' && /no matched result/i.test(errorText);
 }
 
+/** Asks the TV whether `appId` is installed (SAM's getAppLoadStatus answers {"exist": true|false}). */
+export function appStatusCommand (appId: string): string {
+	if (!isAppId(appId)) throw new Error('Invalid app id');
+	return `luna-send -n 1 luna://com.webos.applicationManager/getAppLoadStatus '{"appId":"${appId}"}'`;
+}
+
+/** The reply says the app is not installed: a clear "exist": false. Anything else (no answer, a refusal) is not. */
+export function saysNotInstalled (output: string): boolean {
+	return /"returnValue"\s*:\s*true/.test(output) && /"exist"\s*:\s*false/.test(output);
+}
+
 /** A friendly name for the app the Home button opens. */
 export function homeName (appId: string): string {
 	return appId === FULL_HOME_ID || appId === 'com.webos.app.home' ? 'LG Home' : appId;

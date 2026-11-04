@@ -280,7 +280,9 @@ stop_bg_watch () { p=$(cat "$W/watch.pid" 2>/dev/null); [ -n "$p" ] && kill -TER
 bg_guard () { ( run_env LOG="$W/guard.log" NAP=sleep INTERVAL=1 "$@" sh "$HOOKD/guard.sh" </dev/null >/dev/null 2>&1 & ); }
 grun () { n="$1"; shift; run_env LOG="$W/guard.log" MAX_LOOPS="$n" CONFIRM=2 "$@" sh "$HOOKD/guard.sh"; }
 # Hearth's own watch.sh (no freezing): what Hearth writes into the same folder when it is opened
-hearth_watch () { printf '%s\n' '#!/bin/sh' "# Hearth's own watch.sh (test stand-in)" 'while :; do sleep 1; done' > "$HOOKD/watch.sh"; }
+hearth_watch () { printf '%s\n' '#!/bin/sh' "# Hearth's own watch.sh (test stand-in)" 'LAUNCHER_ID="${LAUNCHER_ID:-tld.my.customlauncher}"' 'while :; do sleep 1; done' > "$HOOKD/watch.sh"; }
+# Hearth P0.x's watch.sh (test stand-in): it freezes LG Home too
+p0_watch () { printf '%s\n' '#!/bin/sh' "# Hearth P0.x's watch.sh (test stand-in)" 'LAUNCHER_ID="${LAUNCHER_ID:-tld.my.customlauncher}"' 'freeze_home () { pkill -STOP -f "$HOME_PROC" 2>/dev/null; }' 'while :; do sleep 1; done' > "$HOOKD/watch.sh"; }
 
 # ---------- A. syntax and fixed values ----------
 section "A. sh -n of every script, and the defaults"
@@ -288,7 +290,9 @@ for f in "$SRC"/*.sh "$ROOT"/scripts/test-homehook*.sh; do
     check "sh -n ${f#$ROOT/}" sh -n "$f"
 done
 WS="$SRC/watch.sh"
-check "watch.sh freezes LG Home (has 'pkill -STOP': guard.sh tells HearthNG's watch.sh from Hearth's by it)" has 'pkill -STOP' "$WS"
+check "watch.sh freezes LG Home (has 'pkill -STOP')" has 'pkill -STOP' "$WS"
+check "watch.sh opens com.hearthng.launcher by default (guard.sh tells HearthNG's watch.sh from another launcher's by that line)" hasline 'LAUNCHER_ID="${LAUNCHER_ID:-com.hearthng.launcher}"' "$WS"
+check "guard.sh looks for that line" hasline "WATCH_MARK='LAUNCHER_ID:-com.hearthng.launcher}'" "$SRC/guard.sh"
 HP_LINE="HOME_PROC_DEFAULT='flutter-client -i com\.webos\.app\.home([^A-Za-z0-9._-]|\$)'"
 for f in watch apply stock guard stop; do
     check "$f.sh: the same LG Home process pattern" hasline "$HP_LINE" "$SRC/$f.sh"
@@ -956,11 +960,20 @@ section "E3. guard: watch.sh is Hearth's own (Hearth was opened and rewrote the 
 reset; start_home; freeze_now; hearth_watch
 grun 3
 check "LG Home unfrozen at the first check" eval 'waitfor home_running && [ "$(count "is not HearthNG" "$W/guard.log")" = 1 ]'
-check "in the log: not HearthNG's: LG Home unfrozen, exiting" has "guard: $HOOKD/watch.sh is missing or is not HearthNG's: LG Home unfrozen, exiting" "$W/guard.log"
+check "in the log: not HearthNG's: LG Home unfrozen, exiting" has "guard: $HOOKD/watch.sh is not HearthNG's (another launcher's helper, e.g. the original Hearth's): LG Home unfrozen, exiting" "$W/guard.log"
 check "no watcher started" gone "$W/watch.pid"
+check "one notification in Russian, as webosbrew: why LG Home is back" eq "$(calls '^toast caller=webosbrew .*Помощник HearthNG заменён помощником другого лаунчера: LG Home снова работает')" 1
+reset; start_home; freeze_now; hearth_watch; echo en-GB > "$S/locale"
+grun 1
+check "menu in English: the notification in English" eq "$(calls '^toast caller=webosbrew .*Another launcher.s helper replaced the HearthNG helper: LG Home works again')" 1
+reset; start_home; freeze_now; p0_watch
+grun 1
+check "Hearth P0.x's watch.sh (it freezes LG Home too): also not HearthNG's, LG Home unfrozen" eval 'waitfor home_running && [ "$(count "is not HearthNG" "$W/guard.log")" = 1 ]'
+check "and the notification" eq "$(calls '^toast caller=webosbrew .*Помощник HearthNG заменён помощником другого лаунчера')" 1
 reset; start_home; freeze_now; rm -f "$HOOKD/watch.sh"
 grun 1
-check "watch.sh missing: the same" eval 'waitfor home_running && has "is missing or is not HearthNG" "$W/guard.log"'
+check "watch.sh missing: LG Home unfrozen too" eval 'waitfor home_running && has "guard: $HOOKD/watch.sh is missing: LG Home unfrozen, exiting" "$W/guard.log"'
+check "but no notification (switching the helper off removes it)" eq "$(calls '^toast ')" 0
 
 section "E4. guard: the launcher was uninstalled"
 reset; start_home; freeze_now; rm -f "$APPD/appinfo.json"

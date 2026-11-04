@@ -3,8 +3,9 @@
 # the TV by the launcher together with the other helper files. Log: /tmp/launcher-homehook.log (lines "guard:").
 # Every INTERVAL s, in this order:
 #   1. the emergency exit is on ($HOOK/stopped): exits (stop.sh also stops it);
-#   2. watch.sh is missing or is not HearthNG's (it has no LG Home freeze, e.g. Hearth itself wrote its own helper
-#      into the same folder): unfreezes LG Home and exits. Nothing else would ever unfreeze it;
+#   2. watch.sh is missing or is not HearthNG's (it does not open HearthNG by default, WATCH_MARK; e.g. Hearth itself
+#      wrote its own helper into the same folder): unfreezes LG Home and exits. Nothing else would ever unfreeze it.
+#      For another launcher's watch.sh it also shows a notification (LG Home is back, and why);
 #   3. the launcher is not installed (CONFIRM checks in a row): unfreezes LG Home and exits;
 #   4. the watcher is not running (CONFIRM checks in a row): starts it again with apply.sh. After MAX_RESTARTS restarts
 #      since boot it gives up: unfreezes LG Home, shows a notification and exits (the launcher, when it next opens,
@@ -24,7 +25,9 @@ LOG="${LOG:-/tmp/launcher-homehook.log}"
 UPTIME_FILE="${UPTIME_FILE:-/proc/uptime}"
 HOME_PROC_DEFAULT='flutter-client -i com\.webos\.app\.home([^A-Za-z0-9._-]|$)'
 HOME_PROC="${HOME_PROC:-$HOME_PROC_DEFAULT}"
-WATCH_MARK='pkill -STOP'              # only HearthNG's watch.sh freezes LG Home
+# Only HearthNG's watch.sh opens HearthNG by default. Hearth's own helpers open tld.my.customlauncher; the one of the
+# P0.x packages freezes LG Home too, so 'pkill -STOP' does not tell them apart.
+WATCH_MARK='LAUNCHER_ID:-com.hearthng.launcher}'
 TOAST_LANG="${TOAST_LANG:-auto}"
 LUNA="${LUNA_SEND:-luna-send}"
 NAP="${NAP:-sleep}"
@@ -57,14 +60,24 @@ toast () {
     r=$("$LUNA" -n 1 -a webosbrew "$TOAST_URI" "{\"sourceId\":\"webosbrew\",\"message\":\"$1\"}" 2>&1)
     log "toast \"$1\": ${r:-no reply}"
 }
-gave_up_text () {
+# The notification's language: TOAST_LANG (ru, en), else the TV's menu language.
+toast_lang () {
     tl="$TOAST_LANG"
     if [ "$tl" != ru ] && [ "$tl" != en ]; then
         tl=$("$LUNA" -n 1 luna://com.webos.settingsservice/getSystemSettings '{"keys":["localeInfo"]}' 2>/dev/null | tr -d '\n ' | sed -n 's/.*"UI":"\([^"]*\)".*/\1/p')
     fi
-    case "$tl" in
+    echo "$tl"
+}
+gave_up_text () {
+    case "$(toast_lang)" in
         ru*) echo "Помощник $APP_NAME несколько раз останавливался: LG Home снова работает" ;;
         *) echo "The $APP_NAME helper keeps stopping: LG Home works again" ;;
+    esac
+}
+replaced_text () {
+    case "$(toast_lang)" in
+        ru*) echo "Помощник $APP_NAME заменён помощником другого лаунчера: LG Home снова работает" ;;
+        *) echo "Another launcher's helper replaced the $APP_NAME helper: LG Home works again" ;;
     esac
 }
 quit () {
@@ -90,9 +103,16 @@ confirmed () {
 loops=0
 while :; do
     if [ -f "$STOPPED" ]; then log "emergency exit is on ($STOPPED): exiting"; quit; fi
-    if [ ! -f "$HOOK/watch.sh" ] || ! grep -q -- "$WATCH_MARK" "$HOOK/watch.sh" 2>/dev/null; then
+    if [ ! -f "$HOOK/watch.sh" ]; then
         thaw_home
-        log "$HOOK/watch.sh is missing or is not HearthNG's: LG Home unfrozen, exiting"
+        log "$HOOK/watch.sh is missing: LG Home unfrozen, exiting"
+        quit
+    fi
+    if ! grep -qF -- "$WATCH_MARK" "$HOOK/watch.sh" 2>/dev/null; then
+        # another launcher wrote its helper here (seen 2026-11-03: the original Hearth, opened with its helper on)
+        thaw_home
+        log "$HOOK/watch.sh is not HearthNG's (another launcher's helper, e.g. the original Hearth's): LG Home unfrozen, exiting"
+        toast "$(replaced_text)"
         quit
     fi
     if [ ! -f "$LAUNCHER/appinfo.json" ]; then

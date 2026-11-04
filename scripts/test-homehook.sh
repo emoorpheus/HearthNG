@@ -7,7 +7,7 @@ T="$(mktemp -d)"; fail=0
 check () { if [ "$2" = "$3" ]; then echo "ok   $1"; else echo "FAIL $1 (got '$2', wanted '$3')"; fail=1; fi; }
 mkdir -p "$T/hook" "$T/launcher"
 echo '{}' > "$T/launcher/appinfo.json"
-printf '%s\n' '#!/bin/sh' '# test stand-in: pkill -STOP' > "$T/hook/watch.sh"
+printf '%s\n' '#!/bin/sh' '# test stand-in' 'LAUNCHER_ID="${LAUNCHER_ID:-com.hearthng.launcher}"' > "$T/hook/watch.sh"
 echo "1234.56 999.00" > "$T/uptime"
 NOPROC='[n]o-such-process-for-hearthng-tests'
 
@@ -190,8 +190,8 @@ guard () { MAX_LOOPS=1 NAP=true HOOK="$T/hook" LAUNCHER="$T/launcher" PIDFILE="$
 check "guard: the emergency exit is on: it exits" "$(grep -c 'guard: emergency exit is on' "$T/log")" "1"
 check "guard: and removes its pid file" "$([ -f "$T/gpid" ] && echo yes || echo no)" "no"
 rm -f "$T/hook/stopped"
-: > "$T/log"; printf '%s\n' '#!/bin/sh' '# a watch.sh that does not freeze LG Home' > "$T/hook/w2"; mv "$T/hook/watch.sh" "$T/hook/w1"; mv "$T/hook/w2" "$T/hook/watch.sh"; guard
-check "guard: watch.sh is not HearthNG's: LG Home is unfrozen and the guard exits" "$(grep -c "is not HearthNG's: LG Home unfrozen, exiting" "$T/log")" "1"
+: > "$T/log"; printf '%s\n' '#!/bin/sh' "# another launcher's watch.sh (Hearth P0.x's freezes LG Home too)" 'LAUNCHER_ID="${LAUNCHER_ID:-tld.my.customlauncher}"' 'freeze_home () { pkill -STOP -f "$HOME_PROC" 2>/dev/null; }' > "$T/hook/w2"; mv "$T/hook/watch.sh" "$T/hook/w1"; mv "$T/hook/w2" "$T/hook/watch.sh"; guard
+check "guard: watch.sh is not HearthNG's (it freezes LG Home, but opens another launcher): LG Home is unfrozen and the guard exits" "$(grep -c "is not HearthNG's (another launcher's helper, e.g. the original Hearth's): LG Home unfrozen, exiting" "$T/log")" "1"
 mv "$T/hook/w1" "$T/hook/watch.sh"
 : > "$T/log"; echo "$$" > "$T/gpid"; guard
 check "guard: a second guard exits at once" "$(grep -c 'another guard is already running' "$T/log")" "1"

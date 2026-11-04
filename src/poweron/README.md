@@ -37,9 +37,13 @@ a power cut or a restart) set to the chosen app (plus `wakeOnWiFi` and `wakeOnLa
   not drawn first.
 - **A missing app.** If the app cannot be opened (uninstalled), webOS 4.5 opens the last input as usual. On webOS 10.3.0
   (OLED65M59LA, seen 2026-11-03) the TV opened LG's *Apps* (the store, `com.webos.app.discovery`) instead, which showed a
-  network error there (code -102). `bootd` keeps what it read until the next full start, and the start-up check runs
-  after `bootd` has read the copy: an app removed while the copy is in place is still opened until the second restart.
-  Choosing *Live TV or the last input* first and restarting once avoids that.
+  network error there (code -102). `bootd` keeps what it read until the next full start. If the removed app is Hearth
+  itself, the start-up check removes the copy at the next start, but it runs after `bootd` has read the copy, so the TV
+  still tries to open it until the second restart. Another removed app stays chosen until something else is chosen.
+  Choosing *Live TV or the last input* before removing the app, and restarting once, avoids that. HearthNG asks the TV whether the chosen
+  app and the one `bootd` loaded are installed (`getAppLoadStatus`); for one that is not, the row reads *(not
+  installed)* and the restart line in the list says so. Only a clear `"exist":false` counts: without an answer nothing
+  is marked.
 - **It starts working after the TV restarts once.** `bootd` reads its configuration only when it starts, which is a full
   restart, not waking the TV from standby. Restarting `bootd` itself is not safe (it re-runs the TV's start-up jobs).
   Hearth offers *Restart the TV now* and the row says *(after a restart)* until then.

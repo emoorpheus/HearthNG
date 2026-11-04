@@ -22,6 +22,8 @@ interface Props {
 	restartNeeded: boolean;
 	/** what the TV does until then, in words */
 	untilRestart: string;
+	/** and that app is not installed (the TV said so): the TV cannot open it */
+	untilRestartMissing?: boolean;
 	/** a change is being made */
 	busy: boolean;
 	onChoose: (id: string) => void;
@@ -43,7 +45,7 @@ const VISIBLE_ROWS = 8;
 
 /** Settings → Options → "When the TV turns on, open…": the TV's default, Hearth, then every app. OK chooses. While a
  *  restart is still needed, the first row offers it. */
-export function PowerOnPicker ({choices, chosen, network, networkKeys, restartNeeded, untilRestart, busy, onChoose, onNetwork, onRestart, onClose}: Props) {
+export function PowerOnPicker ({choices, chosen, network, networkKeys, restartNeeded, untilRestart, untilRestartMissing, busy, onChoose, onNetwork, onRestart, onClose}: Props) {
 	// focus is kept by row, not by position: the restart row comes and goes at the top, and the focus must stay on the
 	// same app when it does. It starts on the current choice.
 	const [focusKey, setFocusKey] = useState('c:' + chosen);
@@ -53,7 +55,8 @@ export function PowerOnPicker ({choices, chosen, network, networkKeys, restartNe
 	if (restartNeeded) {
 		rows.push(confirm
 			? {key: 'restart', kind: 'restart', label: tt('poweronpicker.pressOkAgainTo'), detail: tt('poweronpicker.theScreenGoesDark')}
-			: {key: 'restart', kind: 'restart', label: tt('poweronpicker.restartTheTvNow'), detail: tt('poweronpicker.theTvReadsThis', {untilRestart})});
+			: {key: 'restart', kind: 'restart', label: tt('poweronpicker.restartTheTvNow'),
+				detail: tt(untilRestartMissing ? 'poweronpicker.theTvReadsThisMissing' : 'poweronpicker.theTvReadsThis', {untilRestart})});
 	}
 	if (chosen && networkKeys) {
 		rows.push({key: 'network', kind: 'network', label: tt('poweronpicker.network', {state: network ? tt('common.on') : tt('common.off')}),
@@ -120,7 +123,7 @@ export function PowerOnPicker ({choices, chosen, network, networkKeys, restartNe
 							>
 								<PickerIcon kind={row.kind === 'restart' ? 'power' : row.kind === 'network' ? 'info' : row.current ? 'pin' : row.choice && row.choice.id === '' ? 'default' : 'app'} />
 								<div class="picker__text">
-									<div class="picker__label">{row.label}{row.current ? ' (now)' : ''}</div>
+									<div class="picker__label">{row.label}{row.current ? ' ' + tt('poweronpicker.now') : ''}</div>
 									{row.detail && <div class="picker__detail">{row.detail}</div>}
 								</div>
 							</div>

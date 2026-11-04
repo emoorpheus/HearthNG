@@ -54,7 +54,11 @@ Settings are not carried over (another app ID).
 3. Install HearthNG, open it and switch on what you use.
 
 If Hearth stays installed and is opened with its helper switched on, it writes its own helper over HearthNG's; HearthNG's
-watchdog then unfreezes LG Home and stops. Switching *Replace LG Home (helper)* on again in HearthNG takes the folder back.
+watchdog then unfreezes LG Home, shows a notification and stops. The row then reads *Another launcher's helper*.
+Switching *Replace LG Home (helper)* on again in HearthNG takes the folder back; while Hearth is installed, HearthNG
+says so first. If Hearth was set to open at power-on and is removed, the TV can keep trying to open it until its
+second restart (on webOS 10.3.0 it showed LG's Apps store instead); *When the TV turns on, open...* in HearthNG then marks
+the app as not installed.
 
 ### Emergency exit
 

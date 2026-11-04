@@ -53,8 +53,12 @@ the helper starts at boot, and starts the watcher and the guard. Switching it on
 stops everything, unfreezes LG Home and deletes the files and the link.
 
 Only one launcher can use this folder. Hearth (`tld.my.customlauncher`) uses the same one: if Hearth is opened with its own
-helper switched on, it rewrites the files with its own version, and HearthNG's guard then unfreezes LG Home and stops.
-Uninstall Hearth before using HearthNG.
+helper switched on, it rewrites the files with its own version, and HearthNG's guard then unfreezes LG Home, shows a
+notification (since helper 18-ng4) and stops. The launcher and the guard tell the helpers apart by the line
+`LAUNCHER_ID="${LAUNCHER_ID:-com.hearthng.launcher}"` in `watch.sh`: Hearth's own helpers open `tld.my.customlauncher`
+(the one of Hearth's P0.x packages freezes LG Home too, so `pkill -STOP` alone does not tell them apart). For another
+launcher's helper the row reads *Another launcher's helper*, and switching it on warns first, as it does while Hearth is
+installed. Uninstall Hearth before using HearthNG.
 
 ## Emergency exit
 

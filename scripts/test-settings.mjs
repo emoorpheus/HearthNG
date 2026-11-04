@@ -126,6 +126,10 @@ eq(c0.tileOrder, null, 'a new config has no saved tile order');
 eq(p.optionsFor('system', c0).find((o) => o.id === 'replaceHome').label, 'Replace LG Home (helper)', 'P35f: the helper row is one switch (the Home button row moved to Remote, P61b2)');
 const row = (id) => p.optionsFor('system', c0).find((o) => o.id === id);
 eq(row('replaceHome').description.length <= 90, true, 'P35d: the helper row has a short description');
+const hookRow = (homeHook) => p.optionsFor('system', c0, {homeHook}).find((o) => o.id === 'replaceHome').valueText;
+eq([hookRow({running: true, linked: true}), hookRow({running: false, linked: true, stopped: true}), hookRow({running: false, linked: false})].join(' | '), 'On | Stopped (emergency exit) | Off', 'the helper row: on, the emergency exit, off');
+eq(hookRow({running: true, linked: true, foreign: true}), 'Another launcher\'s helper', '§10: another launcher\'s helper in the folder is not taken for HearthNG\'s (running or not)');
+eq(hookRow({running: true, linked: true, hearth: true}), 'On', 'the original Hearth merely installed does not change the row (the warning comes when it is switched on)');
 const dis = (cfg, info, id) => p.optionsFor('system', cfg, info).find((o) => o.id === id).disabled;
 eq(p.optionsFor('clock', c0).filter((o) => /Widget position/.test(o.label)).map((o) => o.label).join(' | '), 'Widget position (vertical) | Widget position (horizontal)', 'the clock position settings are named vertical and horizontal');
 eq(JSON.stringify([p.applyPref({...c0, clock: {...c0.clock, top: 2}}, 'clockTop', 'left').clock.top, p.applyPref({...c0, clock: {...c0.clock, top: 0}}, 'clockTop', 'left').clock.top]), '[0,0]', 'the clock can go all the way to the top (0%) and stops there');
@@ -238,6 +242,9 @@ eq(p.resetLook({...c0, clock: {...c0.clock, color: 'black', opacity: 30}}).clock
 	eq(po({powerOn: st('youtube.leanback.v4', ''), powerOnNames: {chosen: 'YouTube'}}), 'YouTube (after a restart)', 'chosen but not loaded yet: after a restart');
 	eq(po({powerOn: st('', '', {supported: false})}), 'Not on this TV', 'a TV whose software lacks it');
 	eq(po({powerOn: st('', '', {foreign: true})}), 'Set by another tool', 'someone else\'s start-up file is said so');
+	eq(po({powerOn: st('gone.app', 'gone.app', {missing: ['gone.app']})}), 'gone.app (not installed)', 'a chosen app the TV says is not installed is said so');
+	eq(po({powerOn: st('gone.app', '', {missing: ['gone.app']})}), 'gone.app (not installed)', 'also before the restart (that matters more)');
+	eq(po({powerOn: st('', 'tld.my.customlauncher', {missing: ['tld.my.customlauncher']})}), 'TV default (after a restart)', 'only the loaded app is missing: the row still shows the choice (the list explains)');
 	eq(p.ROOT_OPTIONS.indexOf('powerOnApp') !== -1, true, 'the power-on row needs root');
 }
 

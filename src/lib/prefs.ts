@@ -25,7 +25,7 @@ import {lastFailure, rootState, type RootState} from './failure';
 import {APP_ID} from '../config/constants';
 import {HOME_FOCUS_IDS, homeFocusText} from './homefocus';
 import type {LogoState} from './system';
-import {needsRestart, powerOnName, type PowerOnStatus} from './poweroncmd';
+import {needsRestart, notInstalled, powerOnName, type PowerOnStatus} from './poweroncmd';
 import {LANGUAGES, PACK_ID, languageLabel, languageOf} from './languages';
 import {hasPack, packName} from '../i18n/pack';
 import {td} from '../i18n';
@@ -38,7 +38,7 @@ export interface SystemInfo {
 	/** K2: the TV has a memory list that Keep Hearth ready can change (false: none; null/undefined: unknown) */
 	keepList?: boolean | null;
 	/** the hand-over watcher: running, and whether it starts at boot (null while unknown) */
-	homeHook: {running: boolean; linked: boolean; stopped?: boolean; frozenHome?: boolean} | null;
+	homeHook: {running: boolean; linked: boolean; stopped?: boolean; frozenHome?: boolean; foreign?: boolean; hearth?: boolean} | null;
 	/** the launcher is in the TV's input list (null while unknown) */
 	tvInput?: boolean | null;
 	/** "When the TV turns on, open...": what is on the TV (null while unknown or not readable) */
@@ -274,6 +274,8 @@ function powerOnText (c: UserConfig, info?: SystemInfo): string {
 	if (!status.supported) return td('common.notOnTv');
 	if (status.foreign) return td('pref.byOtherTool');
 	const chosen = status.chosen ? powerOnName(status.chosen, names.chosen) + (status.network ? td('pref.network') : '') : td('pref.tvDefault');
+	// an app removed while it is chosen: the TV cannot open it (webOS 10.3.0 opened LG's Apps store instead)
+	if (notInstalled(status, status.chosen)) return td('pref.notInstalled', {name: chosen});
 	return needsRestart(status) ? td('pref.afterRestart', {name: chosen}) : chosen;
 }
 
@@ -471,7 +473,8 @@ const BASE_PREFS: PrefDef[] = [
 	},
 	{
 		id: 'replaceHome', tab: 'system', kind: 'action',
-		text: (_c, info) => (!info || !info.homeHook ? td('common.unknown') : info.homeHook.running ? td('common.on') : info.homeHook.stopped ? td('homehook.statusStopped') : td('common.off'))
+		// HearthNG: another launcher's helper in the folder (the original Hearth writes its own there) is not "On"
+		text: (_c, info) => (!info || !info.homeHook ? td('common.unknown') : info.homeHook.foreign ? td('homehook.statusForeign') : info.homeHook.running ? td('common.on') : info.homeHook.stopped ? td('homehook.statusStopped') : td('common.off'))
 	},
 	{
 		// P58c (PR #18, Obednal97): the TV's own Home app setting; the row is never greyed out for the webOS version

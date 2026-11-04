@@ -58,6 +58,22 @@ eq(existsSync(link), true, 'the boot link exists');
 eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false}', 'status: linked (the watcher is not started in a dry run)');
 eq(h.parseHookResult(sh(h.APPLY_COMMAND)), 'applied', 'applying again works');
 
+// §10: another launcher's helper in the folder (the original Hearth writes its own watch.sh there), and the original Hearth installed
+const ownWatch = readFileSync(hook + '/watch.sh', 'utf8');
+eq(ownWatch.includes(h.WATCH_MARK), true, 'HearthNG\'s own watch.sh carries the mark the status and the guard look for');
+writeFileSync(hook + '/watch.sh', '#!/bin/sh\n# a helper without the LG Home freeze (version 18)\nwhile :; do sleep 1; done\n');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false,"foreign":true}', 'status: another launcher\'s watch.sh is noticed');
+writeFileSync(hook + '/watch.sh', '#!/bin/sh\n# Hearth P0.x: it freezes LG Home too\nLAUNCHER_ID="${LAUNCHER_ID:-tld.my.customlauncher}"\nfreeze_home () { pkill -STOP -f "$HOME_PROC" 2>/dev/null; }\n');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false,"foreign":true}', 'status: also one that freezes LG Home but opens another launcher (Hearth P0.x)');
+writeFileSync(hook + '/watch.sh', ownWatch);
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false}', 'and HearthNG\'s own is not');
+const hearthDir = root + h.ORIGINAL_HEARTH_DIR;
+mkdirSync(hearthDir, {recursive: true});
+writeFileSync(hearthDir + '/appinfo.json', '{"id":"tld.my.customlauncher"}');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false,"hearth":true}', 'status: the original Hearth is installed');
+rmSync(hearthDir, {recursive: true, force: true});
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":true,"stopped":false}', 'and not once it is gone');
+
 // the emergency exit (stop.sh): apply starts nothing, an update keeps it, switching the helper on undoes it
 writeFileSync(hook + '/stopped', '');
 eq(h.parseHookResult(sh(h.APPLY_COMMAND)), 'stopped', 'with the emergency exit on, apply says stopped');
@@ -113,7 +129,7 @@ eq(existsSync(hook + '/watch.sh.new') || existsSync(hook + '/apply.sh.new'), fal
 // removal
 sh(h.REMOVE_COMMAND);
 eq([existsSync(hook), existsSync(link), existsSync(root + '/tmp/launcher-allow-stock-home')].join(','), 'false,false,false', 'remove deletes the folder, the boot link and the stand-down flag');
-eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":false,"stopped":false}', 'status: off after removal');
+eq(st(sh(h.STATUS_COMMAND)), '{"running":false,"linked":false,"stopped":false}', 'status: off after removal (no watch.sh: not "another launcher\'s")');
 eq(st('linked\nflutterhome\n'), '{"running":false,"linked":true,"stopped":false,"frozenHome":true}', 'status: LG Home is a Flutter app (frozen by the helper)');
 eq(h.STATUS_COMMAND.includes(h.FLUTTER_HOME_DIR), true, 'status command looks for LG Home\'s Flutter files');
 eq(h.REMOVE_COMMAND.includes("pkill -CONT -f '[f]lutter-client -i com\\.webos\\.app\\.home([^A-Za-z0-9._-]|$)'"), true, 'removal unfreezes LG Home (exact process pattern)');

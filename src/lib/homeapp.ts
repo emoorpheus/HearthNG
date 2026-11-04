@@ -12,8 +12,8 @@ import {log} from './log';
 import {isWebOS} from './luna';
 import {LG_HOME_ID, writeHomeSetting} from './system';
 import {
-	FULL_HOME_ID, READ_PARAMS, REMOVE_GUARD_COMMAND, SAVED_COMMAND, SETTINGS_SERVICE, guardSteps, homeAppMessage, isAppId,
-	parseHomeSetting, parseSaved, type HomeAppResult
+	FULL_HOME_ID, READ_PARAMS, REMOVE_GUARD_COMMAND, SAVED_COMMAND, SETTINGS_SERVICE, appStatusCommand, guardSteps, homeAppMessage, isAppId,
+	parseHomeSetting, parseSaved, saysNotInstalled, type HomeAppResult
 } from './homeappcmd';
 import {t as tt} from '../i18n';
 
@@ -39,6 +39,19 @@ function writeHomeApp (appId: string): Promise<boolean> {
 /** LG's own Home on this TV, for when the value from before is not known: the full-screen overlay on webOS 4.x, else LG Home. */
 function stockHome (): Promise<string> {
 	return appExists(FULL_HOME_ID).then((full) => (full ? FULL_HOME_ID : LG_HOME_ID));
+}
+
+/** `app`, or LG's own Home when the TV says `app` is not installed. HearthNG §10: the start-up script of Hearth's P0.x
+ *  packages (80-boot-hearth) made tld.my.customlauncher the Home app at every start; kept as "the app before" and put
+ *  back after Hearth was uninstalled, the Home button would name an app that is gone. An app that cannot be checked is
+ *  kept. */
+function installedOrStock (app: string): Promise<string> {
+	if (app === LG_HOME_ID || app === FULL_HOME_ID) return Promise.resolve(app);
+	return exec(appStatusCommand(app), 5000).then(saysNotInstalled, () => false).then((missing) => {
+		if (!missing) return app;
+		log(`Home app: ${app} is not installed, so LG's own Home is used instead`);
+		return stockHome();
+	});
 }
 
 /** The value a start-up check on the TV has kept, or ''. */
@@ -71,7 +84,7 @@ export function setHearthAsHome (): Promise<HomeAppOutcome> {
 		if (current === null) return {result: 'failed', detail: tt('homeapp.theTvDidNotAnswer')};
 		// already Hearth (set by hand, or Hearth's settings were cleared): what was there before is not known here
 		const before = current !== APP_ID ? Promise.resolve(current) : savedOnTv().then((saved) => saved || stockHome());
-		return before.then((previous) => writeHomeApp(APP_ID).then((ok) => {
+		return before.then(installedOrStock).then((previous) => writeHomeApp(APP_ID).then((ok) => {
 			if (!ok) return {result: 'refused', detail: ''} as HomeAppOutcome;
 			log(`Home app: set to ${APP_ID} (was ${previous})`);
 			return installGuard(previous).then((): HomeAppOutcome => ({result: 'applied', detail: previous}));
@@ -88,7 +101,7 @@ export function restoreHomeApp (previous: string): Promise<HomeAppOutcome> {
 		const removeGuard = () => exec(REMOVE_GUARD_COMMAND, 5000).catch(() => '');
 		if (current !== APP_ID) return removeGuard().then((): HomeAppOutcome => ({result: 'restored', detail: current}));
 		const target = isAppId(previous) && previous !== APP_ID ? Promise.resolve(previous) : savedOnTv().then((saved) => saved || stockHome());
-		return target.then((app) => writeHomeApp(app).then((ok): HomeAppOutcome | Promise<HomeAppOutcome> => {
+		return target.then(installedOrStock).then((app) => writeHomeApp(app).then((ok): HomeAppOutcome | Promise<HomeAppOutcome> => {
 			if (!ok) return {result: 'refused', detail: ''};
 			log(`Home app: set back to ${app}`);
 			return removeGuard().then((): HomeAppOutcome => ({result: 'restored', detail: app}));

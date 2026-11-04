@@ -25,6 +25,15 @@ eq(h.parseHomeSetting({returnValue: true, settings: {defaultApps: {home: "x'; re
 eq(h.isMissing('There is no matched result from DB'), true, 'the "no such setting" reply is recognised');
 eq(h.isMissing('Denied method call'), false, 'and a refusal is not taken for it');
 
+// ---- is the app from before still installed? (§10: the original Hearth was the Home app, then uninstalled) ----
+eq(h.appStatusCommand('tld.my.customlauncher'), `luna-send -n 1 luna://com.webos.applicationManager/getAppLoadStatus '{"appId":"tld.my.customlauncher"}'`, 'the TV is asked with SAM\'s getAppLoadStatus');
+let badIds = 0; for (const bad of ["x'; reboot; '", 'a b', '', '$(id)']) { try { h.appStatusCommand(bad); } catch { badIds++; } }
+eq(badIds, 4, 'and only for a plain app id');
+eq(h.saysNotInstalled('{"returnValue":true,"exist":false}'), true, 'a clear "exist": false (as webOS 10.3.0 answers for a removed app, 2026-11-04) means not installed');
+eq(h.saysNotInstalled('{\n    "returnValue": true,\n    "exist": false\n}'), true, 'also as luna-send -f prints it');
+eq(h.saysNotInstalled('{"returnValue":true,"exist":true}'), false, 'an installed app is kept');
+eq([h.saysNotInstalled(''), h.saysNotInstalled('{"returnValue":false,"errorText":"Denied"}'), h.saysNotInstalled('garbage "exist":false')].join(), 'false,false,false', 'no answer or a refusal: the app is kept (never a guess)');
+
 // ---- messages ----
 eq(h.homeAppMessage('restored', 'com.webos.app.fullhome'), 'Turned off. The Home button opens LG Home again', 'LG\'s overlay is called LG Home');
 eq(h.homeAppMessage('restored', 'com.example.home'), 'Turned off. The Home button opens com.example.home again', 'another app is named by its id');
@@ -48,4 +57,49 @@ eq(execSync(onTv(h.REMOVE_GUARD_COMMAND), {shell: '/bin/sh'}).toString().trim(),
 eq(existsSync(root + '/dir') || existsSync(root + '/46-launcher-homeapp'), false, 'and leaves nothing behind');
 eq(h.parseSaved(execSync(onTv(h.SAVED_COMMAND), {shell: '/bin/sh'}).toString()), '', 'nothing saved: ""');
 rmSync(root, {recursive: true, force: true});
+
+// ---- switching it on and off on a simulated TV (homeapp.ts with the TV's shell replaced): §10, an app from before that
+// is not installed any more is not given back to the Home button ----
+const flowOut = new URL('../node_modules/.cache-homeapp-flow-test.mjs', import.meta.url).pathname;
+await build({
+  entryPoints: [new URL('../src/lib/homeapp.ts', import.meta.url).pathname], bundle: true, format: 'esm', outfile: flowOut, platform: 'node', logLevel: 'error',
+  plugins: [{name: 'stub-tv', setup(b) {
+    b.onResolve({filter: /\?raw$/}, () => ({path: 'raw-stub', namespace: 'stub'}));
+    b.onResolve({filter: /^\.\/(apps|luna|launch|log)$/}, (a) => ({path: a.path.slice(2) + '-stub', namespace: 'stub'}));
+    b.onLoad({filter: /.*/, namespace: 'stub'}, (a) => ({loader: 'js', contents: ({
+      'raw-stub': 'export default "#!/bin/sh\\n";',
+      'apps-stub': 'export const exec = (cmd) => globalThis.tvExec(cmd);',
+      'luna-stub': 'export const isWebOS = () => true; export const lunaCall = () => Promise.reject(new Error("no luna here"));',
+      'launch-stub': 'export const appExists = () => Promise.resolve(false);',
+      'log-stub': 'export const log = () => undefined;'
+    })[a.path]}));
+  }}]
+});
+const flow = await import(flowOut);
+const tv = {apps: {home: 'com.webos.app.home', MembershipApp: 'com.webos.app.overlaymembership'}, installed: new Set(['com.webos.app.home', 'com.hearthng.launcher']), writes: []};
+globalThis.tvExec = (cmd) => {
+  if (/getAppLoadStatus/.test(cmd)) { const id = /"appId":"([^"]+)"/.exec(cmd)[1]; return Promise.resolve(JSON.stringify({returnValue: true, exist: tv.installed.has(id)})); }
+  if (/getSystemSettings/.test(cmd)) return Promise.resolve(JSON.stringify({returnValue: true, settings: {defaultApps: {...tv.apps}}}));
+  const set = /setSystemSettings '(.*)'$/.exec(cmd);
+  if (set) { tv.apps = JSON.parse(set[1]).settings.defaultApps; tv.writes.push(tv.apps.home); return Promise.resolve('{"returnValue":true}'); }
+  return Promise.resolve('');                       // the start-up check's files, cat of a saved value: nothing there
+};
+// the original Hearth's start-up script had made it the Home app, then Hearth was uninstalled
+tv.apps = {home: 'tld.my.customlauncher', MembershipApp: 'com.webos.app.overlaymembership'};
+let r = await flow.setHearthAsHome();
+eq([r.result, r.detail, tv.apps.home].join(' '), 'applied com.webos.app.home com.hearthng.launcher', 'on: the Home app named a removed app (the original Hearth): LG Home is kept as the one to put back');
+eq(tv.apps.MembershipApp, 'com.webos.app.overlaymembership', 'and the other defaultApps entries stay');
+r = await flow.restoreHomeApp('tld.my.customlauncher');
+eq([r.result, r.detail, tv.apps.home].join(' '), 'restored com.webos.app.home com.webos.app.home', 'off with a saved app that is gone (an older setting): LG Home, not the removed app');
+tv.installed.add('com.example.home');
+tv.apps = {home: 'com.example.home'};
+r = await flow.setHearthAsHome();
+eq(r.detail, 'com.example.home', 'an installed app from before is kept');
+r = await flow.restoreHomeApp(r.detail);
+eq([r.result, tv.apps.home].join(' '), 'restored com.example.home', 'and given back when it is switched off');
+tv.apps = {home: 'com.hearthng.launcher'};
+const silent = globalThis.tvExec;
+globalThis.tvExec = (cmd) => (/getAppLoadStatus/.test(cmd) ? Promise.reject(new Error('no answer')) : silent(cmd));
+r = await flow.restoreHomeApp('com.example.gone');
+eq(tv.apps.home, 'com.example.gone', 'the TV does not answer whether it is installed: the saved app is used as before (no guess)');
 process.exit(fail ? 1 : 0);

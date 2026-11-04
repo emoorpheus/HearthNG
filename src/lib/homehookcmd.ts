@@ -9,7 +9,7 @@
 // (guard.sh) starts it again if it stops. stop.sh is the emergency exit (run by hand over SSH).
 
 /** Bump when the scripts change: the launcher then rewrites the installed copy and restarts the watcher. */
-export const HOOK_VERSION = '18-ng3';
+export const HOOK_VERSION = '18-ng4';
 export const HOOK_DIR = '/media/developer/launcher-homehook';
 export const HOOK_LINK = '/var/lib/webosbrew/init.d/48-launcher-homehook';
 export const APP_QML = '/usr/palm/applications/com.webos.app.home/qml';
@@ -36,6 +36,11 @@ export interface HookStatus {
 	/** LG Home is a Flutter app here (webOS 25): the helper freezes it, so without a Home button setting the Home button
 	 *  opens nothing. Only present when true. */
 	frozenHome?: boolean;
+	/** the helper folder holds another launcher's watch.sh (one without the LG Home freeze, e.g. the original Hearth's):
+	 *  HearthNG's guard then unfreezes LG Home and stops. Only present when true. */
+	foreign?: boolean;
+	/** the original Hearth (tld.my.customlauncher) is installed: it uses the same helper folder. Only present when true. */
+	hearth?: boolean;
 }
 
 const RESULTS: HookResult[] = ['applied', 'stopped', 'launcher-missing', 'files-missing'];
@@ -143,10 +148,19 @@ export const REMOVE_COMMAND = `${STOP_WATCHER}; rm -f '${ALLOW_FILE}' '${ALIVE_F
 export const VERSION_COMMAND = `cat '${HOOK_DIR}/version' 2>/dev/null; true`;
 /** LG Home's Flutter files (webOS 25; seen on webOS 10.3.0): where they are, LG Home runs as its own process that the helper freezes. */
 export const FLUTTER_HOME_DIR = '/usr/palm/applications/com.webos.app.home/data/flutter_assets';
-export const STATUS_COMMAND = `if [ -f '${PID_FILE}' ] && kill -0 "$(cat '${PID_FILE}')" 2>/dev/null; then echo running; fi; if [ -L '${HOOK_LINK}' ]; then echo linked; fi; if [ -f '${STOPPED_FILE}' ]; then echo stopped; fi; if [ -d '${FLUTTER_HOME_DIR}' ]; then echo flutterhome; fi; true`;
+/** The original Hearth. It writes its own helper into the same folder (HOOK_DIR) when it opens with its helper on. */
+export const ORIGINAL_HEARTH_ID = 'tld.my.customlauncher';
+export const ORIGINAL_HEARTH_DIR = `/media/developer/apps/usr/palm/applications/${ORIGINAL_HEARTH_ID}`;
+/** What the status and guard.sh look for to tell HearthNG's helper from another one: only HearthNG's watch.sh opens
+ *  HearthNG by default (`LAUNCHER_ID="${LAUNCHER_ID:-com.hearthng.launcher}"`). Hearth's own helpers open
+ *  tld.my.customlauncher; the one of the P0.x packages freezes LG Home too, so 'pkill -STOP' does not tell them apart. */
+export const WATCH_MARK = 'LAUNCHER_ID:-com.hearthng.launcher}';
+export const STATUS_COMMAND = `if [ -f '${PID_FILE}' ] && kill -0 "$(cat '${PID_FILE}')" 2>/dev/null; then echo running; fi; if [ -L '${HOOK_LINK}' ]; then echo linked; fi; if [ -f '${STOPPED_FILE}' ]; then echo stopped; fi; if [ -d '${FLUTTER_HOME_DIR}' ]; then echo flutterhome; fi; if [ -f '${HOOK_DIR}/watch.sh' ] && ! grep -qF -- '${WATCH_MARK}' '${HOOK_DIR}/watch.sh' 2>/dev/null; then echo foreign; fi; if [ -f '${ORIGINAL_HEARTH_DIR}/appinfo.json' ]; then echo hearth; fi; true`;
 
 export function parseHookStatus (output: string): HookStatus {
 	const status: HookStatus = {running: /^running$/m.test(output), linked: /^linked$/m.test(output), stopped: /^stopped$/m.test(output)};
 	if (/^flutterhome$/m.test(output)) status.frozenHome = true;
+	if (/^foreign$/m.test(output)) status.foreign = true;
+	if (/^hearth$/m.test(output)) status.hearth = true;
 	return status;
 }
