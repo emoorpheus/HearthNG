@@ -2,7 +2,7 @@
 
 # HearthNG for webOS
 
-**HearthNG** is a fork of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) 2.0.2. Everything after the
+**HearthNG** (NG: Next-Gen) is a fork of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) 2.0.2. Everything after the
 HearthNG sections describes Hearth and applies to HearthNG too, except where these sections say otherwise.
 
 ## What HearthNG changes
