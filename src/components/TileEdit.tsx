@@ -1,6 +1,8 @@
-import {useCallback} from 'preact/hooks';
+import {useCallback, useLayoutEffect, useRef} from 'preact/hooks';
 import {useKeys, type NavKey} from '../hooks/useKeys';
 import {useOkPress} from '../hooks/useOkPress';
+import {edgeShift} from '../lib/edgefit';
+import {MOTION} from '../theme/tokens';
 
 // LG-style edit mode (hold OK on an app or input on the home screen): arrows either side of the tile move it along the
 // row, round buttons above it hide it, uninstall it (apps that can be removed) or mark it as a favourite (a star).
@@ -52,12 +54,33 @@ function EditIcon ({name, on}: {name: keyof typeof PATHS; on?: boolean}) {
 	);
 }
 
+/** The buttons above the tile stay this far inside the screen. */
+const EDGE_PX = 24;
+
 /** Drawn inside the tile being edited: the two arrows and the row of buttons above it. */
 export function EditDecor ({view}: {view: TileEditView}) {
 	const onTile = view.at < 0;
+	const actionsRef = useRef<HTMLDivElement>(null);
+	// The buttons are centred over the tile; over a tile at the screen edge (the first one) they would reach past it and
+	// the outer button would be cut off, so they are moved inwards. Measured again once the row has scrolled (the tile
+	// moves along the row while it is edited).
+	useLayoutEffect(() => {
+		const fit = () => {
+			const el = actionsRef.current;
+			if (!el) return;
+			el.style.marginLeft = '';
+			const box = el.getBoundingClientRect();
+			const scale = el.offsetWidth > 0 ? box.width / el.offsetWidth : 1;
+			const shift = edgeShift(box.left, box.width, window.innerWidth, EDGE_PX);
+			if (shift) el.style.marginLeft = `${Math.round(shift / scale)}px`;
+		};
+		fit();
+		const timer = window.setTimeout(fit, MOTION.scrollMs + 40);
+		return () => window.clearTimeout(timer);
+	});
 	return (
 		<div class={`tile-edit${onTile ? ' tile-edit--on-tile' : ''}`}>
-			<div class="tile-edit__actions">
+			<div class="tile-edit__actions" ref={actionsRef}>
 				{view.actions.map((a, i) => (
 					<div
 						key={a.kind}
