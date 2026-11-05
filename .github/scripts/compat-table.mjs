@@ -33,7 +33,8 @@ const short = (v) => v.replace(/\s*\(.*$/, '');
 /** One table row from one issue, or null when the body is not a compatibility form. */
 export function rowOf (issue) {
 	const s = sections(issue.body);
-	const works = pick(s, 'does hearth work');
+	// HearthNG's form, or a report filed on the Hearth form before the fork
+	const works = pick(s, 'does hearthng work') || pick(s, 'does hearth work');
 	if (!works) return null;
 	const type = pick(s, 'tv type');
 	const exactModel = pick(s, 'exact tv model');
@@ -41,7 +42,7 @@ export function rowOf (issue) {
 	const webosExact = pick(s, 'exact webos');
 	const fw = pick(s, 'firmware version');
 	const fwExact = pick(s, 'your firmware');
-	const version = pick(s, 'hearth version');
+	const version = pick(s, 'hearthng version') || pick(s, 'hearth version');
 	const rooted = pick(s, 'is the tv rooted');
 	const remote = pick(s, 'remote control');
 	const way = pick(s, 'how do you open');
@@ -61,7 +62,7 @@ export function rowOf (issue) {
 export function tableOf (issues) {
 	const rows = issues.filter((i) => !i.pull_request).sort((a, b) => a.number - b.number).map(rowOf).filter(Boolean);
 	if (!rows.length) return '_No verified reports yet._';
-	const head = ['TV model', 'webOS', 'Firmware', 'Setup', 'Result', 'Hearth', 'Remote', 'How it opens', 'Report'];
+	const head = ['TV model', 'webOS', 'Firmware', 'Setup', 'Result', 'Version', 'Remote', 'How it opens', 'Report'];
 	return ['| ' + head.join(' | ') + ' |', '| ' + head.map(() => '---').join(' | ') + ' |'].concat(rows.map((r) => '| ' + r.join(' | ') + ' |')).join('\n');
 }
 

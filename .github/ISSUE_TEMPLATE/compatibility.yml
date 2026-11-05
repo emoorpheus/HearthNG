@@ -1,12 +1,12 @@
 name: Compatibility report
-description: Tell us which TV you tried Hearth on and whether it worked
+description: Tell us which TV you tried HearthNG on and whether it worked
 title: "[Compat] <TV model>, webOS <version>"
 labels: ["compatibility"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for testing Hearth. A maintainer reads every report; when it looks right it gets the label `verified` and appears in the Tested TVs table by itself. You find the TV facts in the TV's own Settings, Support, TV Information. Pick the closest answer in each list; if yours is not there, choose **Other** and type it in the box under the list.
+        Thank you for testing HearthNG. A maintainer reads every report; when it looks right it gets the label `verified` and appears in the Tested TVs table by itself. You find the TV facts in the TV's own Settings, Support, TV Information. Pick the closest answer in each list; if yours is not there, choose **Other** and type it in the box under the list.
   - type: dropdown
     id: model
     attributes:
@@ -84,7 +84,7 @@ body:
   - type: dropdown
     id: working
     attributes:
-      label: Does Hearth work on your TV?
+      label: Does HearthNG work on your TV?
       options:
         - "Yes, it starts and shows my apps"
         - "No, it does not work"
@@ -94,15 +94,13 @@ body:
     id: debug
     attributes:
       label: "If it does not work, debug information (optional)"
-      description: "In Hearth, Settings, System, switch on *Show the Debug tab*, then paste the text here or drag a photo of the Debug tab into this box. A rooted TV also has the file /tmp/hearth-debug.txt."
+      description: "In HearthNG, Settings, System, switch on *Show the Debug tab*, then paste the text here or drag a photo of the Debug tab into this box. A rooted TV also has the file /tmp/hearth-debug.txt."
   - type: dropdown
     id: version
     attributes:
-      label: Hearth version (optional)
+      label: HearthNG version (optional)
       options:
-        - "2.0.1"
-        - "2.0.0"
-        - "1.2.0"
+        - "1.0.0"
         - "Other (say which in the remarks)"
   - type: dropdown
     id: remote
@@ -115,7 +113,7 @@ body:
   - type: dropdown
     id: homeway
     attributes:
-      label: How do you open Hearth? (optional)
+      label: How do you open HearthNG? (optional)
       options:
         - "The remote's Home button"
         - "The helper that replaces LG Home"

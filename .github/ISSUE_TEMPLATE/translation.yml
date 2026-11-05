@@ -1,12 +1,12 @@
 name: Translation
-description: Share a Hearth language file you wrote
+description: Share a HearthNG language file you wrote
 title: "[Translation] <language>"
 labels: ["translation"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for translating Hearth. Start from `docs/languages/en.json` (see the Language files guide). Translations are written by people; we do not accept machine translations, and we do not change your wording. Accepted languages are built into the next Hearth release, so every user (rooted or not) can choose them.
+        Thank you for translating HearthNG. Start from `docs/languages/en.json` (see the Language files guide). Translations are written by people; we do not accept machine translations, and we do not change your wording. Accepted languages are built into the next HearthNG release, so every user (rooted or not) can choose them.
         GitHub does not accept a `.json` attachment and the file is too long to paste: put it in a `.zip` and drag the zip into the box below.
   - type: input
     id: language
@@ -25,7 +25,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Hearth version it was made for
+      label: HearthNG version it was made for
       placeholder: "2.0.0"
     validations:
       required: true
@@ -44,9 +44,9 @@ body:
     attributes:
       label: Confirm
       options:
-        - label: I wrote this translation myself (not by machine) and it may be shared with Hearth under its licence.
+        - label: I wrote this translation myself (not by machine) and it may be shared with HearthNG under its licence.
           required: true
-        - label: I loaded it on my TV (System -> Hearth language) and the letters show correctly.
+        - label: I loaded it on my TV (System -> HearthNG language) and the letters show correctly.
   - type: input
     id: credit
     attributes:
