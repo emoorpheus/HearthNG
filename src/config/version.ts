@@ -2,3 +2,6 @@
 export const HEARTH_VERSION = '1.0.0';
 /** HearthNG is a fork of Hearth (https://github.com/rudra-avatar/Hearth): the Hearth release it is based on. */
 export const UPSTREAM_VERSION = '2.1.3';
+/** Who makes HearthNG, and who made Hearth (GitHub names). Shown in the Settings about line; README "Authors" says the same. */
+export const NG_AUTHOR = 'emoorpheus';
+export const UPSTREAM_AUTHOR = 'rudra-avatar';

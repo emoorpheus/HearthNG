@@ -21,7 +21,7 @@
  },
  {
   "file": "lib/about.ts",
-  "text": "HearthNG {} (Hearth {})"
+  "text": "HearthNG {} by {}, based on Hearth {} by {}"
  },
  {
   "file": "lib/homekeycore.ts",

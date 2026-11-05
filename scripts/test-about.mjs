@@ -20,10 +20,10 @@ const firstHeading = (changelog.match(/^## .*$/m) || [''])[0];
 eq(firstHeading, `## HearthNG ${a.HEARTH_VERSION} (based on Hearth ${a.UPSTREAM_VERSION})`, 'CHANGELOG: the first heading names this version and the Hearth release it is based on');
 eq(new RegExp(`^## ${a.UPSTREAM_VERSION.replace(/\./g, '\\.')}$`, 'm').test(changelog), true, "CHANGELOG: Hearth's own notes of that release are there");
 
-eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79', homebrew: '0.7.3'}, 'yes', null, '9.9.9'), 'HearthNG 9.9.9 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Homebrew 0.7.3  ·  Root: yes', 'full line when rooted');
-eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79'}, 'no', 'denied', '9.9.9'), 'HearthNG 9.9.9 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Root: not available (the TV refused the command)', 'root refused: says so, no Homebrew version');
-eq(a.aboutText({}, 'no', 'no-service', '1'), 'HearthNG 1 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  Root: not available (Homebrew Channel service not found)', 'no service: says so');
-eq(a.aboutText({}, 'unknown', null, '1'), 'HearthNG 1 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  Root: checking…', 'before the check ends');
+eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79', homebrew: '0.7.3'}, 'yes', null, '9.9.9'), 'HearthNG 9.9.9 by emoorpheus, based on Hearth ' + a.UPSTREAM_VERSION + ' by rudra-avatar  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Homebrew 0.7.3  ·  Root: yes', 'full line when rooted');
+eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79'}, 'no', 'denied', '9.9.9'), 'HearthNG 9.9.9 by emoorpheus, based on Hearth ' + a.UPSTREAM_VERSION + ' by rudra-avatar  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Root: not available (the TV refused the command)', 'root refused: says so, no Homebrew version');
+eq(a.aboutText({}, 'no', 'no-service', '1'), 'HearthNG 1 by emoorpheus, based on Hearth ' + a.UPSTREAM_VERSION + ' by rudra-avatar  ·  Root: not available (Homebrew Channel service not found)', 'no service: says so');
+eq(a.aboutText({}, 'unknown', null, '1'), 'HearthNG 1 by emoorpheus, based on Hearth ' + a.UPSTREAM_VERSION + ' by rudra-avatar  ·  Root: checking…', 'before the check ends');
 
 const apps = [{id: 'a'}, {id: 'b'}, {id: 'c'}];
 eq(a.extendOrder(apps, ['b']), ['b', 'a', 'c'], 'apps not in the saved order go after it, in list order');

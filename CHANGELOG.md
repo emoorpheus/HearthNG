@@ -4,7 +4,7 @@
 
 First version of the HearthNG fork. Test build.
 
-- New app ID `com.hearthng.launcher`, title HearthNG, version 1.0.0; the about line shows the Hearth version it is based on. It installs next to Hearth, does not update it and does not take over its settings.
+- New app ID `com.hearthng.launcher`, title HearthNG, version 1.0.0; the about line in Settings names the authors and the Hearth version it is based on: `HearthNG 1.0.0 by emoorpheus, based on Hearth 2.1.3 by rudra-avatar`. It installs next to Hearth, does not update it and does not take over its settings.
 - *Replace LG Home (helper)*: LG Home's own process (webOS 25) is frozen while HearthNG is in front; checks after every launch, a restart of HearthNG and, as a last resort, LG Home with a notification; standby handled; a subscription that goes quiet is noticed within about 10 s and made again; a loading notification only when HearthNG is late (Russian or English by the TV's menu language); a watchdog that restarts the helper (at most 5 times per boot); an emergency exit (`stop.sh`, `stop.sh resume`) that survives a restart.
 - Russian language bundled.
 - The texts name the app HearthNG (before: Hearth), in English and in the bundled languages (110–115 texts each); *Hearth* alone stays only where a text means the original Hearth (`tld.my.customlauncher`). The TV input is added as *HearthNG*. The language note points to `docs/language_packs.md` in the HearthNG source code (HearthNG has no GitHub Pages site). The helper's log lines and code comments are not changed.
