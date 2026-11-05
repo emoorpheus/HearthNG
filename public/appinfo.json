@@ -14,5 +14,6 @@
   "transparent": false,
   "splashBackground": "splash.png",
   "requiredMemory": 20,
-  "supportGIP": true
+  "supportGIP": true,
+  "needNetworkToLaunchOnBoot": false
 }

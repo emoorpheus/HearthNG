@@ -11,6 +11,9 @@ const walk = (dir, out = []) => { readdirSync(join(root, dir)).forEach((n) => { 
 const ID = JSON.parse(read('public/appinfo.json')).id;
 const ORIGINAL = 'tld.my.customlauncher';
 eq(ID, 'com.hearthng.launcher', 'appinfo.json: the HearthNG ID');
+// The TV's start-up screen (CoverUI, AppInterfaces.qml on webOS 3) holds back the power-on app for up to 10 s while
+// the network is not up, unless appinfo.json says it does not need it. HearthNG opens without the network.
+eq(JSON.parse(read('public/appinfo.json')).needNetworkToLaunchOnBoot, false, 'appinfo.json: needNetworkToLaunchOnBoot is false (opened at power-on without waiting for the network)');
 eq(/export const APP_ID = '([^']+)'/.exec(read('src/config/constants.ts'))[1], ID, 'constants.ts APP_ID = appinfo.json id');
 
 // the service: its name, the origin it connects with, and every app it asks the TV to open
