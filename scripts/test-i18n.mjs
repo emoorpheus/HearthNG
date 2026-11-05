@@ -37,5 +37,16 @@ const files = []; (function walk (d) { readdirSync(d, {withFileTypes: true}).for
 const missing = [];
 files.forEach((f) => { const src = readFileSync(f, 'utf8'); for (const m of src.matchAll(/\btt\('([^']+)'/g)) if (!(m[1] in e.en)) missing.push(f.split('/src/')[1] + ': ' + m[1]); });
 eq(missing, [], 'every tt(key) used in the source exists in en.ts');
+// HearthNG: the texts name this app HearthNG. "Hearth" alone stays only where a text means the original Hearth
+// (tld.my.customlauncher, another app on the same TV). The same holds for the language packs in docs/languages/packs.
+const ORIGINAL_HEARTH_KEYS = ['app.originalHearthInstalled', 'app.originalHearthText', 'app.anotherHelperText', 'app.originalHearthMayWrite', 'uninstall.hearthIsKept'];
+const bare = /\bHearth\b/;
+eq(Object.keys(e.en).filter((k) => bare.test(e.en[k]) && ORIGINAL_HEARTH_KEYS.indexOf(k) < 0), [], 'en.ts: "Hearth" alone only in the texts about the original Hearth');
+eq(ORIGINAL_HEARTH_KEYS.filter((k) => !bare.test(e.en[k] || '')), [], 'en.ts: the texts about the original Hearth still name it');
+const packDir = new URL('../docs/languages/packs', import.meta.url).pathname;
+readdirSync(packDir).filter((n) => n.endsWith('.json')).forEach((n) => {
+  const s = JSON.parse(readFileSync(packDir + '/' + n, 'utf8')).strings;
+  eq(Object.keys(s).filter((k) => k in e.en && bare.test(s[k]) && ORIGINAL_HEARTH_KEYS.indexOf(k) < 0), [], `${n}: "Hearth" alone only in the texts about the original Hearth (keys en.ts still has)`);
+});
 console.log(fails ? `${fails} FAILED` : 'all ok');
 if (fails) process.exit(1);

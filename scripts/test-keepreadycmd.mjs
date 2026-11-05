@@ -1,4 +1,4 @@
-// Tests for "Keep Hearth ready": the status line, the install steps and the texts.   Run: npm test
+// Tests for "Keep HearthNG ready": the status line, the install steps and the texts.   Run: npm test
 import {build} from 'esbuild';
 const out = new URL('../node_modules/.cache-keepreadycmd-test.mjs', import.meta.url).pathname;
 await build({entryPoints: [new URL('../src/lib/keepreadycmd.ts', import.meta.url).pathname], bundle: true, format: 'esm', outfile: out, platform: 'node', logLevel: 'error'});
@@ -31,8 +31,8 @@ const steps = k.installSteps('#!/bin/sh\necho hi\n');
 eq(steps[steps.length - 1].command.endsWith("keepready.sh' apply on"), true, 'the last step turns it on');
 eq(k.installSteps('x', true).pop().command.endsWith('apply on relaunch'), true, 'the relaunch choice goes to the script');
 eq(/apply off/.test(k.REMOVE_COMMAND), true, 'removing asks the script to apply off');
-eq(k.keepMessage(false, true), 'Keep Hearth ready: off', 'off message');
-eq(/^Keep Hearth ready: on\./.test(k.keepMessage(true, true)), true, 'on message');
+eq(k.keepMessage(false, true), 'Keep HearthNG ready: off', 'off message');
+eq(/^Keep HearthNG ready: on\./.test(k.keepMessage(true, true)), true, 'on message');
 eq(/Nothing was changed/.test(k.keepMessage(true, false, 'x')), true, 'failure message');
 eq(/RAM/.test(k.KEEP_WARNING) && /experimental/i.test(k.KEEP_WARNING), true, 'the warning names RAM and experimental');
 if (fail) { console.log(`${fail} failed`); process.exit(1); }
