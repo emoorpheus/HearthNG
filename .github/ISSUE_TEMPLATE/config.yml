@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security problem
+    url: https://github.com/emoorpheus/hearthng/security/advisories/new
+    about: Report a vulnerability privately instead of opening an issue.
+  - name: The original Hearth
+    url: https://github.com/rudra-avatar/Hearth
+    about: Problems with Hearth (tld.my.customlauncher) belong to its own project.

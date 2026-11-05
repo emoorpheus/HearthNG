@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in HearthNG does not work as described
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Please do not put IP addresses, account names or other personal data in the report.
+        Security problems go through SECURITY.md, not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what HearthNG did instead.
+    validations:
+      required: true
+  - type: input
+    id: tv
+    attributes:
+      label: TV model, webOS and firmware version
+      description: "Settings, Support, TV Information. For example: OLED55C9, webOS 4.9.1, 05.30.00"
+    validations:
+      required: true
+  - type: dropdown
+    id: rooted
+    attributes:
+      label: Is the TV rooted (Homebrew Channel with root)?
+      options:
+        - "Yes"
+        - "No (Developer Mode only)"
+        - "I do not know"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: HearthNG version
+      description: The about line at the bottom of Settings.
+      placeholder: "1.0.0"
+  - type: textarea
+    id: debug
+    attributes:
+      label: Debug information (optional)
+      description: "Settings, System, switch on *Show the Debug tab*, then paste its text. A rooted TV also has /tmp/hearth-debug.txt."
+      render: text

@@ -1,0 +1,15 @@
+name: Idea
+description: Suggest a change or a new feature
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like HearthNG to do?
+      description: The situation and what should happen. If another launcher or LG Home does it, say how.
+    validations:
+      required: true
+  - type: input
+    id: tv
+    attributes:
+      label: TV model and webOS version (optional)

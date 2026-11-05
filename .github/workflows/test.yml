@@ -1,0 +1,28 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      # scripts/test-langscan.mjs reads the code with the TypeScript 5 API
+      - run: npm i --prefix /tmp/ast typescript@5
+      - run: npm test
+      - run: npm run build
+      # Error level only: the scripts still carry warnings and notes.
+      - name: shellcheck the TV scripts
+        run: find src -name '*.sh' -print0 | xargs -0 shellcheck -s sh -S error
