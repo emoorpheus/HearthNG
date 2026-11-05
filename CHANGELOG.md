@@ -1,6 +1,6 @@
 # Changelog
 
-## HearthNG 1.0.0 (based on Hearth 2.1.1)
+## HearthNG 1.0.0 (based on Hearth 2.1.2)
 
 First version of the HearthNG fork. Test build.
 
@@ -30,6 +30,19 @@ First version of the HearthNG fork. Test build.
 - Not taken from Hearth 2.1.0: *Check for updates* (it installs the original Hearth, not HearthNG) and *Reorder home row* (holding OK already moves the tile in HearthNG's edit mode). From it the edit mode takes the saving: the order is written 0.7 s after the last step and at once when edit mode ends or HearthNG leaves the front, not after every step. Settings no longer has its own re-order screen (Hearth 2.1.0 removed it).
 - *Hide the Hearth Settings tile* in HearthNG: Settings opens from a gear among the buttons above the tile in edit mode (hold OK on an app, then Up); five presses of Down on the Home screen bring the tile back until HearthNG restarts.
 - Not taken from Hearth 2.1.1: its one change, *Check for updates* also on TVs without root (HearthNG has no *Check for updates*).
+- Hearth 2.1.2 taken over: *LG Home* as a job for *Map additional keys* (a warning first while a way of replacing LG Home is on), and on webOS 3 the LG Home tile sends the TV its Home key when the TV refuses to open LG Home (rooted TVs). Russian texts for it.
+
+## 2.1.2
+
+LG Home can now be opened from a remote button, and from the LG Home tile on webOS 3 TVs.
+
+### New
+
+- **LG Home** is a new job for *Map additional keys* (Settings, System, Remote control). Give a button of your remote this job and it opens LG's own home screen, on every webOS version. If a way of replacing LG Home is switched on, Hearth first warns that LG Home would not stay in front and lets you switch the replacement off first.
+
+### Fixes
+
+- **The LG Home tile on webOS 3 TVs** (rooted). webOS 3 has no LG Home app, so the tile could not open it. When the TV refuses the launch, Hearth now sends the TV its Home key instead. Thanks to James18232 for finding this way (issue #36).
 
 ## 2.1.1
 
@@ -37,7 +50,7 @@ A small fix.
 
 ### Fixes
 
-- **Check for updates** now also shows in Settings, System on TVs without root (it was missing there in 2.1.0). Without root it points you to the Homebrew Channel for the update.
+- **Check for updates** also shows in Settings, System on TVs without root (it was missing there in 2.1.0). Without root it points you to the Homebrew Channel for the update.
 
 ## 2.1.0
 
