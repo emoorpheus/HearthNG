@@ -1,6 +1,6 @@
 # Step 1: Developer Mode
 
-Developer Mode is a free LG app. It gives you the first key: you can put your own apps on the TV. You need it to install Hearth if the TV is not rooted. It does not change anything dangerous.
+Developer Mode is a free LG app. It gives you the first key: you can put your own apps on the TV. You need it to install HearthNG if the TV is not rooted. It does not change anything dangerous.
 
 ## Do this
 
@@ -19,5 +19,5 @@ Help from the community: <https://www.webosbrew.org/devmode>.
 
 ## Next
 
-- Want everything Hearth can do (Home button, screen saver, live app list)? Go to [Step 2: Root the TV](rooting.md).
-- Happy without rooting? Go to [Step 3: Install Hearth](install.md).
+- Want everything HearthNG can do (Home button, screen saver, live app list)? Go to [Step 2: Root the TV](rooting.md).
+- Happy without rooting? Go to [Step 3: Install HearthNG](install.md).

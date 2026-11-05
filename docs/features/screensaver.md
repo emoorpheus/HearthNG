@@ -1,6 +1,6 @@
 # Screen saver (rooted TVs, experimental)
 
-A screen saver shows pictures when nobody has pressed a button for a while. Hearth's saver replaces the TV's own saver with **your pictures, GIFs, videos or a slideshow**. It is **on at first** and plays a short built-in **fireplace video**. If its set-up fails, Hearth turns it off and tells you.
+A screen saver shows pictures when nobody has pressed a button for a while. HearthNG's saver replaces the TV's own saver with **your pictures, GIFs, videos or a slideshow**. It is **on at first** and plays a short built-in **fireplace video**. If its set-up fails, HearthNG turns it off and tells you.
 
 ![Screen saver tab](../screenshots/settings-saver.jpg)
 
@@ -19,7 +19,7 @@ Open **Settings, Screen saver**:
 
 Good to know:
 
-- Nothing is written on the TV's storage. A restart puts LG's saver back, and Hearth puts its own on again.
+- Nothing is written on the TV's storage. A restart puts LG's saver back, and HearthNG puts its own on again.
 - GIFs, videos and fast slideshows use more power than one still picture. A very big GIF or video may use a lot of memory.
 - Put your own saver pictures in `/media/developer/screensavers` (see [Wallpaper](wallpaper.md#your-own-pictures-rooted-tv)).
 - **On webOS 10 and newer this is untested.** The TV's own saver is built differently there and some TVs refuse the change. Some TVs also hold the saver back (OLED, or inputs with no signal).

@@ -3,7 +3,7 @@
 !!! tip "A very good step-by-step rooting guide"
     Before you start, have a look at this brilliant guide by the community: <https://tv.slada.sk/guides/rooting-guide>. It explains rooting in detail, with pictures.
 
-Rooting gets you the "big key" for your TV. With it Hearth can open when you press **Home**, start when you switch the TV on, show a screen saver and much more. Without it Hearth still works, only with less magic.
+Rooting gets you the "big key" for your TV. With it HearthNG can open when you press **Home**, start when you switch the TV on, show a screen saver and much more. Without it HearthNG still works, only with less magic.
 
 !!! danger "Do not update the TV's software first"
     Some updates close the door for good, and then the TV cannot be rooted any more. **Do not update to webOS 26 firmware released after 2026-10-10 (for example 43.21.84): the public method is patched there and that firmware currently cannot be rooted.** Turn off automatic updates before you connect the TV to the internet. List of firmware: [tv.slada.sk rooting guide](https://tv.slada.sk/guides/rooting-guide). Blocking updates: [tv.slada.sk guides](https://tv.slada.sk/guides).
@@ -21,7 +21,7 @@ You need these now, and later for the [compatibility report](../COMPATIBILITY.md
 
 ## 2. Ask: can my TV be rooted?
 
-Open <https://cani.rootmy.tv> on a computer. Type the model and firmware. It says which method works, or that none does. If it says your TV is patched, stop here and do not update further. Hearth still works without root.
+Open <https://cani.rootmy.tv> on a computer. Type the model and firmware. It says which method works, or that none does. If it says your TV is patched, stop here and do not update further. HearthNG still works without root.
 
 ## 3. Use the method it names
 
@@ -56,4 +56,4 @@ More: <https://www.webosbrew.org/rooting>. Every method has its own step-by-step
 
 ## Next
 
-[Step 3: Install Hearth](install.md).
+[Step 3: Install HearthNG](install.md).

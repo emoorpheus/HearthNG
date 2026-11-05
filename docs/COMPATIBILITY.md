@@ -1,5 +1,7 @@
 # Tested TVs
 
+These are Hearth's reports (HearthNG is a fork of Hearth). HearthNG itself is tested on one TV only: LG OLED65M59LA, webOS 25.
+
 Does Hearth work on your TV? This page lists reports from real people. **Reference device:** rooted webOS 7.6.0, firmware 04.60.90.
 
 ## Verified reports

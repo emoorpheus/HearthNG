@@ -1,10 +1,10 @@
-# Everything Hearth can do
+# Everything HearthNG can do
 
-All of Hearth's choices live in **Hearth Settings**. Find it as the last tile on the home row, or on the home row's menu if you hid it. The pages below explain each part in simple words.
+All of HearthNG's choices live in **HearthNG Settings**. Find it as the last tile on the home row, or on the home row's menu if you hid it. The pages below explain each part in simple words.
 
 | Page | What you learn |
 |---|---|
-| [Using Hearth](features/using.md) | The remote keys, the home row, favourites, names and icons, Recent apps, quiet mode |
+| [Using HearthNG](features/using.md) | The remote keys, the home row, favourites, names and icons, Recent apps, quiet mode |
 | [Look](features/look.md) | Themes, icons, the row, app names, reset |
 | [Widget](features/widget.md) | The clock, the date and the weather |
 | [Wallpaper](features/wallpaper.md) | The background picture or slideshow |

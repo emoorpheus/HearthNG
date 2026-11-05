@@ -60,7 +60,7 @@ back to a plain text tile without its icon, so removal doesn't break anything.
 `public/wallpapers/photo-NN.jpg` (25 photos) are public-domain photos supplied by the maintainer, resized to cover 1920x1080 (no cropping; JPEG quality 92, full colour detail).
 
 ## Feather icons (MIT)
-The cog on the Hearth Settings tile is the "settings" icon from Feather (https://feathericons.com), (c) Cole Bemis, MIT licence.
+The cog on the HearthNG Settings tile is the "settings" icon from Feather (https://feathericons.com), (c) Cole Bemis, MIT licence.
 
 ## Technique and code derived from other projects
 
@@ -82,13 +82,13 @@ The MIT licence text of that project:
 
 Credited in the README: pull requests by Alejandro Morales (#1), chriskoperdraad-tech (#2, #3: webOS 3 Home-bar watcher lines in `src/homehook/watch.sh`; #37: reading the key code from the key hook's log on webOS 3 in `src/lib/homekeycore.ts`), ganondorft (#6: `public/tools/webos11-permission.sh`), iulyax27 (#8, #10) and Obednal97 (#16 to #22, #25 and #39: input status, settings scroll, the TV's Home app setting, remote button reassigning, When Home is pressed, icon refresh, the power-on app, the message and drawing for TVs without the key filter list; adapted into Hearth's own code), a community contribution (author not named), and the ideas from Clean Your TV, webOS Brew, LG Input Hook (Simon34545), Lightkeeper and throwaway96's Homebrew Channel 0.8.0-rc1. The packaged helper service `services/com.hearthng.launcher.ssap` follows the fix in free-my-tv pull request #285 by simbasjungles (connecting to the TV's remote-control service with the origin newer firmware requires); the code is Hearth's own. The *LG preloaded apps* feature follows the approach of Glasshouse (the TV's preload list plus the preload manager's live call). No code was copied from projects other than the ones listed in the tables above.
 
-## Bundled key hook (Home button opens Hearth)
+## Bundled key hook (Home button opens HearthNG)
 
-The folder `homehook` of the install holds two unmodified programs taken from the Input Hook app (`org.webosbrew.inputhook`, version from its `main` branch of October 2026). They are started by `src/homehook/homehook.sh` only when the user opens *Home button opens Hearth*. They run as separate programs; Hearth's own code does not link to them.
+The folder `homehook` of the install holds two unmodified programs taken from the Input Hook app (`org.webosbrew.inputhook`, version from its `main` branch of October 2026). They are started by `src/homehook/homehook.sh` only when the user opens *Home button opens HearthNG*. They run as separate programs; HearthNG's own code does not link to them.
 
 | File | Project | Licence | SHA-256 |
 |---|---|---|---|
 | `homehook/libinputhookpp.so` | [inputhookpp](https://github.com/sundermann/inputhookpp) by Sundermann, as built in [Input Hook](https://github.com/Simon34545/lginputhook) by Simon34545 | GPL-3.0 (`licenses/inputhookpp-GPL-3.0.txt`); Input Hook's own code BSD-3-Clause, © 2023 simon_34545 (`licenses/lginputhook-BSD-3-Clause.txt`) | `de2c155a598827e7b31b2fa2cfe80e1cc7ad9347ccdd16f1c2aeb9bc0db1b49d` |
 | `homehook/ezinject` | [ezinject](https://github.com/smx-smx/ezinject) by Stefano Moioli (smx-smx) | zlib-style, © 2021 Stefano Moioli (`licenses/ezinject-COPYING.txt`) | `d2def5b3f68a415cf5a4a747ab70115e70a82f721bafbcc0d9c5a7bd5c161160` |
 
-The source code of the GPL-3.0 library is at https://github.com/sundermann/inputhookpp and, with the changes made for Input Hook, at https://github.com/Simon34545/lginputhook (the same programs this install carries). Anyone may ask the Hearth maintainer for a copy as well. The original idea of the hook is by Informatic (the `inputhook` script).
+The source code of the GPL-3.0 library is at https://github.com/sundermann/inputhookpp and, with the changes made for Input Hook, at https://github.com/Simon34545/lginputhook (the same programs this install carries). Anyone may ask the HearthNG author for a copy as well (for the builds of the original Hearth, the Hearth maintainer). The original idea of the hook is by Informatic (the `inputhook` script).

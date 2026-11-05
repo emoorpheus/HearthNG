@@ -1,7 +1,7 @@
 # When the TV turns on, open… (rooted TVs)
 
 Settings → System → **When the TV turns on, open…** chooses what the TV shows when you switch it on: Live TV or the
-last input (the TV's own default), Hearth, or any installed app.
+last input (the TV's own default), HearthNG, or any installed app.
 
 ## How it works
 
@@ -23,7 +23,7 @@ own button (`localKey`) there is no app (`{LAST_APP}` only resumes Netflix), so 
 TV on most sets, which shows "No signal" when no aerial is plugged in.
 
 `bootd` reads `/var/luna/preferences/bootd.json` **instead of** its own file when that file exists (LG left it in for
-debugging). On webOS 7.6 LG's table lists only `remoteKey`, `localKey` and `upDownKey` (checked on a TV, 2026-10-29); Hearth still sets all three reasons below (as the PR did), so on that TV it adds `micomPower`, which bootd presumably ignores (untested there). Hearth writes that file: LG's own file with `remoteKey`, `localKey` and `micomPower` (a cold start, e.g. after
+debugging). On webOS 7.6 LG's table lists only `remoteKey`, `localKey` and `upDownKey` (checked on a TV, 2026-10-29); HearthNG still sets all three reasons below (as the PR did), so on that TV it adds `micomPower`, which bootd presumably ignores (untested there). HearthNG writes that file: LG's own file with `remoteKey`, `localKey` and `micomPower` (a cold start, e.g. after
 a power cut or a restart) set to the chosen app (plus `wakeOnWiFi` and `wakeOnLan` when network wake-ups are on). Nothing runs in the background.
 
 - **Only when you switch it on yourself.** Every other reason keeps LG's behaviour, so the TV still goes where it is
@@ -37,7 +37,7 @@ a power cut or a restart) set to the chosen app (plus `wakeOnWiFi` and `wakeOnLa
   not drawn first.
 - **A missing app.** If the app cannot be opened (uninstalled), webOS 4.5 opens the last input as usual. On webOS 10.3.0
   (OLED65M59LA, seen 2026-11-03) the TV opened LG's *Apps* (the store, `com.webos.app.discovery`) instead, which showed a
-  network error there (code -102). `bootd` keeps what it read until the next full start. If the removed app is Hearth
+  network error there (code -102). `bootd` keeps what it read until the next full start. If the removed app is HearthNG
   itself, the start-up check removes the copy at the next start, but it runs after `bootd` has read the copy, so the TV
   still tries to open it until the second restart. Another removed app stays chosen until something else is chosen.
   Choosing *Live TV or the last input* before removing the app, and restarting once, avoids that. HearthNG asks the TV whether the chosen
@@ -46,14 +46,14 @@ a power cut or a restart) set to the chosen app (plus `wakeOnWiFi` and `wakeOnLa
   is marked.
 - **It starts working after the TV restarts once.** `bootd` reads its configuration only when it starts, which is a full
   restart, not waking the TV from standby. Restarting `bootd` itself is not safe (it re-runs the TV's start-up jobs).
-  Hearth offers *Restart the TV now* and the row says *(after a restart)* until then.
+  HearthNG offers *Restart the TV now* and the row says *(after a restart)* until then.
 - **Turning it off** (choose *Live TV or the last input*) removes the file, so from the next restart the TV does
   exactly what it did before.
 
 A start-up check (`/var/lib/webosbrew/init.d/45-launcher-poweron` → `/media/developer/launcher-poweron/guard.sh`) runs
-at each start. It notes which app `bootd` loaded (`/tmp/launcher-poweron.loaded`), so Hearth knows when a restart is
-still needed. It also removes the file if Hearth was uninstalled, or if a software update changed LG's own file (so an
-old copy never hides the new one). If the file was changed by someone else, it is left alone. A file Hearth did not
+at each start. It notes which app `bootd` loaded (`/tmp/launcher-poweron.loaded`), so HearthNG knows when a restart is
+still needed. It also removes the file if HearthNG was uninstalled, or if a software update changed LG's own file (so an
+old copy never hides the new one). If the file was changed by someone else, it is left alone. A file HearthNG did not
 write is never overwritten or removed.
 
 - **Before a firmware update, turn it off** (and restart once). An update usually removes root, and then the start-up
