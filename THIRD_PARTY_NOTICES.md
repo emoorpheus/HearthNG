@@ -1,6 +1,8 @@
 # Third-party notices
 
-This project is a modified version of [partridgeworks/webos-launcher](https://github.com/partridgeworks/webos-launcher) (MIT licence, see [LICENSE](LICENSE)).
+HearthNG (by emoorpheus) is a modified version of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) by rudra-avatar,
+which is a modified version of [partridgeworks/webos-launcher](https://github.com/partridgeworks/webos-launcher). All three are
+under the MIT licence; [LICENSE](LICENSE) keeps the copyright notices of each.
 
 The MIT licence in [LICENSE](LICENSE) covers this project's own code and its app icon
 (`public/icon.png`, `public/largeIcon.png`). The following material belongs to others and

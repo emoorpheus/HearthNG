@@ -1,7 +1,7 @@
 {
   "id": "com.hearthng.toast",
   "version": "1.0.0",
-  "vendor": "HearthNG",
+  "vendor": "emoorpheus",
   "type": "web",
   "main": "index.html",
   "title": "HearthNG notifications",

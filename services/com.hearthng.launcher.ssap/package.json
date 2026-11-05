@@ -1,6 +1,7 @@
 {
   "name": "com.hearthng.launcher.ssap",
   "version": "1.0.0",
-  "description": "Hearth helper: talks to the TV's own remote-control port for the app list without root",
+  "description": "HearthNG helper: talks to the TV's own remote-control port for the app list without root",
+  "author": "emoorpheus",
   "main": "service.js"
 }
