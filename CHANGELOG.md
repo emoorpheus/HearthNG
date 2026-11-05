@@ -1,6 +1,6 @@
 # Changelog
 
-## HearthNG 1.0.0 (based on Hearth 2.1.2)
+## HearthNG 1.0.0 (based on Hearth 2.1.3)
 
 First version of the HearthNG fork. Test build.
 
@@ -31,6 +31,19 @@ First version of the HearthNG fork. Test build.
 - *Hide the Hearth Settings tile* in HearthNG: Settings opens from a gear among the buttons above the tile in edit mode (hold OK on an app, then Up); five presses of Down on the Home screen bring the tile back until HearthNG restarts.
 - Not taken from Hearth 2.1.1: its one change, *Check for updates* also on TVs without root (HearthNG has no *Check for updates*).
 - Hearth 2.1.2 taken over: *LG Home* as a job for *Map additional keys* (a warning first while a way of replacing LG Home is on), and on webOS 3 the LG Home tile sends the TV its Home key when the TV refuses to open LG Home (rooted TVs). Russian texts for it.
+- Hearth 2.1.3 taken over: LG Home on webOS 3 sends the Home key to the devices named like a remote first, at most three, and tries the next when the TV logs no `NL_HOME_SHOWN` (script `lghome-v2`, so a TV with the older script gets the new one); the README and guides describe *Replace LG Home with SAM (experimental)*.
+
+## 2.1.3
+
+A small fix for the LG Home button on webOS 3 TVs.
+
+### Fixes
+
+- **LG Home on webOS 3 TVs** (rooted). Hearth now sends the Home key to the remote-control device of the TV first, and when the TV does not react it tries the next device. Before, on some TVs the key went to another device and nothing happened. Thanks to James18232, who debugged this on a webOS 3.4.3 TV: he sent the logs and the list of key devices, found that the remote is `event3`, and tested the fix by hand (issue #36).
+
+### Guides
+
+- The README and the guides now describe the *Replace LG Home with SAM (experimental)* option and credit Glasshouse for it. The recommended settings are now five, and SAM comes first because it avoids the flash of LG Home.
 
 ## 2.1.2
 
@@ -172,7 +185,7 @@ A big update: a new Settings layout, many more looks, a screen saver, a Home but
 - **Map additional keys:** give the remote's colour buttons and other dedicated buttons a new job (open an app or input, Hearth, mute, or nothing). Home, arrows, OK, Back, power, volume, channels and numbers are never taken. (Pull requests #19 and #22 by Obednal97, adapted.)
 - **When the TV turns on, open...:** the TV opens Hearth (or any app) at power-on, after one restart. It replaces *Add the launcher as a TV input*, which is gone (Hearth removes the old input once). (Method and first code from pull request #25 by Obednal97.)
 - **Set Hearth as the TV's Home app** (experimental; worked on webOS 4.5, not on 7.6). (Pull request #18 by Obednal97.)
-- **Replace LG Home (helper)** is one click and also starts the bundled key hook; the old *script and SAM* method is removed (it started late and broke the aspect-ratio setting; a TV that had it is cleaned up once).
+- **Replace LG Home (helper)** is one click and also starts the bundled key hook; the old *script and SAM* method was replaced (a TV that had it is cleaned up once). A new SAM option came later, in 2.0.3.
 - **Keep Hearth ready** (experimental): asks the TV to keep Hearth in memory so Home opens it at once; a warning shows first, a failing step switches it off with the reason, and *Reopen Hearth if the TV closed it* is a second switch. Both grey out on a TV without a memory list.
 - **LG preloaded apps** (experimental): see which apps LG keeps loaded in the background and switch some off; nothing is closed; *Everything back to LG's setting* undoes it. (Approach from Glasshouse.)
 
