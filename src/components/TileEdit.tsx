@@ -4,9 +4,10 @@ import {useOkPress} from '../hooks/useOkPress';
 
 // LG-style edit mode (hold OK on an app or input on the home screen): arrows either side of the tile move it along the
 // row, round buttons above it hide it, uninstall it (apps that can be removed) or mark it as a favourite (a star).
+// While the Settings tile is hidden (Look -> Hide the Hearth Settings tile), or that is being tried, a gear opens Settings.
 // The tile stays where it is on the row; the buttons are drawn by the tile itself (EditDecor), the keys are read here.
 
-export type EditActionKind = 'hide' | 'uninstall' | 'favourite';
+export type EditActionKind = 'hide' | 'uninstall' | 'favourite' | 'settings';
 
 export interface EditAction {
 	kind: EditActionKind;
@@ -37,6 +38,8 @@ const PATHS: Record<EditActionKind | 'left' | 'right', string> = {
 	uninstall: 'M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5l1 13h9l1-13 M10.5 10v6.5 M13.5 10v6.5',
 	// a star (filled while the tile is a favourite)
 	favourite: 'M12 3.6l2.55 5.2l5.7.83l-4.13 4.02l.98 5.68L12 16.65l-5.1 2.68l.98-5.68l-4.13-4.02l5.7-.83z',
+	// a gear: a ring with eight teeth round a hole (Hearth Settings while its tile is hidden)
+	settings: 'M12 6.2a5.8 5.8 0 1 0 0 11.6a5.8 5.8 0 1 0 0-11.6z M12 9.6a2.4 2.4 0 1 0 0 4.8a2.4 2.4 0 1 0 0-4.8z M12 2.8v3.4 M12 17.8v3.4 M2.8 12h3.4 M17.8 12h3.4 M5.5 5.5l2.4 2.4 M16.1 16.1l2.4 2.4 M5.5 18.5l2.4-2.4 M16.1 7.9l2.4-2.4',
 	left: 'M14.5 6l-6 6l6 6',
 	right: 'M9.5 6l6 6l-6 6'
 };

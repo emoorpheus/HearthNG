@@ -16,7 +16,10 @@ const L = await import(await bundle('../src/lib/languages.ts', 'tvlanguage-langu
 eq(L.languageFromLocale('ru-RU'), 'ru', 'ru-RU (the menu language of the test TV) -> ru');
 eq(L.languageFromLocale('de-DE'), 'de', 'de-DE -> de');
 eq(L.languageFromLocale('en-GB'), 'en', 'en-GB -> en');
-eq(L.languageFromLocale('pt-BR'), 'en', 'a language that is not bundled -> English');
+eq(L.languageFromLocale('ja-JP'), 'en', 'a language that is not bundled -> English');
+eq(L.languageFromLocale('pt-BR'), 'pt-BR', 'pt-BR (bundled since Hearth 2.1.0, its id has a region) -> pt-BR');
+eq(L.languageFromLocale('pt_br'), 'pt-BR', 'and in lower case with an underscore');
+eq(L.languageFromLocale('pt-PT'), 'pt-BR', 'another Portuguese -> the bundled Portuguese, not English');
 eq(L.languageFromLocale('PL_pl'), 'pl', 'upper case and an underscore are read too');
 eq(L.languageFromLocale(''), 'en', 'empty -> English');
 eq(L.languageFromLocale(undefined), 'en', 'nothing -> English');

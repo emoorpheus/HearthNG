@@ -39,6 +39,10 @@ export interface SystemInfo {
 	keepList?: boolean | null;
 	/** the hand-over watcher: running, and whether it starts at boot (null while unknown) */
 	homeHook: {running: boolean; linked: boolean; stopped?: boolean; frozenHome?: boolean; foreign?: boolean; hearth?: boolean} | null;
+	/** 2.0.3 (R3): the SAM stand-in method (null/undefined while unknown) */
+	/** F2: the SAM set-up or switch-off is running (the row is not pressable meanwhile) */
+	samBusy?: boolean;
+	samHome?: {enabled: boolean; mounted: boolean; web: boolean; linked: boolean; watching: boolean; restartUsed: boolean} | null;
 	/** the launcher is in the TV's input list (null while unknown) */
 	tvInput?: boolean | null;
 	/** "When the TV turns on, open...": what is on the TV (null while unknown or not readable) */
@@ -61,7 +65,7 @@ export interface SystemInfo {
 /** The options that run shell commands, so they can't work without root. */
 /** System rows that stay while root has failed (P83). */
 export const NO_ROOT_ROWS = ['language', 'languageRemove', 'tvApps', 'noRootGuide', 'showDebug'];
-export const ROOT_OPTIONS = ['remap', 'replaceHome', 'homeApp', 'homeKey', 'preload', 'keepReady', 'keepRelaunch', 'tvInput', 'powerOnApp', 'lgLogo', 'screensaver', 'screensaverPictures', 'screensaverInterval', 'screensaverShuffle', 'screensaverCare', 'screensaverFit', 'screensaverDim', 'screensaverPowerOff', 'screensaverShow'];
+export const ROOT_OPTIONS = ['remap', 'replaceHome', 'samHome', 'homeApp', 'homeKey', 'preload', 'keepReady', 'keepRelaunch', 'tvInput', 'powerOnApp', 'lgLogo', 'screensaver', 'screensaverPictures', 'screensaverInterval', 'screensaverShuffle', 'screensaverCare', 'screensaverFit', 'screensaverDim', 'screensaverPowerOff', 'screensaverShow'];
 
 
 /** Why a row is greyed out, or null when it is usable. */
@@ -75,11 +79,27 @@ function helperIsOn (info?: SystemInfo, config?: UserConfig): boolean {
 	return !!(config && config.replaceHome) || !!(info && info.homeHook && (info.homeHook.running || info.homeHook.linked));
 }
 
+function samIsOn (info?: SystemInfo, config?: UserConfig): boolean {
+	return !!(config && config.samHome) || !!(info && info.samHome && (info.samHome.enabled || info.samHome.linked));
+}
+
 export function disabledReason (id: string, info?: SystemInfo, config?: UserConfig): string | null {
 	if (id === 'rows' && config && config.favourites && config.favourites.length > 0) return td('disabled.rows');
 	// the Home app setting and the helper + Home button are two ways of replacing LG Home: only one at a time (a row that is on stays usable, so it can be switched off)
-	if (id === 'homeApp' && !homeAppIsOn(info, config) && helperIsOn(info, config)) return td('disabled.homeApp');
-	if (id === 'replaceHome' && !helperIsOn(info, config) && homeAppIsOn(info, config)) return td('disabled.replaceHome');
+	// 2.0.3 (R3, F2): helper, SAM stand-in and Home app: any one that is on greys the other two out (a row that is on stays usable, so it can be switched off)
+	if (id === 'samHome' && info && info.samBusy) return td('disabled.samBusy');
+	if (id === 'homeApp' && !homeAppIsOn(info, config)) {
+		if (helperIsOn(info, config)) return td('disabled.homeApp');
+		if (samIsOn(info, config)) return td('disabled.replaceHomeSam');
+	}
+	if (id === 'replaceHome' && !helperIsOn(info, config)) {
+		if (homeAppIsOn(info, config)) return td('disabled.replaceHome');
+		if (samIsOn(info, config)) return td('disabled.replaceHomeSam');
+	}
+	if (id === 'samHome' && !samIsOn(info, config)) {
+		if (helperIsOn(info, config)) return td('disabled.samHome');
+		if (homeAppIsOn(info, config)) return td('disabled.replaceHome');
+	}
 	if (id === 'powerOnApp' && info && info.powerOn && !info.powerOn.supported) return td('disabled.powerOn');
 	// K2: no memory list on this TV: Keep cannot work (a row that is on stays usable, so it can be switched off)
 	if ((id === 'keepReady' || id === 'keepRelaunch') && info && info.keepList === false && config && !config.keepReady && !config.keepRelaunch) return td('disabled.keepList');
@@ -120,10 +140,14 @@ export interface Pref {
 /** A row as written in the tables below: its texts come from the string table by id. */
 type PrefDef = Omit<Pref, 'label' | 'description'>;
 
+/** HearthNG: rows that work differently from the original Hearth read their own description (a separate key, so a
+ *  language pack made for the original never shows the original's wording for them). */
+const NG_DESC: Record<string, string> = {hideSettings: 'pref.hideSettings.descNg'};
+
 function withTexts (p: PrefDef): Pref {
 	const row = {...p} as Pref;
 	Object.defineProperty(row, 'label', {get: () => td(`pref.${p.id}.label`), enumerable: true});
-	Object.defineProperty(row, 'description', {get: () => td(`pref.${p.id}.desc`), enumerable: true});
+	Object.defineProperty(row, 'description', {get: () => td(NG_DESC[p.id] || `pref.${p.id}.desc`), enumerable: true});
 	return row;
 }
 
@@ -236,7 +260,7 @@ const WEATHER_PREFS: PrefDef[] = [
 type Level = 'off' | 'light' | 'medium' | 'strong';
 const levelText = (v: Level): string => td(`level.${v}`);
 
-const ICON_STYLES = ['original', 'minimal', 'mono', 'soft', 'accent', 'gradient', 'tinted'] as const;
+const ICON_STYLES = ['original', 'minimal', 'glyph', 'mono', 'soft', 'accent', 'gradient', 'tinted'] as const;
 type IconStyleRow = typeof ICON_STYLES[number];
 const icon_styleText = (v: IconStyleRow): string => td(`iconStyle.${v}`);
 const ICON_TILES = ['dark', 'light'] as const;
@@ -252,6 +276,10 @@ const SHADOW_LEVELS: readonly ShadowLevel[] = ['off', 'light', 'medium', 'strong
 const shadowText = (v: ShadowLevel): string => td(v === 'max' ? 'level.max' : `level.${v}`);
 const SHADOW_VALUES: Record<ShadowLevel, {shadow: boolean; shadowStrength?: number}> = {off: {shadow: false}, light: {shadow: true, shadowStrength: 30}, medium: {shadow: true, shadowStrength: 50}, strong: {shadow: true, shadowStrength: 80}, max: {shadow: true, shadowStrength: 100}};
 const shadowLevel = (c: UserConfig): ShadowLevel => (!c.clock.shadow ? 'off' : c.clock.shadowStrength <= 30 ? 'light' : c.clock.shadowStrength <= 60 ? 'medium' : c.clock.shadowStrength <= 90 ? 'strong' : 'max');
+
+// 2.0.3 (R1, F1): the gradient behind the widget: Off, then 5-100 % in steps of 5 (100 % = the earlier 50 % darkness)
+const SCRIM_VALUES: readonly number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+const scrimText = (v: number): string => (v === 0 ? td('common.off') : `${v}%`);
 
 const FADE_LEVELS: readonly Level[] = ['off', 'light', 'medium', 'strong'];
 const FADE_VALUES: Record<Level, {fadeStrength: number; fadeHeight?: number}> = {off: {fadeStrength: 0}, light: {fadeStrength: 15, fadeHeight: 35}, medium: {fadeStrength: 30, fadeHeight: 50}, strong: {fadeStrength: 55, fadeHeight: 70}};
@@ -368,6 +396,8 @@ const BASE_PREFS: PrefDef[] = [
 		(c) => c.showLgHome, (c, v) => ({...c, showLgHome: v})),
 	toggle('showSystem', 'look',
 		(c) => c.showSystem, (c, v) => ({...c, showSystem: v})),
+	toggle('hideSettings', 'look',
+		(c) => c.hideSettings, (c, v) => ({...c, hideSettings: v})),
 	range('sideMargin', 'look',
 		'sideMargin', (c) => c.sideMargin, (c, v) => ({...c, sideMargin: v}), (v) => `${v} px`),
 	range('bottomMargin', 'look',
@@ -427,7 +457,7 @@ const BASE_PREFS: PrefDef[] = [
 	{...choice('wallpaperFit', 'wallpaper',
 		SAVER_FIT_VALUES, (c) => (c.wallpaper.fit === 'fit' ? 'fit' : 'fill'), (c, v) => ({...c, wallpaper: {...c.wallpaper, fit: v}}), fitText), visible: (c) => c.wallpaper.mode !== 'gradient' || c.background.indexOf('photo-') === 0},
 	{...choice('interval', 'wallpaper',
-		INTERVAL_VALUES, (c) => c.wallpaper.intervalSec, (c, v) => ({...c, wallpaper: {...c.wallpaper, intervalSec: v}}), intervalText), visible: isSlideshow},
+		INTERVAL_VALUES, (c) => c.wallpaper.intervalSec, (c, v) => ({...c, wallpaper: {...c.wallpaper, intervalSec: v}}), (v) => v === 0 ? td('time.eachVisit') : intervalText(v)), visible: isSlideshow},
 	{...toggle('shuffle', 'wallpaper',
 		(c) => c.wallpaper.shuffle, (c, v) => ({...c, wallpaper: {...c.wallpaper, shuffle: v}})), visible: isSlideshow},
 	choice('clockColor', 'wallpaper',
@@ -442,6 +472,8 @@ const BASE_PREFS: PrefDef[] = [
 		'wallpaperOpacity', (c) => c.wallpaperOpacity, (c, v) => ({...c, wallpaperOpacity: v}), (v) => `${v}%`),
 	choice('clockShadow', 'wallpaper',
 		SHADOW_LEVELS, (c) => shadowLevel(c), (c, v) => ({...c, clock: {...c.clock, ...SHADOW_VALUES[v]}}), (v) => shadowText(v)),
+	choice('clockScrim', 'wallpaper',
+		SCRIM_VALUES, (c) => c.clock.scrim, (c, v) => ({...c, clock: {...c.clock, scrim: v}}), (v) => scrimText(v)),
 	range('iconOpacity', 'wallpaper',
 		'iconOpacity', (c) => c.iconOpacity, (c, v) => ({...c, iconOpacity: v}), (v) => `${v}%`),
 
@@ -475,6 +507,11 @@ const BASE_PREFS: PrefDef[] = [
 		id: 'replaceHome', tab: 'system', kind: 'action',
 		// HearthNG: another launcher's helper in the folder (the original Hearth writes its own there) is not "On"
 		text: (_c, info) => (!info || !info.homeHook ? td('common.unknown') : info.homeHook.foreign ? td('homehook.statusForeign') : info.homeHook.running ? td('common.on') : info.homeHook.stopped ? td('homehook.statusStopped') : td('common.off'))
+	},
+	{
+		// 2.0.3 (R3): the SAM stand-in method, back as an experimental row; OK asks first, then installs and switches on, or off
+		id: 'samHome', tab: 'system', kind: 'action',
+		text: (c, info) => (info && info.samHome ? (info.samHome.enabled || info.samHome.linked ? td('common.on') : td('common.off')) : c.samHome ? td('common.on') : td('common.off'))
 	},
 	{
 		// P58c (PR #18, Obednal97): the TV's own Home app setting; the row is never greyed out for the webOS version
@@ -553,7 +590,7 @@ const LAYOUT: [PrefTab, string, string[]][] = [
 	['look', '', ['preset', 'restoreLook']],
 	['look', 'Theme', ['theme', 'themeExport', 'themeSave', 'themeRemove']],
 	['look', 'Icons', ['iconScale', 'tileShape', 'iconStyle', 'iconLight', 'iconColor', 'tileFrame', 'iconGap', 'iconOpacity']],
-	['look', 'Home row', ['rows', 'scrollSpeed', 'homeFocus', 'sideMargin', 'bottomMargin', 'inputStatus', 'showLgHome', 'showSystem']],
+	['look', 'Home row', ['rows', 'scrollSpeed', 'homeFocus', 'sideMargin', 'bottomMargin', 'inputStatus', 'showLgHome', 'showSystem', 'hideSettings']],
 	['look', 'Labels', ['showLabels', 'labelsOnFocus', 'labelColor', 'labelFont', 'labelSize', 'labelWeight']],
 	['look', 'Quiet mode', ['quietSec', 'quietDimSec', 'quietDimLevel', 'oledShift']],
 	['look', 'Favourites', ['favSideMargin', 'favBottomMargin']],
@@ -561,13 +598,13 @@ const LAYOUT: [PrefTab, string, string[]][] = [
 	['look', '', ['resetLook']],
 	['clock', '', ['widgetOn']],
 	['clock', 'Time and date', ['clockFormat', 'showPeriod', 'showDate']],
-	['clock', 'Widget look', ['clockSize', 'clockFont', 'clockWeight', 'clockTop', 'clockLeft', 'clockAlign', 'clockColor', 'clockShadow', 'clockOpacity']],
+	['clock', 'Widget look', ['clockSize', 'clockFont', 'clockWeight', 'clockTop', 'clockLeft', 'clockAlign', 'clockColor', 'clockShadow', 'clockScrim', 'clockOpacity']],
 	['clock', 'Weather', ['weatherOn', 'weatherUnit', 'weatherCity', 'weatherCityName', 'weatherRange']],
 	['wallpaper', '', ['wallpaper', 'wallpaperFit', 'interval', 'shuffle', 'wallpaperOpacity', 'fadeStrength']],   // P66b: few rows, no groups (was Background and Picture)
 	['saver', '', ['screensaver', 'screensaverPictures', 'screensaverInterval', 'screensaverShuffle', 'screensaverFit', 'screensaverCare', 'screensaverDim', 'screensaverPowerOff', 'screensaverShow']],
 	['system', '', ['language', 'languageRemove']],
 	['system', 'Remote control', ['homeKey', 'remap']],
-	['system', 'TV start', ['tvApps', 'noRootGuide', 'tvInput', 'replaceHome', 'powerOnApp', 'lgLogo', 'homeApp']],
+	['system', 'TV start', ['tvApps', 'noRootGuide', 'tvInput', 'replaceHome', 'samHome', 'powerOnApp', 'lgLogo', 'homeApp']],
 	['system', 'Memory', ['preload', 'keepReady', 'keepRelaunch']],
 	['system', '', ['showDebug']]
 ];

@@ -113,7 +113,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
   - Pick a city from a list of about 75, search for any place over the internet, or add your own cities with a custom theme
   - A live preview sits beside the Widget settings
 - **Your apps and inputs in one row.**
-  - Choose what is shown, re-order, or hold OK on an app to move it the LG way: Left/Right move it, Up gives *Hide*, *Uninstall* and *More* (to the start or end, favourites)
+  - Choose what is shown, or hold OK on an app to edit it the LG way: Left/Right move it, Up gives *Hide*, *Uninstall* and a star for the favourites (and a gear for Hearth Settings while its tile is hidden)
   - **Favourites** make a short row of your most used apps (Down shows all the others)
   - **Order by last opened** keeps recent apps first
   - Back on the home row opens the **Recent apps** panel (rooted TVs)
@@ -122,7 +122,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
 - **Looks.**
   - Presets: Standard, OLED (pure black, grey one-colour icons, no outline, the name only under the selected icon), OLED (minimal) (the OLED look with icons at 70 %, no widget, no weather and no Hearth screen saver), Night, Minimal, Gallery; *Your own* brings back your look (see [Look](docs/features/look.md#preset))
   - Six dark themes: OLED black, Calm blue-grey, Midnight blue, Deep forest, Deep teal, Warm graphite
-  - Seven icon styles with dark or light tiles, icon colour and opacity (see *Icon styles* below)
+  - Eight icon styles (including *Glyph*, shapes without a tile) with dark or light tiles, icon colour and opacity (see *Icon styles* below)
   - One or two rows, margins, app-name font and size
 - **Custom themes** (rooted). Load a zip with colours, fonts, icons, app order and names, cities and a wallpaper, or export your apps as a starting point. See *Custom themes* below.
 - **Wallpaper.** Plain black, one picture, a slideshow of a whole folder (USB drive or the TV's storage, subfolders too) or the bundled photos, with shuffle and an interval from 10 seconds to 1 hour.
@@ -131,7 +131,7 @@ It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can
 - **Start the TV straight into Hearth** (rooted). *System, TV start, When the TV turns on, open...* opens Hearth at power-on.
 - **The Home button opens Hearth** (rooted). Hearth bundles the Input Hook key hook and starts it itself, so you need no other app; a helper script covers leaving apps with Back.
 - **Remote buttons** (rooted, experimental). Give the colour buttons and other dedicated buttons of your remote a new job.
-- **Languages.** Hearth's menus can be switched to French and Polish (checked by native speakers), to Indonesian, Spanish, German or Arabic (machine translated, waiting for native speakers) or to your own language file. See [Language files](https://rudra-avatar.github.io/Hearth/language_packs/).
+- **Languages.** Hearth's menus can be switched to French, Polish and Brazilian Portuguese (checked by native speakers), to Indonesian, Spanish, German, Arabic or Russian (machine translated, waiting for native speakers) or to your own language file. See [Language files](https://rudra-avatar.github.io/Hearth/language_packs/).
 - **Made to be fast.** The home screen is drawn from saved data first; everything else (app list, weather, helper checks) happens a few seconds later in the background. While another app is in front, Hearth lets go of its wallpaper and stops its clock.
 - **Clear messages.** When something cannot work on your TV, Hearth says what and why instead of failing silently, and greys out the options that need a rooted TV.
 
@@ -295,11 +295,11 @@ To remove Hearth, turn off *Replace LG Home (helper)*, the screen saver and *Map
 |---|---|---|
 | Home | ← → | Move along the row (the row loops) |
 | Home | OK | Open the app. With the *LG Home* and *System Settings* tiles switched on, they open LG's own screens; the last tile is **Hearth Settings** |
-| Home | hold OK | Edit the tile: Left/Right move it; Up: Hide, Uninstall, More (to the start or end, favourites); OK or Back: done |
+| Home | hold OK | Edit the tile: Left/Right move it; Up: Hide, Uninstall, the favourites star (and a gear for Hearth Settings while its tile is hidden); OK or Back: done |
 | Home | Back | Open the Recent apps panel (OK opens an app, hold OK closes it, ↑ Close all) |
 | Home | ↓ / ↑ | With favourites: show or hide the row of all other apps |
 | Settings | ← → on the tab bar | Apps & Sources · Look · Widget · Wallpaper · Screen saver · System |
-| Settings (Apps, Sources) | OK / hold OK | Show or hide an item / edit its name and icon. **Re-order**, **Refresh list**, **Favourites** and **Order by last opened** sit above the grid |
+| Settings (Apps, Sources) | OK / hold OK | Show or hide an item / edit its name and icon. **Refresh list**, **Favourites** and **Order by last opened** sit above the grid |
 | Settings (other tabs) | OK, or ← → | OK steps through the choices or opens a group; ← → nudge numbers (they stop at the ends) |
 | Any other screen | Back | Go back one screen (Back first closes an open group) |
 
@@ -321,7 +321,7 @@ To remove Hearth, turn off *Replace LG Home (helper)*, the screen saver and *Map
 - **Widget:**
   - *Show widget*
   - *Time and date*
-  - *Widget look*: size, font, thickness, position, alignment, colour, shadow, opacity
+  - *Widget look*: size, font, thickness, position, alignment, colour, shadow, backdrop, opacity
   - *Weather*: on or off, unit, city, city name, today's high and low
 - **Wallpaper:** the picture or slideshow, interval, shuffle, opacity and bottom fade.
 - **Screen saver (rooted):**
@@ -355,6 +355,7 @@ Every feature is explained in plain words in the [guides](https://rudra-avatar.g
 - **Accent mono:** the one-colour shape in the theme's accent colour (not offered with OLED black).
 - **Gradient mono:** the one-colour shape fades from light to darker.
 - **Tinted tile:** the real picture on a tile in the theme's colour.
+- **Glyph:** just the one-colour shape, with no tile. The highlighted icon only grows. *Icon tile: Dark* gives dark shapes and labels, *Light* gives light ones.
 
 Beside it, **Icon tile** picks a *Dark* tile with a light shape or a *Light* tile with a dark shape, **Icon colour** changes the shape colour, and **Icon opacity** lets the wallpaper show through. Size, spacing and shape have their own rows.
 
@@ -510,7 +511,7 @@ A theme puts its values into the normal settings, so you can still change them a
 - the languages that come with Hearth (no root; they arrive with updates)
 - your own language file (OK loads it, rooted TVs)
 
-The bundled French pack (by Foxinou35) and Polish pack (by sir_RAFIK) were written and checked by native speakers. The bundled Indonesian, Spanish, German and Arabic packs are machine translated and are shown as *(machine translated)* until a native speaker reviews them.
+The bundled French pack (by Foxinou35), Polish pack (by sir_RAFIK) and Brazilian Portuguese pack (by assanches) were written and checked by native speakers. The bundled Indonesian, Spanish, German, Arabic and Russian packs are machine translated and are shown as *(machine translated)* until a native speaker reviews them.
 
 To add a language, see [Language files](https://rudra-avatar.github.io/Hearth/language_packs/) and the *Translation* issue form. Supported scripts: Latin, Cyrillic, Greek and Arabic (left to right).
 
@@ -651,10 +652,10 @@ More in the [Troubleshooting guide](https://rudra-avatar.github.io/Hearth/troubl
 **Code contributions** (applied by hand into Hearth's own code; authors credited in the commits and the changelog):
 
 - **Alejandro Morales**, pull request #1: slideshow shuffle that survives restarts.
-- **chriskoperdraad-tech**, pull requests #2 and #3: webOS 3.x (Chromium 38) support. The Home-bar watcher lines are theirs; the ES5 build and the custom-property fallback are Hearth's own code.
+- **chriskoperdraad-tech**, pull requests #2, #3 and #37: webOS 3.x (Chromium 38) support (the Home-bar watcher lines are theirs; the ES5 build and the custom-property fallback are Hearth's own code) and the fix that lets *Map home button* find the Home button's code on webOS 3 (#37). Also the testing and research on a webOS 3.9 TV that shaped Hearth's webOS 3 support (issue #23).
 - **ganondorft**, pull request #6: the webOS 11 permission fix and the Windows line-ending fix.
 - **iulyax27**, pull requests #8 and #10: icon batches, the Input Hook guide, and the ideas for quiet mode, OLED shift and *When Home is pressed*.
-- **Obednal97**, pull requests #16 to #22 and #25: input status (#16), the Settings scroll fix (#17), *Set Hearth as the TV's Home app* (#18), remote button reassigning and the remote drawings (#19, #22), *When Home is pressed* (#20), icon refresh after app updates (#21), and *When the TV turns on, open...* with the TV's start-up table method (#25). Hearth's code is adapted from theirs.
+- **Obednal97**, pull requests #16 to #22, #25 and #39: input status (#16), the Settings scroll fix (#17), *Set Hearth as the TV's Home app* (#18), remote button reassigning and the remote drawings (#19, #22), *When Home is pressed* (#20), icon refresh after app updates (#21), *When the TV turns on, open...* with the TV's start-up table method (#25), and the clear message and the 2016 Magic Remote drawing for TVs that cannot use the other remote method (#39, issue #36). Hearth's code is adapted from theirs.
 - **simbasjungles**, free-my-tv pull request #285: the fix for the "1008" error that newer LG firmware gives a web page's connection to the TV's remote-control service (SSAP): a small packaged service connects with the right origin. Hearth's helper service `com.hearthng.launcher.ssap` follows that idea and is written in Hearth's own code; it is what makes the app list work without root on webOS 11.2.
 - **Recent apps panel, icon shapes and bottom fade:** community contribution, author not named. The idea and the TV services to call came from it; Hearth's code is its own.
 

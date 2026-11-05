@@ -9,12 +9,16 @@ export const isBundledLanguage = (id: string): boolean => id !== 'en' && languag
 
 export const DEFAULT_LANGUAGE = 'en';
 
-/** HearthNG: the interface language for the TV's menu language (its locale, e.g. "ru-RU"): the language part when it is one of
- *  the languages above, otherwise English. Pure. */
+/** HearthNG: the interface language for the TV's menu language (its locale, e.g. "ru-RU"): the whole tag or its language part
+ *  when it is one of the languages above, else a bundled one of the same language (pt-PT -> pt-BR), otherwise English. Pure. */
 export function languageFromLocale (locale: unknown): string {
 	if (typeof locale !== 'string') return DEFAULT_LANGUAGE;
-	const code = locale.trim().toLowerCase().split(/[-_]/)[0];
-	return code && LANGUAGES.some((l) => l.id === code) ? code : DEFAULT_LANGUAGE;
+	const tag = locale.trim().toLowerCase().replace(/_/g, '-');
+	const code = tag.split('-')[0];
+	if (!code) return DEFAULT_LANGUAGE;
+	// the whole tag first (pt-BR has a region in its id), then the language alone, then a bundled one of the same language (pt-PT -> pt-BR)
+	const hit = LANGUAGES.filter((l) => l.id.toLowerCase() === tag)[0] || LANGUAGES.filter((l) => l.id === code)[0] || LANGUAGES.filter((l) => l.id.toLowerCase().split('-')[0] === code)[0];
+	return hit ? hit.id : DEFAULT_LANGUAGE;
 }
 
 /** The TV's menu language out of a settingsservice getSystemSettings {keys: ['localeInfo']} reply (settings.localeInfo.locales.UI,
@@ -38,6 +42,6 @@ export function languageOf (id: string): Language {
 
 /** User 2026-11-01: every bundled language except English is shown on the language row with this suffix (the packs are machine-made; own files are not marked). */
 export const MACHINE_SUFFIX = ' (machine translated)';
-/** 2.0.2 (user 2026-11-02): packs written or reviewed by a native speaker (fr #33, pl #35) carry no suffix. */
-export const HUMAN_LANGUAGES: readonly string[] = ['fr', 'pl'];
+/** 2.0.2 (user 2026-11-02): packs written or reviewed by a native speaker (fr #33, pl #35, pt-BR #38) carry no suffix. */
+export const HUMAN_LANGUAGES: readonly string[] = ['fr', 'pl', 'pt-BR'];
 export const languageLabel = (id: string): string => { const l = languageOf(id); return l.id === 'en' || HUMAN_LANGUAGES.indexOf(l.id) >= 0 ? l.name : l.name + MACHINE_SUFFIX; };

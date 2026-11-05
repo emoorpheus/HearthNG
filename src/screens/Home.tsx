@@ -66,6 +66,8 @@ interface Props {
 	onActivate: (item: TileModel) => void;
 	/** OK held on a tile */
 	onLongPress?: (item: TileModel) => void;
+	/** R10: set while the Settings tile is hidden; called when Down was pressed five times in a row with nothing to move to */
+	onDeadDown?: () => void;
 	/** Back pressed on the home screen (opens the Recent apps panel) */
 	onBack: () => void;
 	/** counts up each time the launcher is brought to the front (Home pressed): the highlight goes back to the first tile */
@@ -96,9 +98,14 @@ function useShift (on: boolean): {x: number; y: number} | null {
 /** The home screen: a clock and the tiles along the bottom, in one row or two.
  *  Left/Right move along a row, Up/Down change row (two rows), OK opens, holding OK opens the app's menu.
  *  Back opens the Recent apps panel. */
-export function Home ({items: allItems, favourites, timeFormat, appearance, active, paused, onActivate, onLongPress, onBack, wake, homeKey, focus, weather, edit}: Props) {
+export function Home ({items: allItems, favourites, timeFormat, appearance, active, paused, onActivate, onLongPress, onDeadDown, onBack, wake, homeKey, focus, weather, edit}: Props) {
 	const now = useClock(paused);
 	const [position, setPosition] = useState<RowsPosition>(initialPosition);
+	const posRef = useRef(position);
+	posRef.current = position;
+	const deadRef = useRef(0);                           // R10: Down presses in a row that moved nothing
+	const deadCall = useRef(onDeadDown);
+	deadCall.current = onDeadDown;
 	// Favourites: with any chosen, the first row holds them alone; Down brings up a second row with everything else, Up hides it again.
 	const favList = favourites || [];
 	const favSig = favList.join('|');
@@ -220,6 +227,7 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 	const handleKey = useCallback((key: NavKey, event?: KeyboardEvent): boolean => {
 		pendingKey.current = null;                            // the person is moving: a late app list no longer moves the highlight
 		if (quietRef.current) return true;                    // the key that wakes the apps does nothing else
+		if (key !== 'down') deadRef.current = 0;
 		if (key === 'left' || key === 'right') {
 			// a held key repeats faster than the row can glide: thin the repeats out, gently at first
 			const d = stepDecision(stepRef.current, Date.now(), !!(event && event.repeat), speedRef.current);
@@ -235,6 +243,12 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 			setOpen(false);
 			setPosition((p) => movePosition(favouriteSizes(favN, items.length, true), p, 'up'));
 			return true;
+		}
+		if (key === 'down' && deadCall.current) {             // R10: five Down presses that do nothing bring the hidden Settings tile back
+			const cur = clampPosition(sizes, posRef.current);
+			const nx = movePosition(sizes, cur, 'down');
+			if (nx.row !== cur.row) deadRef.current = 0;
+			else if (!(event && event.repeat) && ++deadRef.current >= 5) { deadRef.current = 0; deadCall.current(); }
 		}
 		// functional updates, so quick repeated presses never act on a stale position
 		if (key === 'left' || key === 'right' || key === 'up' || key === 'down') setPosition((p) => movePosition(sizes, p, key));
