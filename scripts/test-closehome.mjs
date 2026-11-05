@@ -1,19 +1,19 @@
 // Runs the real CLOSE_HOME_COMMAND against look-alike processes.   Run: npm test
 import {build} from 'esbuild';
-import {execSync, spawn} from 'child_process';
+import {execSync} from 'child_process';
 const out = new URL('../node_modules/.cache-system-test.mjs', import.meta.url).pathname;
 await build({entryPoints: [new URL('../src/lib/system.ts', import.meta.url).pathname], bundle: true, format: 'esm', outfile: out, platform: 'node', logLevel: 'error',
   plugins: [{name: 'stub', setup(b) { b.onResolve({filter: /\.\/(apps|luna)$/}, (a) => ({path: a.path, namespace: 'stub'})); b.onLoad({filter: /.*/, namespace: 'stub'}, () => ({contents: 'export const exec = () => Promise.resolve(""); export const isWebOS = () => false;', loader: 'js'})); }}]});
 const {CLOSE_HOME_COMMAND, homeSettingCommand, parseHomeApp, parseDefaultApps} = await import(out);
 let fail = 0;
 const eq = (a, b, m) => { const ok = a === b; if (!ok) fail++; console.log(ok ? 'ok  ' : 'FAIL', m, ok ? '' : `(${a} != ${b})`); };
-const start = (name) => { const p = spawn('bash', ['-c', `exec -a "${name}" sleep 60`], {stdio: 'ignore', detached: true}); p.unref(); return p; };
+import {startLookalike as start} from './lookalike.mjs';
 const alive = (p) => { try { process.kill(p.pid, 0); return true; } catch { return false; } };
-const home = start('/usr/bin/qml-runner --app com.webos.app.home');
-const homeEnd = start('qml-runner com.webos.app.home');
-const connect = start('/usr/bin/qml-runner --app com.webos.app.homeconnect');
-const other = start('com.webos.app.settings');
-const web = start('WebAppMgr --app com.hearthng.launcher');
+const home = await start('/usr/bin/qml-runner --app com.webos.app.home');
+const homeEnd = await start('qml-runner com.webos.app.home');
+const connect = await start('/usr/bin/qml-runner --app com.webos.app.homeconnect');
+const other = await start('com.webos.app.settings');
+const web = await start('WebAppMgr --app com.hearthng.launcher');
 await new Promise((r) => setTimeout(r, 400));
 const result = execSync(CLOSE_HOME_COMMAND, {shell: '/bin/sh'}).toString();   // runs as `sh -c`, like the TV's exec
 await new Promise((r) => setTimeout(r, 400));
@@ -30,7 +30,7 @@ const bin = mkdtempSync(tmpdir() + '/fakeluna-');
 wf(bin + '/luna-send', '#!/bin/sh\necho "$FAKE_FRONT"\n'); chmodSync(bin + '/luna-send', 0o755);
 const front = (appId) => JSON.stringify({returnValue: true, appId, processId: '', windowId: ''});
 const run2 = (appId) => execSync(CLOSE_HOME_COMMAND, {shell: '/bin/sh', env: {...process.env, PATH: bin + ':' + process.env.PATH, FAKE_FRONT: front(appId)}}).toString().trim();
-const homeA = start('/usr/bin/qml-runner --app com.webos.app.home');
+const homeA = await start('/usr/bin/qml-runner --app com.webos.app.home');
 await new Promise((r) => setTimeout(r, 300));
 eq(run2('com.webos.app.home'), 'skipped', 'LG Home in front: it is left running');
 await new Promise((r) => setTimeout(r, 200));

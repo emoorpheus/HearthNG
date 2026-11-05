@@ -4,6 +4,7 @@ import {execSync, spawn} from 'child_process';
 import {existsSync, mkdirSync, readFileSync, writeFileSync, mkdtempSync, rmSync} from 'fs';
 import {tmpdir} from 'os';
 import {join} from 'path';
+import {startLookalike} from './lookalike.mjs';
 
 const out = new URL('../node_modules/.cache-homehookcmd-test.mjs', import.meta.url).pathname;
 await build({entryPoints: [new URL('../src/lib/homehookcmd.ts', import.meta.url).pathname], bundle: true, format: 'esm', outfile: out, platform: 'node', logLevel: 'error'});
@@ -116,7 +117,7 @@ await new Promise((r) => setTimeout(r, 400));
 let stubbornAlive = true; try { process.kill(stubborn.pid, 0); } catch { stubbornAlive = false; }
 eq(stubbornAlive, false, 'a watcher that ignores a polite stop is stopped for sure');
 // a watcher whose pid file was lost is found by its command line
-const lost = spawn('bash', ['-c', 'exec -a "sh /media/developer/launcher-homehook/watch.sh" sleep 60'], {stdio: 'ignore', detached: true}); lost.unref();
+const lost = await startLookalike('sh /media/developer/launcher-homehook/watch.sh');
 await new Promise((r) => setTimeout(r, 300));
 sh(h.withStatus(stopStep.command));
 await new Promise((r) => setTimeout(r, 400));
