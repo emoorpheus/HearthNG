@@ -15,6 +15,10 @@ const eq = (got, want, name) => { const ok = JSON.stringify(got) === JSON.string
 const pkg = JSON.parse(readFileSync(dir + '../package.json', 'utf8')).version;
 const info = JSON.parse(readFileSync(dir + '../public/appinfo.json', 'utf8')).version;
 eq([a.HEARTH_VERSION, a.HEARTH_VERSION], [pkg, info], 'the version in the app matches package.json and appinfo.json');
+const changelog = readFileSync(dir + '../CHANGELOG.md', 'utf8');
+const firstHeading = (changelog.match(/^## .*$/m) || [''])[0];
+eq(firstHeading, `## HearthNG ${a.HEARTH_VERSION} (based on Hearth ${a.UPSTREAM_VERSION})`, 'CHANGELOG: the first heading names this version and the Hearth release it is based on');
+eq(new RegExp(`^## ${a.UPSTREAM_VERSION.replace(/\./g, '\\.')}$`, 'm').test(changelog), true, "CHANGELOG: Hearth's own notes of that release are there");
 
 eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79', homebrew: '0.7.3'}, 'yes', null, '9.9.9'), 'HearthNG 9.9.9 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Homebrew 0.7.3  ·  Root: yes', 'full line when rooted');
 eq(a.aboutText({webos: '11.2.0', firmware: '43.21.79'}, 'no', 'denied', '9.9.9'), 'HearthNG 9.9.9 (Hearth ' + a.UPSTREAM_VERSION + ')  ·  webOS 11.2.0  ·  firmware 43.21.79  ·  Root: not available (the TV refused the command)', 'root refused: says so, no Homebrew version');

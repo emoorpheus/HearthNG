@@ -1,6 +1,6 @@
 # Changelog
 
-## HearthNG 1.0.0 (based on Hearth 2.1.0)
+## HearthNG 1.0.0 (based on Hearth 2.1.1)
 
 First version of the HearthNG fork. Test build.
 
@@ -29,6 +29,15 @@ First version of the HearthNG fork. Test build.
 - Hearth 2.1.0 taken over: Português (Brasil), the *Glyph* icon style, *Widget backdrop*, the wallpaper interval *Each visit*, a new row scroll speed *Fast* (the old *Fast* is *Max*), *Hide the Hearth Settings tile*, saving when the TV's storage is full, *Replace LG Home with SAM (experimental)* (it, the helper and the Home app setting grey each other out), the *Map home button* and *Map additional keys* fixes with the 2016 Magic Remote drawing, the webOS 3 fixes (HD panel, start-up warnings, boot guard) and the whole-session Debug report. Russian stays HearthNG's own translation (Hearth 2.1.0 brings a machine translation); the new texts are added to it.
 - Not taken from Hearth 2.1.0: *Check for updates* (it installs the original Hearth, not HearthNG) and *Reorder home row* (holding OK already moves the tile in HearthNG's edit mode). From it the edit mode takes the saving: the order is written 0.7 s after the last step and at once when edit mode ends or HearthNG leaves the front, not after every step. Settings no longer has its own re-order screen (Hearth 2.1.0 removed it).
 - *Hide the Hearth Settings tile* in HearthNG: Settings opens from a gear among the buttons above the tile in edit mode (hold OK on an app, then Up); five presses of Down on the Home screen bring the tile back until HearthNG restarts.
+- Not taken from Hearth 2.1.1: its one change, *Check for updates* also on TVs without root (HearthNG has no *Check for updates*).
+
+## 2.1.1
+
+A small fix.
+
+### Fixes
+
+- **Check for updates** now also shows in Settings, System on TVs without root (it was missing there in 2.1.0). Without root it points you to the Homebrew Channel for the update.
 
 ## 2.1.0
 
