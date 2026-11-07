@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/emoorpheus/HearthNG/releases/latest"><img src="https://img.shields.io/github/v/release/emoorpheus/HearthNG?color=brightgreen&label=release" alt="Release"></a>
+  <a href="https://github.com/emoorpheus/HearthNG/releases/latest"><img src="https://img.shields.io/github/v/release/emoorpheus/HearthNG?color=brightgreen&label=release&logo=github" alt="Release"></a>
   <img src="https://img.shields.io/badge/webOS-3.x%20--%2025%2B-blue" alt="webOS Compatibility">
   <img src="https://img.shields.io/badge/OLED-Pure%20Black%20%23000-black" alt="OLED Optimized">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
