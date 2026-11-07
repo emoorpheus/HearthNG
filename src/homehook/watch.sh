@@ -195,10 +195,16 @@ tv_active () {
 power_line () { "$LUNA" -n 1 "$POWER_URI" '{}' 2>/dev/null | tr -d '\n' | tr -s ' ' | cut -c1-200; }
 app_of () { a=$(echo "$1" | sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p'); echo "${a:-(empty)}"; }
 
-# Does an empty foreground count as LG Home? (auto: only while LG Home's own process exists, i.e. where it is frozen)
+# Does an empty foreground count as LG Home? (auto: only while LG Home's own process exists, i.e. where it is frozen;
+# on webOS 24/25 where HOME_APP_DIR exists, also counts during boot when LG Home has not spawned yet)
 empty_counts () {
     case "$EMPTY_AS_HOME" in 1) return 0 ;; 0) return 1 ;; esac
-    [ -n "$(home_pids)" ]
+    [ -n "$(home_pids)" ] && return 0
+    if [ -d "$HOME_APP_DIR" ]; then
+        _ec_up=$(uptime_now); _ec_up=${_ec_up%%.*}
+        [ "${_ec_up:-0}" -lt 75 ] && return 0
+    fi
+    return 1
 }
 
 # The language of the notifications: ru when the TV's menu language is Russian, en otherwise.
@@ -648,6 +654,8 @@ launcher_gone () {
 # One report from the TV about the app in front.
 takeover_noted=0
 asked=          # uptime_now when handle last asked for the launcher: for the "in front after N s" log line
+last_user_app=
+last_user_app_time=0
 handle () {
     line="$1"
     case "$line" in
@@ -676,6 +684,15 @@ handle () {
     if is_home "$line" || is_empty "$line"; then
         if [ -f "$ALLOW" ]; then
             if is_home "$line"; then allow_home_seen=1; thaw_home; fi
+            return
+        fi
+        # During boot: if a user app was running just before LSM reinitialized or SAM triggered LAUNCH_LASTAPP,
+        # freeze LG Home and relaunch/restore the user app instead of overriding it with HearthNG.
+        _h_now=$(uptime_now); _h_now=${_h_now%%.*}
+        if [ "${_h_now:-0}" -lt 75 ] && [ -n "$last_user_app" ] && [ $(( ${_h_now:-0} - last_user_app_time )) -le 15 ]; then
+            freeze_home
+            log "boot collision: $(app_of "$line") appeared over $last_user_app during boot (uptime ${_h_now}s): restoring $last_user_app"
+            "$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$last_user_app\"}" 2>/dev/null
             return
         fi
         if [ ! -f "$LAUNCHER/appinfo.json" ]; then
@@ -708,6 +725,11 @@ handle () {
     else
         asked=
         clear_stale_allow
+        _u_app=$(app_of "$line")
+        if [ -n "$_u_app" ] && [ "$_u_app" != "(empty)" ]; then
+            last_user_app="$_u_app"
+            _u_now=$(uptime_now); last_user_app_time=${_u_now%%.*}
+        fi
     fi
 }
 
@@ -800,6 +822,23 @@ freeze_at_start () {
     log "start: LG Home frozen"
 }
 
+# During boot on webOS 24/25, SAM may launch LG Home (LAUNCH_LASTAPP) tens of seconds after bootd started the launcher.
+# boot_freeze_monitor watches for HOME_PROC appearing during the boot window and freezes it immediately before it renders.
+boot_freeze_monitor () {
+    while kill -0 "$1" 2>/dev/null; do
+        _bf_up=$(uptime_now); _bf_up=${_bf_up%%.*}
+        [ "${_bf_up:-0}" -ge 75 ] && return 0
+        if [ ! -f "$ALLOW" ] && [ ! -f "$STOPPED" ] && ! takeover_active; then
+            if [ -n "$(home_pids)" ]; then
+                freeze_home
+                log "boot_freeze_monitor: LG Home process appeared at uptime ${_bf_up}s: frozen immediately"
+                return 0
+            fi
+        fi
+        $CHECK_NAP 0.5 2>/dev/null || $CHECK_NAP 1
+    done
+}
+
 # WATCH_TOAST="text": one notification the way the helper shows them (own or the TV's), then exit. Nothing else runs.
 if [ -n "$WATCH_TOAST" ]; then
     toast "$WATCH_TOAST"
@@ -854,6 +893,10 @@ if [ ! -d "$HOME_APP_DIR" ]; then
 fi
 
 freeze_at_start
+_init_up=$(uptime_now); _init_up=${_init_up%%.*}
+if [ "${_init_up:-0}" -lt 75 ] && [ -d "$HOME_APP_DIR" ]; then
+    ( boot_freeze_monitor $$ </dev/null >/dev/null 2>&1 & )
+fi
 ( wake_loop $$ </dev/null >/dev/null 2>&1 & )   # the TV turning on after standby
 if [ "$CHECK_EVERY" -gt 0 ] 2>/dev/null; then
     ( check_loop $$ </dev/null >/dev/null 2>&1 & )   # is the subscription still heard?
