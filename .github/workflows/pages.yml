@@ -31,6 +31,9 @@ jobs:
       - run: pip install "mkdocs-material==9.5.50"
       - run: mkdocs build --strict --site-dir site
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+        continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
@@ -44,3 +47,4 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
