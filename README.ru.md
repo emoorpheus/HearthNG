@@ -23,7 +23,7 @@
 ---
 
 <p align="center">
-  <img src="docs/screenshots/hearthng-home-hero.png" alt="Главный экран HearthNG (OLED Black)" width="950">
+  <img src="docs/screenshots/ru/hero.png" alt="Главный экран HearthNG (OLED Black)" width="950">
 </p>
 
 ## Обзор проекта
@@ -56,7 +56,7 @@ HearthNG опрашивает аппаратный статус портов Ext
 
 ### 3. Блокировка всплывающих окон обновления LG (для ТВ с Root)
 <p align="center">
-  <img src="docs/screenshots/hearthng-settings-noupdate-ru.png" alt="Блокировка обновления LG в настройках" width="850">
+  <img src="docs/screenshots/ru/settings-noupdate.png" alt="Блокировка обновления LG в настройках" width="850">
 </p>
 
 Системные обновления прошивки от LG часто закрывают уязвимости root-доступа и ломают сервисы Homebrew Channel. В HearthNG встроен переключатель в один клик в разделе *Настройки &rarr; Система &rarr; Запуск ТВ*, который блокирует системный апдейтер `/usr/sbin/update`, гарантируя защиту от нежелательных OTA-обновлений при сохранении работы всех homebrew-компонентов.
@@ -94,12 +94,12 @@ HearthNG легко настраивается под любой вкус:
 
 | Минималистичный OLED Black | Живые обои и градиенты |
 |:---:|:---:|
-| ![OLED Black Minimal](docs/screenshots/hearthng-home-dark-mono.png) | ![Aurora Wallpaper](docs/screenshots/hearthng-home-wallpaper.png) |
+| ![OLED Black Minimal](docs/screenshots/ru/dark-mono.png) | ![Aurora Wallpaper](docs/screenshots/ru/wallpaper.png) |
 | **Чистый #000 и монохромные значки** | **25 встроенных фото, слайдшоу с USB, градиенты** |
 
 | Тихий режим (только часы и дата) | Панель недавних приложений |
 |:---:|:---:|
-| ![Quiet Mode](docs/screenshots/hearthng-quiet-mode.png) | ![Recent Apps](docs/screenshots/hearthng-recents.png) |
+| ![Quiet Mode](docs/screenshots/ru/quiet-mode.png) | ![Recent Apps](docs/screenshots/ru/recents.png) |
 | **Скрытие плиток при бездействии для защиты OLED** | **Быстрое переключение с кнопкой «Закрыть все»** |
 
 ---
@@ -110,12 +110,12 @@ HearthNG легко настраивается под любой вкус:
 
 | Управление приложениями и входами | Внешний вид, темы и шрифты |
 |:---:|:---:|
-| ![Settings Apps](docs/screenshots/hearthng-settings-apps.png) | ![Settings Look](docs/screenshots/hearthng-settings-look.png) |
+| ![Settings Apps](docs/screenshots/ru/settings-apps.png) | ![Settings Look](docs/screenshots/ru/settings-look.png) |
 | **Сортировка, скрытие, избранное, переименование** | **Темы, форма плиток, отступы, шрифты часов** |
 
 | Виджет часов и погоды | Системные опции и Root |
 |:---:|:---:|
-| ![Settings Widget](docs/screenshots/hearthng-settings-widget.png) | ![Settings System](docs/screenshots/hearthng-settings-system-expanded.png) |
+| ![Settings Widget](docs/screenshots/ru/settings-widget.png) | ![Settings System](docs/screenshots/ru/settings-system-expanded.png) |
 | **Формат времени, тень, прогноз погоды онлайн** | **Замена LG Home, блокировка обновлений, автозапуск** |
 
 ---

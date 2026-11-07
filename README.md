@@ -23,7 +23,7 @@
 ---
 
 <p align="center">
-  <img src="docs/screenshots/hearthng-home-hero.png" alt="HearthNG Home Screen (OLED Black)" width="950">
+  <img src="docs/screenshots/en/hero.png" alt="HearthNG Home Screen (OLED Black)" width="950">
 </p>
 
 ## Overview
@@ -56,7 +56,7 @@ HearthNG polls real-time hardware status via webOS External Input Manager (`com.
 
 ### 3. Block LG OTA Update Pop-ups (Rooted TVs)
 <p align="center">
-  <img src="docs/screenshots/hearthng-settings-noupdate-ru.png" alt="Block LG update toggle in Settings" width="850">
+  <img src="docs/screenshots/en/settings-noupdate.png" alt="Block LG update toggle in Settings" width="850">
 </p>
 
 Firmware updates from LG frequently patch root exploits and break custom Homebrew Channel services. HearthNG includes a one-click toggle in *Settings &rarr; System &rarr; TV start* that halts and disarms `/usr/sbin/update`, shielding your TV against involuntary OTA updates while keeping all homebrew services active.
@@ -94,12 +94,12 @@ HearthNG adapts to your aesthetic preference with rich personalization options:
 
 | Minimalist OLED Black | Dynamic Wallpaper & Scrim |
 |:---:|:---:|
-| ![OLED Black Minimal](docs/screenshots/hearthng-home-dark-mono.png) | ![Aurora Wallpaper](docs/screenshots/hearthng-home-wallpaper.png) |
+| ![OLED Black Minimal](docs/screenshots/en/dark-mono.png) | ![Aurora Wallpaper](docs/screenshots/en/wallpaper.png) |
 | **Pure #000 with monochrome glyphs** | **25 curated photos, USB slideshow, custom gradients** |
 
 | Quiet Mode (Clock & Date Only) | Recent Apps Task Switcher |
 |:---:|:---:|
-| ![Quiet Mode](docs/screenshots/hearthng-quiet-mode.png) | ![Recent Apps](docs/screenshots/hearthng-recents.png) |
+| ![Quiet Mode](docs/screenshots/en/quiet-mode.png) | ![Recent Apps](docs/screenshots/en/recents.png) |
 | **Hides tiles after inactivity to protect OLED panels** | **Instant access to active applications with "Close All"** |
 
 ---
@@ -110,12 +110,12 @@ All settings are configured directly from your remote control:
 
 | Apps & Sources Management | Look, Themes & Typography |
 |:---:|:---:|
-| ![Settings Apps](docs/screenshots/hearthng-settings-apps.png) | ![Settings Look](docs/screenshots/hearthng-settings-look.png) |
+| ![Settings Apps](docs/screenshots/en/settings-apps.png) | ![Settings Look](docs/screenshots/en/settings-look.png) |
 | **Reorder, hide, favorite, or rename tiles** | **Themes, tile shapes, margins, custom fonts** |
 
 | Clock & Weather Widget | System & Root Control |
 |:---:|:---:|
-| ![Settings Widget](docs/screenshots/hearthng-settings-widget.png) | ![Settings System](docs/screenshots/hearthng-settings-system-expanded.png) |
+| ![Settings Widget](docs/screenshots/en/settings-widget.png) | ![Settings System](docs/screenshots/en/settings-system-expanded.png) |
 | **12/24h format, shadow, live local weather** | **LG Home replacement, update blocker, auto-start** |
 
 ---
