@@ -22,6 +22,8 @@ export interface TileModel {
 	color?: string;
 	/** an input with nothing plugged in: drawn greyed out (P62) */
 	disconnected?: boolean;
+	/** active signal present (green indicator dot) */
+	signal?: boolean;
 	/** a small second line under the name ("Not connected", or the connected device's name) */
 	note?: string;
 }
@@ -52,7 +54,7 @@ export class Tile extends Component<Props> {
 		const b = next.model;
 		if (this.monoSeen !== monoVersion()) return true;
 		return this.props.focused !== next.focused || this.props.lifted !== next.lifted || this.props.checked !== next.checked || this.props.dimmed !== next.dimmed || this.props.edit !== next.edit ||
-			a !== b && (a.key !== b.key || a.label !== b.label || a.imageUrl !== b.imageUrl || a.glyphImageUrl !== b.glyphImageUrl || a.sourceIcon !== b.sourceIcon || a.glyph !== b.glyph || a.color !== b.color || a.disconnected !== b.disconnected || a.pending !== b.pending || a.note !== b.note);
+			a !== b && (a.key !== b.key || a.label !== b.label || a.imageUrl !== b.imageUrl || a.glyphImageUrl !== b.glyphImageUrl || a.sourceIcon !== b.sourceIcon || a.glyph !== b.glyph || a.color !== b.color || a.disconnected !== b.disconnected || a.signal !== b.signal || a.pending !== b.pending || a.note !== b.note);
 	}
 
 	private hover = () => { if (this.props.onHover) this.props.onHover(); };
@@ -78,6 +80,7 @@ export class Tile extends Component<Props> {
 								? <Glyph name={model.glyph} />
 								: model.pending ? null : <div class="tile__monogram">{model.label.charAt(0).toUpperCase()}</div>}
 					{checked && <div class="tile__badge"><CheckMark /></div>}
+					{model.signal && <div class="tile__signal" />}
 				</div>
 				<div class="tile__ring" />
 				</div>

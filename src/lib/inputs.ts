@@ -18,6 +18,8 @@ export interface InputSource {
 	icon: string;      // file name under icons/inputs/
 	/** the name the connected device announces over HDMI-CEC, when known (rooted TVs; P62, PR #16) */
 	deviceName?: string;
+	/** active video/HDMI signal detected on this port (true when signal exists) */
+	signal?: boolean;
 }
 
 interface EimDevice {
@@ -27,6 +29,7 @@ interface EimDevice {
 	port: number;
 	connected?: boolean;
 	icon?: string;
+	hdmiSignalExist?: boolean;
 }
 
 interface EimResponse extends LunaResponse {
@@ -70,6 +73,7 @@ function listExternalInputs (): Promise<InputSource[]> {
 				label: d.label || tt('inputs.launcher'),
 				port: d.port,
 				connected: d.connected !== false,
+				signal: d.hdmiSignalExist === true,
 				icon: d.icon || FALLBACK_ICON
 			}))
 	);

@@ -7,5 +7,5 @@ export const BUNDLED_LANGUAGES: readonly {id: string; name: string; stamp: strin
 	{id: "id", name: "Bahasa Indonesia", stamp: "fc5c3c4919"},
 	{id: "pl", name: "Polski", stamp: "554e651519"},
 	{id: "pt-BR", name: "Português (Brasil)", stamp: "2e16454bbf"},
-	{id: "ru", name: "Русский", stamp: "85b498eb47"}
+	{id: "ru", name: "Русский", stamp: "e824a355a6"}
 ];

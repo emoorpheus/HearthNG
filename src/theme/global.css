@@ -466,6 +466,15 @@ html, body {
 }
 .tile__badge svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 
+.tile__signal {
+	position: absolute;
+	right: 14px; top: 14px;
+	width: 12px; height: 12px;
+	border-radius: 50%;
+	background: #10b981;
+	box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+}
+
 /* ---------- settings ---------- */
 
 .settings {

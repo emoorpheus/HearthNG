@@ -16,6 +16,7 @@ import type {ClockConfig} from '../lib/storage';
 import type {WeatherView} from '../lib/weather';
 import {FONT, LAYOUT} from '../theme/tokens';
 import {varScope} from '../lib/cssvars';
+import {createPointerGuard} from '../lib/pointerguard';
 
 export interface Appearance {
 	/** icon size, % of the standard size */
@@ -156,19 +157,29 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 		const wake = () => { hidden = false; setQuiet(false); setDimmed(false); window.clearTimeout(dimTimer); };
 		const onDown = () => { if (hidden) { swallow = true; wake(); } arm(); };
 		const onUp = () => { if (swallow) window.setTimeout(() => { swallow = false; quietRef.current = false; }, 0); };
-		const onPointer = () => { if (hidden) { wake(); quietRef.current = false; } arm(); };
+		// Pointer: the waking move or press only wakes (it hovers and clicks nothing until the pointer rests); repeated moves at one spot are ignored.
+		const guard = createPointerGuard();
+		const onPointer = (e: Event) => {
+			const m = e as MouseEvent;
+			if (e.type === 'mouseover' || e.type === 'mouseenter' || e.type === 'mouseup') { if (guard.blocks(e.type)) e.stopImmediatePropagation(); return; }   // never wake or keep awake, only guarded
+			if (e.type === 'mousemove' && guard.sameSpot(m.screenX, m.screenY)) return;
+			if (hidden) { guard.wake(e.type); wake(); quietRef.current = false; }
+			else if (e.type === 'mousemove') guard.move();
+			if (guard.blocks(e.type)) e.stopImmediatePropagation();
+			arm();
+		};
+		const PTR = ['mousemove', 'mouseover', 'mouseenter', 'mousedown', 'mouseup', 'click', 'wheel'];
 		window.addEventListener('keydown', onDown, true);
 		window.addEventListener('keyup', onUp, true);
-		window.addEventListener('mousemove', onPointer, true);
-		window.addEventListener('click', onPointer, true);
+		for (const type of PTR) window.addEventListener(type, onPointer, true);
 		arm();
 		return () => {
 			window.clearTimeout(timer);
 			window.clearTimeout(dimTimer);
 			window.removeEventListener('keydown', onDown, true);
 			window.removeEventListener('keyup', onUp, true);
-			window.removeEventListener('mousemove', onPointer, true);
-			window.removeEventListener('click', onPointer, true);
+			for (const type of PTR) window.removeEventListener(type, onPointer, true);
+			guard.stop();
 			quietRef.current = false;
 		};
 	}, [appearance.quietSec, appearance.quietDimSec, active, paused, wake]);
