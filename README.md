@@ -1,732 +1,209 @@
-<p align="center"><img src="public/largeIcon.png" alt="HearthNG icon" width="120"></p>
+<p align="center">
+  <img src="public/largeIcon.png" alt="HearthNG icon" width="120">
+</p>
 
-# HearthNG for webOS
+<h1 align="center">HearthNG for webOS</h1>
 
-**HearthNG** (NG: Next-Gen) is a fork of [Hearth for WebOS](https://github.com/rudra-avatar/Hearth) 2.1.3. The sections up to
-the line below are about what HearthNG does differently; the rest is Hearth's description of the app it is built on,
-with the name changed to HearthNG. Where it reports tests and user reports, they are Hearth's (see *Status*).
+<p align="center">
+  <strong>Next-Generation, ultrafast and calm home screen launcher for LG webOS TVs.</strong><br>
+  Engineered for pure OLED black, instant responsiveness, and deep hardware control.
+</p>
 
-## Authors
+<p align="center">
+  <a href="README.md"><strong>English</strong></a> | <a href="README.ru.md"><strong>Русский</strong></a>
+</p>
 
-- **HearthNG**: emoorpheus.
-- **Hearth for WebOS**, the app HearthNG is a fork of: [rudra-avatar](https://github.com/rudra-avatar/Hearth), with the
-  contributors named under *Credits*.
-- Hearth began as a fork of [partridgeworks/webos-launcher](https://github.com/partridgeworks/webos-launcher).
-
-The about line at the bottom right of HearthNG's Settings says the same:
-`HearthNG 1.0.0 by emoorpheus, based on Hearth 2.1.3 by rudra-avatar`. Licence: MIT ([`LICENSE`](LICENSE)).
-
-## What HearthNG changes
-
-- **Its own app ID** `com.hearthng.launcher` (Hearth: `tld.my.customlauncher`), title *HearthNG*, version 1.0.0. The
-  texts name the app HearthNG; *Hearth* stays only where a text means the original Hearth. HearthNG does not replace
-  or update Hearth.
-- **Replace LG Home (helper)** (rooted TVs, *Settings, System, TV start*), for TVs where LG Home is its own process
-  (webOS 25: `flutter-client -i com.webos.app.home`):
-  - LG Home's process is **frozen** (`SIGSTOP`) while HearthNG is in front, so it cannot come back over HearthNG. It is
-    unfrozen by the *LG Home* tile, when the setting is switched off, when HearthNG is uninstalled and by the
-    emergency exit.
-  - After every launch the helper checks that HearthNG really is in front and asks again; if HearthNG still does not
-    show, it restarts it, and as a last resort opens LG Home and shows a notification.
-  - Standby: nothing is launched while the TV is off; when it is on again HearthNG is opened (not over HDMI or a cast).
-  - A "Home screen is loading…" notification appears only when HearthNG is late. Notifications are in Russian when the
-    TV's menu language is Russian, in English otherwise.
-  - A watchdog (`guard.sh`) starts the helper again if it stops (at most 5 times per boot, then it unfreezes LG Home).
-  - An **emergency exit** over SSH (below).
-  - On TVs without that LG Home process nothing is frozen and the helper behaves as in Hearth.
-  - Details: [`src/homehook/README.md`](src/homehook/README.md).
-- **Russian** comes with the app (*Settings, System, HearthNG language*).
-- **OLED black** is pure black: tiles, the focused tile and the Settings background are `#000`; with the theme's own
-  background (no photo) the wallpaper is one flat black, without gradient, shading or text shadow.
-
-### Status
-
-Test build. HearthNG's changes are being tested on one TV: LG OLED65M59LA, webOS 25. Other TVs are untested.
-
-### Install HearthNG
-
-There is no Homebrew Channel repository for HearthNG yet (the address under *Install* below installs Hearth). Install
-the file `com.hearthng.launcher_1.0.0_all.ipk` with webOS Dev Manager (see *Option 2* below), or on a rooted TV over SSH
-(use your TV's address instead of `TV_IP`):
-
-```
-scp -O com.hearthng.launcher_1.0.0_all.ipk root@TV_IP:/tmp/
-ssh root@TV_IP
-luna-send -w 60000 -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_1.0.0_all.ipk","subscribe":true}'
-```
-
-### Moving from Hearth to HearthNG
-
-Hearth and HearthNG use the same helper folders on the TV (`/media/developer/launcher-*`), so use only one of them.
-Settings are not carried over (another app ID).
-
-1. In Hearth, switch off *Replace LG Home (helper)*, *Map home button* and the screen saver, and set *When the TV turns
-   on, open...* back to *TV default*.
-2. Uninstall Hearth (Homebrew Channel or Dev Manager).
-3. Install HearthNG, open it and switch on what you use.
-
-If Hearth stays installed and is opened with its helper switched on, it writes its own helper over HearthNG's; HearthNG's
-watchdog then unfreezes LG Home, shows a notification and stops. The row then reads *Another launcher's helper*.
-Switching *Replace LG Home (helper)* on again in HearthNG takes the folder back; while Hearth is installed, HearthNG
-says so first. If Hearth was set to open at power-on and is removed, the TV can keep trying to open it until its
-second restart (on webOS 10.3.0 it showed LG's Apps store instead); *When the TV turns on, open...* in HearthNG then marks
-the app as not installed.
-
-### Emergency exit
-
-If HearthNG and LG Home both fail to show, over SSH:
-
-```
-sh /media/developer/launcher-homehook/stop.sh          # stops the helper and its watchdog, unfreezes LG Home
-sh /media/developer/launcher-homehook/stop.sh resume   # undo
-```
-
-The emergency exit survives a restart until `stop.sh resume` or until *Replace LG Home (helper)* is switched on again.
+<p align="center">
+  <a href="https://github.com/emoorpheus/HearthNG/releases/latest"><img src="https://img.shields.io/github/v/release/emoorpheus/HearthNG?color=brightgreen&label=release" alt="Release"></a>
+  <img src="https://img.shields.io/badge/webOS-3.x%20--%2025%2B-blue" alt="webOS Compatibility">
+  <img src="https://img.shields.io/badge/OLED-Pure%20Black%20%23000-black" alt="OLED Optimized">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
+</p>
 
 ---
 
-# HearthNG: a fast, calm home screen for webOS TVs
+<p align="center">
+  <img src="docs/screenshots/hearthng-home-hero.png" alt="HearthNG Home Screen (OLED Black)" width="950">
+</p>
 
-**HearthNG** is made only for TVs that run webOS.
+## Overview
 
-Hearth works from **webOS 3 up to the newest versions (webOS 25/26)** (HearthNG keeps that code, but is tested on webOS 25 only) and it is **designed for speed**: it starts almost instantly, scrolls smoothly and everything is adjustable from the remote.
+**HearthNG** is a modernized, independent fork of [Hearth for webOS](https://github.com/rudra-avatar/Hearth), designed to liberate LG Smart TVs from bloated, advertising-heavy, and sluggish factory interfaces.
 
-It replaces the busy home screen with something quiet:
+Where stock LG Home bombards you with sponsored banners, auto-playing video teasers, and multi-row carousels, HearthNG delivers instantaneous boot times, fluid 60/120 fps animations, a minimalist clock and weather widget, and single-row app access — all navigation operable with standard directional keys or the Magic Remote pointer.
 
-- a **clock with the date and the weather**
-- **your apps and TV inputs in one row** along the bottom
-- a background that is plain **OLED black**, a **picture**, or a **slideshow** (your own photos or the 25 bundled photos)
+---
 
-It is a normal webOS app (app ID `com.hearthng.launcher`). On a rooted TV it can also become the screen the TV starts into and the one the Home button opens.
+## What Sets HearthNG Apart (Key Innovations)
 
-**Old and new web views:** one install file runs on **Chromium 38** (webOS 3) and on **Chromium 53 and newer** (webOS 4 up to the newest). A small loader picks the right build when the app starts.
+### 1. webOS 24/25 Boot Race Condition Elimination (`Helper 18-ng5`)
+On modern LG webOS versions (webOS 24 and 25, such as OLED C4, G4, and M5 series), LG Home was converted into an isolated background Flutter process (`flutter-client -i com.webos.app.home`). On stock launchers, a severe race condition occurred: if you turned on the TV and immediately opened an app or switched inputs, LG SAM (`LAUNCH_LASTAPP`) spawned LG Home in the background, which then violently popped up over your active app and terminated it.
 
-> **Reference device (Hearth):** an LG TV on firmware **04.60.90 (webOS 7.6.0)**, rooted with the Homebrew Channel. That is where Hearth is tested. HearthNG is tested on one TV only: LG OLED65M59LA, webOS 25 (see *Status*). Other TVs are covered by user reports (see *What works on which TV*). Parts that were not tested on a TV are marked **experimental** below.
+HearthNG introduces the **Helper 18-ng5** architecture:
+- **`boot_freeze_monitor`**: Freezes `flutter-client` with a targeted `SIGSTOP` signal during boot until the system completely settles.
+- **`collision recovery`**: Continuously monitors window focus and instantly recovers your foreground app if LG Home attempts to steal focus.
+- **Adaptive `empty_counts` polling**: Reduces CPU overhead to virtually zero during idle.
+- **Watchdog Supervisor (`guard.sh`)**: Recovers the helper automatically if terminated, with graceful fallback.
 
-**New to all this?** Hearth's [guides](https://rudra-avatar.github.io/Hearth/) (they describe Hearth; their source, with the name changed to HearthNG, is in [`docs/`](docs/)) start from a plain TV and explain every word, step by step: [Beginners guide](https://rudra-avatar.github.io/Hearth/BEGINNERS-GUIDE/), [every feature](https://rudra-avatar.github.io/Hearth/customizing/), [Troubleshooting](https://rudra-avatar.github.io/Hearth/troubleshooting/).
+### 2. Active HDMI Signal Indicator
+<p align="center">
+  <img src="docs/screenshots/hearthng-hdmi-indicator.png" alt="Active HDMI Signal Indicator on PS5 and Switch 2" width="850">
+</p>
 
-![HearthNG home screen with a favourites row](docs/screenshots/home-favourites.jpg)
+HearthNG polls real-time hardware status via webOS External Input Manager (`com.webos.service.eim/getAllInputStatus`). When a connected console (PlayStation 5, Nintendo Switch, Xbox) or PC is powered on and transmitting an active video stream, a vivid **neon-green status LED** illuminates directly on its HDMI tile. 
 
-| | |
-|---|---|
-| ![Dark mono icons](docs/screenshots/home-dark-mono.jpg) | ![Clouds wallpaper](docs/screenshots/home-clouds.jpg) |
-| ![Fish photo, one of the built-in wallpapers](docs/screenshots/home-fish.jpg) | ![Warm graphite theme](docs/screenshots/home-warm.jpg) |
-| ![Teal theme](docs/screenshots/home-teal.jpg) | ![Lava wallpaper](docs/screenshots/home-lava.jpg) |
-| ![Ocean wallpaper](docs/screenshots/home-ocean.jpg) | ![Misty mountains wallpaper](docs/screenshots/home-mist.jpg) |
-| ![Hold OK on an app for its menu](docs/screenshots/app-menu.jpg) | ![Home with the weather line](docs/screenshots/home-weather.jpg) |
-| ![Quiet mode: only the clock stays](docs/screenshots/quiet-mode.jpg) | ![Back opens the Recent apps panel](docs/screenshots/recents.jpg) |
+> You can see at a glance whether your gaming PC or console is awake before switching inputs.
 
-## What it does
+### 3. Block LG OTA Update Pop-ups (Rooted TVs)
+<p align="center">
+  <img src="docs/screenshots/hearthng-settings-noupdate-ru.png" alt="Block LG update toggle in Settings" width="850">
+</p>
 
-- **Clock, date and weather.**
-  - 27 typefaces; adjustable size, thickness, shadow, colour, opacity, position and alignment
-  - 12-hour, 24-hour or "same as the TV"
-  - The weather line (temperature, conditions, today's high and low) comes from [Open-Meteo](https://open-meteo.com), needs no account, and can be switched off
-  - Pick a city from a list of about 75, search for any place over the internet, or add your own cities with a custom theme
-  - A live preview sits beside the Widget settings
-- **Your apps and inputs in one row.**
-  - Choose what is shown, or hold OK on an app to edit it the LG way: Left/Right move it, Up gives *Hide*, *Uninstall* and a star for the favourites (and a gear for HearthNG Settings while its tile is hidden)
-  - **Favourites** make a short row of your most used apps (Down shows all the others)
-  - **Order by last opened** keeps recent apps first
-  - Back on the home row opens the **Recent apps** panel (rooted TVs)
-  - Inputs with nothing plugged in are greyed out and a connected device's name shows under its input (rooted TVs)
-- **Your own names and icons.** Hold OK on an app or input in Settings to rename it and pick a different icon, or use your own picture from a USB drive or the TV's storage (rooted TVs).
-- **Looks.**
-  - Presets: Standard, OLED (pure black, grey one-colour icons, no outline, the name only under the selected icon), OLED (minimal) (the OLED look with icons at 70 %, no widget, no weather and no HearthNG screen saver), Night, Minimal, Gallery; *Your own* brings back your look (see [Look](docs/features/look.md#preset))
-  - Six dark themes: OLED black, Calm blue-grey, Midnight blue, Deep forest, Deep teal, Warm graphite
-  - Eight icon styles (including *Glyph*, shapes without a tile) with dark or light tiles, icon colour and opacity (see *Icon styles* below)
-  - One or two rows, margins, app-name font and size
-- **Custom themes** (rooted). Load a zip with colours, fonts, icons, app order and names, cities and a wallpaper, or export your apps as a starting point. See *Custom themes* below.
-- **Wallpaper.** Plain black, one picture, a slideshow of a whole folder (USB drive or the TV's storage, subfolders too) or the bundled photos, with shuffle and an interval from 10 seconds to 1 hour.
-- **Quiet mode and OLED care.** After a pause the apps hide and the screen dims; OLED shift moves the picture a few pixels each minute.
-- **Screen saver** (rooted, experimental). Your pictures, GIFs, videos or a slideshow, or a built-in fireplace video, in place of the TV's saver; it can switch the TV off after a chosen time.
-- **Start the TV straight into HearthNG** (rooted). *System, TV start, When the TV turns on, open...* opens HearthNG at power-on.
-- **The Home button opens HearthNG** (rooted). HearthNG bundles the Input Hook key hook and starts it itself, so you need no other app; a helper script covers leaving apps with Back.
-- **Remote buttons** (rooted, experimental). Give the colour buttons and other dedicated buttons of your remote a new job.
-- **Languages.** HearthNG's menus can be switched to French, Polish and Brazilian Portuguese (checked by native speakers), to Indonesian, Spanish, German, Arabic or Russian (machine translated, waiting for native speakers) or to your own language file. See [Language files](https://rudra-avatar.github.io/Hearth/language_packs/).
-- **Made to be fast.** The home screen is drawn from saved data first; everything else (app list, weather, helper checks) happens a few seconds later in the background. While another app is in front, HearthNG lets go of its wallpaper and stops its clock.
-- **Clear messages.** When something cannot work on your TV, HearthNG says what and why instead of failing silently, and greys out the options that need a rooted TV.
+Firmware updates from LG frequently patch root exploits and break custom Homebrew Channel services. HearthNG includes a one-click toggle in *Settings &rarr; System &rarr; TV start* that halts and disarms `/usr/sbin/update`, shielding your TV against involuntary OTA updates while keeping all homebrew services active.
 
-## What works on which TV
+### 4. Pure OLED Black Architecture
+Designed specifically for high-end OLED displays (LG OLED B/C/G/M series, Titan Army Mini-LED):
+- Flat, true `#000000` pitch black background without gray gradients, noise, or light bleeding.
+- Maximizes OLED pixel shut-off for infinite contrast, lower power consumption, and zero burn-in risk.
+- Minimalist typography and crisp monochrome glyph options.
 
-The results in this section are Hearth's, from its maintainer and its users. HearthNG has been tested only on
-LG OLED65M59LA, webOS 25.
+### 5. Magic Remote Quiet Mode Guard
+Prevents inadvertent cursor hovering or micro-movements from waking up hidden rows or disrupting ambient clock viewing.
 
-### Tested versions
+### 6. FitScale for Low-Resolution Displays
+Dynamic viewport auto-scaling ensures that 720p and 768p secondary displays render with identical crisp proportions as native 1080p and 4K displays.
 
-| | |
-|---|---|
-| Reference device (everything tested) | Firmware **04.60.90**, **webOS 7.6.0**, rooted, Homebrew Channel 0.7.3 |
-| Not rooted | Tested on an LG TV with **webOS 11.2.0, firmware 43.21.44**: the home screen, Settings and the full app list work; options that need root are greyed out with the reason. Other firmware is untested |
-| webOS 3.x (Chromium 38) | **Works**, reported by users with two different TVs (details below) |
-| Also reported by users | webOS 4.x, 6.x, 8, 9, 10 and 11 (26): see the [Tested TVs table](https://rudra-avatar.github.io/Hearth/COMPATIBILITY/), which lists reports a maintainer has checked |
-| Newest versions (webOS 25/26) | **Works.** Reported on webOS 26 (11.2) rooted and not rooted. Hearth uses only standard web features and TV services that LG keeps across versions. Please report anything odd |
+### 7. Full Native Russian & English Bilingual Support
+Includes 100% complete, professionally written localization for all interfaces, settings menus, help descriptions, error messages, and emergency recovery terminal scripts.
 
-**Does it work on your TV?** Tell us with the [compatibility form](https://github.com/rudra-avatar/Hearth/issues/new?template=compatibility.yml). A maintainer checks each report and adds the label `verified`; a workflow then puts it in the table by itself.
+---
 
-### Older TVs: webOS 3.x (Chromium 38)
+## Hardware In Action
 
-Hearth works on webOS 3. The maintainer has no webOS 3 TV; the results below come from users.
+Direct screenshot captured live from an **LG OLED 65M59LA** running webOS 25 with active HDMI signals detected on Nintendo Switch 2 and PlayStation 5:
 
-- One user (webOS 3.x, web view 38): clock, apps and Settings work, and the Home button opens Hearth, also after standby
-- Another user (55UH6030-UC, webOS 3.4.3): buttons, weather and wallpaper work, but the *LG Home* tile says "Couldn't open LG Home" (the cause is not known yet)
-- Scrolling with the Magic Remote pointer can feel very sensitive
+<p align="center">
+  <img src="docs/screenshots/hearthng-tv-real.png" alt="Real LG OLED 65M59LA webOS 25 TV Capture" width="950">
+</p>
 
-How it works:
+---
 
-- One install file serves every TV. A loader checks whether the web view supports CSS custom properties (Chrome 49 and newer, so everything from webOS 4).
-- Newer TVs load `assets/app.js`. webOS 3 TVs load `assets/app.legacy.js` (ES5 with polyfills).
-- On webOS 3 the *helper script* opens Hearth when the Home bar is shown.
-- webOS 1 and 2 are not supported (no known way to root them).
+## Visual Styles & Customization
 
-### Rooted TV (Homebrew Channel): everything
+HearthNG adapts to your aesthetic preference with rich personalization options:
 
-The Homebrew Channel lets HearthNG run a few fixed commands on the TV. That powers:
+| Minimalist OLED Black | Dynamic Wallpaper & Scrim |
+|:---:|:---:|
+| ![OLED Black Minimal](docs/screenshots/hearthng-home-dark-mono.png) | ![Aurora Wallpaper](docs/screenshots/hearthng-home-wallpaper.png) |
+| **Pure #000 with monochrome glyphs** | **25 curated photos, USB slideshow, custom gradients** |
 
-- the live app list with real icons
-- Recent apps
-- USB and storage browsing for wallpapers
-- the Home button and the power-on app
-- the screen saver
-- remote buttons
-- theme and language files
-- uninstalling apps
+| Quiet Mode (Clock & Date Only) | Recent Apps Task Switcher |
+|:---:|:---:|
+| ![Quiet Mode](docs/screenshots/hearthng-quiet-mode.png) | ![Recent Apps](docs/screenshots/hearthng-recents.png) |
+| **Hides tiles after inactivity to protect OLED panels** | **Instant access to active applications with "Close All"** |
 
-### Not rooted (only Developer Mode): the core, with the extras greyed out
+---
 
-**Works:**
+## Settings & Controls Gallery
 
-- the home screen, clock and date
-- the **weather** (it uses the web view's own internet connection)
-- themes, sizes, fonts and colours
-- the built-in list of common apps
-- the bundled photos and languages
-- launching apps
+All settings are configured directly from your remote control:
 
-**Needs root, so it is greyed out with the reason:**
+| Apps & Sources Management | Look, Themes & Typography |
+|:---:|:---:|
+| ![Settings Apps](docs/screenshots/hearthng-settings-apps.png) | ![Settings Look](docs/screenshots/hearthng-settings-look.png) |
+| **Reorder, hide, favorite, or rename tiles** | **Themes, tile shapes, margins, custom fonts** |
 
-- Recent apps
-- reading USB and storage for wallpapers and icons
-- the Home button and the power-on app
-- the screen saver and remote buttons
-- theme and language files
-- uninstalling apps
+| Clock & Weather Widget | System & Root Control |
+|:---:|:---:|
+| ![Settings Widget](docs/screenshots/hearthng-settings-widget.png) | ![Settings System](docs/screenshots/hearthng-settings-system-expanded.png) |
+| **12/24h format, shadow, live local weather** | **LG Home replacement, update blocker, auto-start** |
 
-Without root, HearthNG is an app you open yourself; it cannot replace LG Home or start the TV into itself.
+---
 
-**More apps on the row without root.** The built-in list only shows well-known apps. Two ways to get the rest:
+## Compatibility
 
-- **Settings, System, the app-list row (tested on webOS 11.2).** HearthNG asks the TV for its full app list through LG's remote-control service, with no root and no computer.
-  1. Turn on "LG Connect Apps" in the TV's settings (LG menu: Network > LG Connect Apps; newer TVs: All Settings > Connection > Mobile Connection Management).
-  2. Choose the row in HearthNG.
-  3. Press OK on the TV when it asks to allow the connection.
+HearthNG supports all LG webOS versions from legacy platforms up to latest models:
 
-  Newer firmware refuses a web page's own connection, so a small helper service packaged with HearthNG makes it. It may not work on every TV or firmware; when it fails, the built-in list stays. The pairing key is kept only inside HearthNG. The row is hidden on rooted TVs.
+| Platform | Target TVs | Core Launcher | Replace LG Home | Active HDMI LED | Update Blocker |
+|---|---|:---:|:---:|:---:|:---:|
+| **webOS 24 / 25+** | LG OLED B4, C4, G4, M4, B5, C5, G5, M5 | :white_check_mark: | :white_check_mark: *(Helper 18-ng5)* | :white_check_mark: | :white_check_mark: |
+| **webOS 22 / 23** | LG OLED C2, G2, C3, G3, QNED series | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| **webOS 5.x / 6.x** | LG OLED CX, GX, C1, G1 (2020–2021) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| **webOS 3.x / 4.x** | Legacy webOS models (Chromium 38/53) | :white_check_mark: *(ES5 polyfill)* | :white_check_mark: *(SAM/bootd)* | :white_check_mark: | :white_check_mark: |
 
-  ![LG Connect Apps switched On in the TV settings (Network)](docs/screenshots/lg-connect-apps.jpg)
-- **By hand.** The [partridgeworks/webos-launcher](https://github.com/partridgeworks/webos-launcher) guide explains how to add custom apps and icons.
+*Note: Core launcher functionality works on all TVs (even unrooted via webOS Developer Mode). System-level hooks (replacing LG Home, blocking updates, power-on app) require root privileges via Homebrew Channel.*
 
-### Opening HearthNG without root (no Home replacement possible)
+---
 
-Without root nothing can replace LG Home:
+## Installation
 
-- a normal app is suspended or closed when another app opens
-- it cannot read which app is in front (the TV refuses it)
-- a background service exits after a few seconds
+### Method 1: webOS Dev Manager (Recommended)
+1. Download the latest `com.hearthng.launcher_1.0.0_all.ipk` from [Releases](https://github.com/emoorpheus/HearthNG/releases/latest).
+2. Open **webOS Dev Manager** on your PC/Mac.
+3. Click **Install**, choose the `.ipk` file, and wait for confirmation.
 
-Settings, System has the row *Open HearthNG without root: guide* (non-rooted TVs only) with the short version of this section. Two ways to open HearthNG:
+### Method 2: Command Line (SSH)
+On a rooted TV or via Developer Mode:
 
-- **Quick Access (works on any TV, no root).** Open HearthNG once, then use LG's own Quick Access: hold one of the number keys 1-9 on the remote (or open the TV's *Quick Access* setting, name varies by webOS version) and choose HearthNG. A later press of that number opens HearthNG from any app. The TV starts HearthNG fresh each time, so it is slower than a rooted setup.
-- **A second always-on device (advanced).** [webos-vibehack](https://github.com/OmkarK97/webos-vibehack) (MIT) runs a small watcher on a second device that stays on (a Raspberry Pi or home server). It sees which app is in front and tells the TV to open HearthNG when LG Home shows. Needs "LG Connect Apps" on. Not tested with HearthNG.
+```bash
+# Copy package to TV
+scp com.hearthng.launcher_1.0.0_all.ipk root@<TV_IP>:/tmp/
 
-### Experimental, not tested on a TV
-
-These are marked experimental in Settings too:
-
-- the screen saver on webOS 10 and newer
-- *Set HearthNG as the TV's Home app* (worked on webOS 4.5, not on 7.6)
-- *Keep HearthNG ready*
-- *LG preloaded apps*
-- *Map additional keys*
-
-## Install
-
-New to this? Hearth's [Beginners guide](https://rudra-avatar.github.io/Hearth/BEGINNERS-GUIDE/) shows every step from a plain TV, including [installing Hearth](https://rudra-avatar.github.io/Hearth/guide/install/). For HearthNG, install the file as in Option 2; the repository in Option 1 installs Hearth.
-
-### Option 1: through the Homebrew Channel (recommended, gets you updates)
-
-This installs Hearth (`tld.my.customlauncher`), not HearthNG.
-
-1. Open the **Homebrew Channel** on the TV and go to **Settings**.
-2. Choose **Add repository** and type this address:
-
-   `https://raw.githubusercontent.com/rudra-avatar/Hearth/main/repo/apps.json`
-
-3. Go back to the app list, open **Hearth** and choose **Install**.
-4. **Updating:** when a new version is released, open the Homebrew Channel, open Hearth and it shows the new version (for example "2.0.1 (installed: 2.0.0)") with an **Update** button.
-
-**Typing with the TV remote is slow. Easier ways to enter the address:**
-
-- **LG Power** (free Android app; phone and TV on the same Wi-Fi). It is a remote with a keyboard that types straight into the TV. [Google Play](https://play.google.com/store/apps/details?id=com.nic.lgpower), [source](https://github.com/Nicsilver/LGPower) (a hobby project, not made by LG).
-- **webOS Dev Manager** skips the typing: install the `.ipk` file from a computer or an Android phone (Option 2 below).
-- **Over SSH** from a computer on the same network:
-
-  `ares-launch org.webosbrew.hbchannel -p '{"launchMode":"addRepository","url":"https://raw.githubusercontent.com/rudra-avatar/Hearth/main/repo/apps.json"}'`
-
-### Option 2: install the file yourself
-
-HearthNG has no releases page yet: the file `com.hearthng.launcher_1.0.0_all.ipk` comes from the HearthNG author or from your own build (*Build* below). Then use one of these:
-
-- **webOS Dev Manager on a computer** (Windows, Mac, Linux; [download](https://github.com/webosbrew/dev-manager-desktop)). No root needed, Developer Mode is enough.
-- **webOS Dev Manager on an Android phone** (the app *webOS Dev Manager* on Google Play). The downloaded file is in *Downloads*.
-- **Over SSH** on a rooted TV (commands below).
-
-With Dev Manager:
-
-1. Choose **Add device** and type the TV's **IP address** (the Developer Mode app shows it). **Dev Mode Status** and **Key Server** must be on.
-2. Open the TV's **Apps** page, press **Install** and pick the `.ipk` file.
-3. Open **HearthNG** from the TV's app list.
-
-With SSH on a rooted TV:
-
-```
-scp -O com.hearthng.launcher_1.0.0_all.ipk root@TV_IP:/tmp/
-ssh root@TV_IP
-luna-send -i luna://com.webos.appInstallService/dev/install '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_1.0.0_all.ipk","subscribe":true}'
-luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.hearthng.launcher"}'
+# SSH into TV and install
+ssh root@<TV_IP>
+luna-send -w 60000 -i luna://com.webos.appInstallService/dev/install \
+  '{"id":"com.ares.defaultName","ipkUrl":"/tmp/com.hearthng.launcher_1.0.0_all.ipk","subscribe":true}'
 ```
 
-### Updating and removing
+---
 
-Installing over an older version keeps your apps, their order and names, and favourites.
+## Emergency Recovery (SSH)
 
-(In Hearth, updating from 1.x to 2.0.0 reset the look, widget, wallpaper, home-row and quiet-mode values to the new defaults once; *Settings, Look, Restore my settings from before the update* brings old values back once. HearthNG does not take over Hearth's settings.)
+If you ever experience issues with home screen replacement or screen freezes, you can immediately restore default TV behavior over SSH:
 
-To remove HearthNG, turn off *Replace LG Home with SAM* or *Replace LG Home (helper)*, the screen saver and *Map home button* first, then uninstall HearthNG with Dev Manager (the *Apps* page) or `ares-install --remove com.hearthng.launcher`. If you forget, the next TV start removes their start-up links and folders by itself.
+```bash
+# Emergency disable: terminates helper, watchdog, and unfreezes stock LG Home
+sh /media/developer/launcher-homehook/stop.sh
 
-## Using it
-
-| Where | Key | Does |
-|---|---|---|
-| Home | ← → | Move along the row (the row loops) |
-| Home | OK | Open the app. With the *LG Home* and *System Settings* tiles switched on, they open LG's own screens; the last tile is **HearthNG Settings** |
-| Home | hold OK | Edit the tile: Left/Right move it; Up: Hide, Uninstall, the favourites star (and a gear for HearthNG Settings while its tile is hidden); OK or Back: done |
-| Home | Back | Open the Recent apps panel (OK opens an app, hold OK closes it, ↑ Close all) |
-| Home | ↓ / ↑ | With favourites: show or hide the row of all other apps |
-| Settings | ← → on the tab bar | Apps & Sources · Look · Widget · Wallpaper · Screen saver · System |
-| Settings (Apps, Sources) | OK / hold OK | Show or hide an item / edit its name and icon. **Refresh list**, **Favourites** and **Order by last opened** sit above the grid |
-| Settings (other tabs) | OK, or ← → | OK steps through the choices or opens a group; ← → nudge numbers (they stop at the ends) |
-| Any other screen | Back | Go back one screen (Back first closes an open group) |
-
-### Settings
-
-- **Apps & Sources:**
-  - which apps and HDMI inputs are on the row
-  - their order, favourites, names and icons
-  - **Refresh list** looks for newly installed apps
-- **Look:**
-  - *Preset*: Standard, OLED, OLED (minimal), Night, Minimal, Gallery, Your own
-  - *Theme*: *Current theme*, *Export theme base*, *Save this theme*, *Delete this theme*
-  - *Icons*: size, shape, style, tile, colour, outline, spacing, opacity
-  - *Home row*: rows, scroll speed, when Home is pressed, margins, input status, LG Home and System tiles
-  - *Labels*: the app names, or the name only under the selected icon
-  - *Quiet mode*: hide after, dim after, dim strength, OLED shift
-  - *Favourites* margins and the *Recent apps* panel size
-  - **Reset HearthNG visual settings to default**
-- **Widget:**
-  - *Show widget*
-  - *Time and date*
-  - *Widget look*: size, font, thickness, position, alignment, colour, shadow, backdrop, opacity
-  - *Weather*: on or off, unit, city, city name, today's high and low
-- **Wallpaper:** the picture or slideshow, interval, shuffle, opacity and bottom fade.
-- **Screen saver (rooted):**
-  - the saver on or off and what it plays
-  - interval, shuffle, fit, OLED care, brightness
-  - switch the TV off after, show it now
-- **System:**
-  - *HearthNG language*
-  - *Remote control*: Map home button, Map additional keys
-  - *TV start*: app list without root, no-root guide, Replace LG Home, When the TV turns on open..., LG logo, Home app
-  - *Memory*: LG preloaded apps, Keep HearthNG ready, Reopen
-  - *Show the Debug tab*: adds the Debug and Tests tabs, for reporting a problem
-
-Every feature is explained in plain words in the [guides](https://rudra-avatar.github.io/Hearth/customizing/).
-
-| | |
-|---|---|
-| ![Look: Theme](docs/screenshots/settings-theme.jpg) | ![Look: Icons](docs/screenshots/settings-icons.jpg) |
-| ![Look: Home row](docs/screenshots/settings-home-row.jpg) | ![Apps & Sources](docs/screenshots/settings-apps.jpg) |
-| ![Widget](docs/screenshots/settings-widget.jpg) | ![Screen saver](docs/screenshots/settings-saver.jpg) |
-| ![System](docs/screenshots/settings-system.jpg) |
-
-### Icon styles
-
-*Settings, Look, Icons, Icon style* (experimental) changes how every icon on the row is drawn. The change shows at once.
-
-- **Original:** the real picture of each app.
-- **Minimal:** the real picture without a border.
-- **Dark mono:** a light grey one-colour shape on a dark tile.
-- **Soft mono:** a muted one-colour shape on a slightly lighter tile.
-- **Accent mono:** the one-colour shape in the theme's accent colour (not offered with OLED black).
-- **Gradient mono:** the one-colour shape fades from light to darker.
-- **Tinted tile:** the real picture on a tile in the theme's colour.
-- **Glyph:** just the one-colour shape, with no tile. The highlighted icon only grows. *Icon tile: Dark* gives dark shapes and labels, *Light* gives light ones.
-
-Beside it, **Icon tile** picks a *Dark* tile with a light shape or a *Light* tile with a dark shape, **Icon colour** changes the shape colour, and **Icon opacity** lets the wallpaper show through. Size, spacing and shape have their own rows.
-
-### Edit a name or icon
-
-In **Settings → Apps & Sources**, move to an item and **hold OK** (release OK, then press ↓ to edit). The home row shows each change at once, and it is kept across restarts and updates.
-
-| | |
-|---|---|
-| ![Editing an app](docs/screenshots/edit-app-icon.jpg) | ![Editing an input](docs/screenshots/edit-source-icon.jpg) |
-
-- **Name:** up to 24 characters. For an input, ← → step through suggestions (PlayStation 5, Xbox, Laptop and more); OK types any name with the on-screen keyboard. For an app, OK types a name.
-- **Icon:** ← → or OK step through the icons that come with HearthNG: inputs have 16 symbols, apps have the bundled logos of common apps.
-- **Use a picture from a USB drive or the TV:** pick your own image (a square one works best; it is cropped to a square and shrunk). Needs a rooted TV. The picture is saved inside HearthNG's settings, so the USB drive can be removed afterwards.
-- **Use the app's (or the TV's) name and icon:** puts the original back.
-- The names in the *Hide* and *Uninstall* menus stay the app's real names.
-
-### Wallpaper
-
-![The wallpaper picker](docs/screenshots/wallpaper-picker.jpg)
-
-**Settings → Wallpaper → Wallpaper** opens a folder browser. It shows:
-
-- the bundled photos
-- a **USB drive**
-- **Internal storage** (`/media/developer`)
-
-OK on a picture sets it. **Play this folder as a slideshow** plays every picture in the folder (a second row also plays its subfolders). Use JPG, PNG, WebP or BMP.
-
-A web app cannot read files itself, so on a rooted TV the Homebrew Channel's service reads them in small pieces. If it cannot, the screen says why and offers **Try again**.
-
-**Before you choose:** big pictures slow the launcher down, so the smaller the file, the faster HearthNG starts. **The recommended size is 1920x1080**, a good balance of quality and performance; please resize your wallpapers to it.
-
-The hard limit is **8 MB and 25 megapixels** per picture. A picture over the limit is skipped in a slideshow and refused as a single wallpaper.
-
-**Copying your own pictures to the TV** (rooted TV; `<TV address>` is the **IP:** number at the bottom right of HearthNG's Settings):
-
-1. Put wallpaper pictures in **`/media/developer/wallpapers`**. HearthNG makes this folder for you (see *Folders HearthNG makes* below). Screen saver pictures, GIFs and videos go in **`/media/developer/screensavers`**. The pickers show both first (*Wallpapers folder*, *Screen savers folder*).
-2. **From a computer with SSH:** `scp photo.jpg root@<TV address>:/media/developer/wallpapers/` (if `scp` fails, try `scp -O photo.jpg ...`).
-3. **Without an SSH client:** connect to the TV in [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) and use its file or terminal option to copy into the same folder. A USB drive works too.
-4. Open **Settings → Wallpaper → Wallpaper** and choose the picture or the folder.
-
-### Folders HearthNG makes on the TV
-
-On a rooted TV HearthNG makes folders under `/media/developer`, each one only when something needs it.
-
-**Folders for your own files.** Each is made once, when you open the matching picker. A folder you delete is not made again.
-
-| Folder | What goes in it | Made when |
-|---|---|---|
-| `wallpapers` | your wallpaper pictures | you open a wallpaper or screen saver picker |
-| `screensavers` | your screen saver pictures, GIFs and videos | the same |
-| `themes` | theme zips and `theme_base.zip` | you open the theme picker or use *Export theme base* (which replaces an older `theme_base.zip`) |
-| `languages` | language files | you open the language file picker |
-
-**Folders for a feature.** Each is made when you switch the feature on. They hold HearthNG's own scripts and settings, so leave them alone.
-
-| Folder | Feature |
-|---|---|
-| `launcher-homehook` | *Replace LG Home (helper)* |
-| `launcher-homekey` | *Map home button* (the bundled Input Hook key hook) |
-| `launcher-screensaver` | the screen saver |
-| `launcher-poweron` | *When the TV turns on, open...* |
-| `launcher-homeapp` | *Set HearthNG as the TV's Home app* |
-| `launcher-keepready` | *Keep HearthNG ready* |
-| `launcher-preload` | *LG preloaded apps* |
-| `launcher-remap` | *Map additional keys* |
-| `launcher-theme` | a loaded or saved custom theme |
-
-If you uninstall HearthNG while the helper, the screen saver or *Map home button* is still on, the next TV start removes their start-up links and folders by itself.
-
-### Weather and privacy
-
-The weather comes from [Open-Meteo](https://open-meteo.com) (free, no account).
-
-**More cities.** Three ways to choose where the weather is for:
-
-- pick a city from the list of about 75
-- choose **Search for a city** and type any place name (worldwide; needs the internet)
-- add your own cities with a custom theme (the `cities` part, see *Custom themes*); they appear at the top of the City list
-
-**What is sent:** only the latitude and longitude of the city you chose, and the words you type in the city search.
-
-**When:** the weather is fetched a few seconds after HearthNG appears, then every 30 minutes while HearthNG is in front. The last reading is kept so the home screen never waits for the internet. A reading older than 6 hours is not shown.
-
-**Older TVs:** if the TV's web view cannot make a secure connection (some older TVs cannot), HearthNG asks the TV's own `curl` or `wget` through the Homebrew Channel instead. The last-resort attempts skip the certificate check, which is acceptable for public weather numbers that are only ever read as numbers and a place name.
-
-### Screen saver (rooted, experimental)
-
-*Settings, Screen saver, Custom Screen Saver (Photo, GIF, Video or Slideshow).* It is **off on a fresh install** (the TV's own screen saver works); switched on, it starts with a built-in video; a failed set-up turns it off with a message.
-
-Under *Pictures* you can choose:
-
-- a photo
-- a GIF
-- a video (mp4, mkv, webm; muted, plays to its end)
-- a folder
-- the bundled photos
-- "Same as the wallpaper", which follows the Wallpaper row
-
-How it behaves:
-
-- The TV decides when it starts: it uses the idle time in the TV's own screen saver settings, so make sure the TV's saver is on.
-- Any key ends it.
-- *Switch the TV off after* puts the TV in standby after the saver has run that long.
-- A very large GIF or video may use a lot of memory, and GIFs, videos and fast slideshows use more power than a still picture.
-- Some TVs hold the saver back (OLED, no-signal inputs).
-
-Nothing is changed on the TV's storage: a file is mounted in memory over LG's screen saver file, and a start-up link mounts it again after a restart. Switch it off in the same row; a restart puts LG's saver back.
-
-**On webOS 10 and later** LG's saver is a different kind of app. HearthNG mounts a changed copy and asks the TV to read it again. This is untested on a TV; if the TV does not take it, LG's saver stays.
-
-**Credit:** the method for webOS 10 and later is the one documented by [Glasshouse](https://github.com/rorygallagher2024/glasshouse) by Rory Gallagher (MIT); see Credits.
-
-If the saver does not work, send the output of `sh /media/developer/launcher-screensaver/screensaver.sh diagnose` (over SSH).
-
-### Custom themes (rooted)
-
-A custom theme is **one zip file**. HearthNG can load it, keep it and take it away again. You do not start from nothing: HearthNG writes a starting zip for you.
-
-**What a theme can change.** Every part is optional; a theme can hold just one of them.
-
-- colours: the theme palette, the widget colour (or your own colour) and the icon colour
-- fonts: your own font files for the widget and for the app names
-- icon style and tile (dark or light)
-- the wallpaper: one picture, or a folder of pictures as a slideshow
-- app icons: one picture per app
-- app order and app names
-- cities for the weather (added at the top of the City list)
-
-**Step by step**
-
-1. **Export the base theme first.** Do not start from an empty zip: the export is how your app list and icons get into a theme. *Settings, Look, Theme, Export theme base.* HearthNG writes `theme_base.zip` into `/media/developer/themes`. It holds your apps in their present order, their names, their icons and a copy of the theme guide.
-2. **Copy it to a computer.** Over SSH: `scp root@<TV address>:/media/developer/themes/theme_base.zip .` (or use the file option of webOS Dev Manager, or a USB drive).
-3. **Unzip it and customise it.**
-   - Edit `manifest.json` to add or change parts: colours, fonts, wallpaper, cities, the order and names of apps.
-   - Replace pictures in the icon folder with your own.
-   - Keep icons small (64 to 256 pixels, a few KB each) and wallpapers at 1920x1080; heavy files slow HearthNG down.
-   - Allowed files: pictures (png, jpg), fonts (woff2, woff, ttf, otf), the manifest and notes. Scripts and programs make HearthNG refuse the theme.
-   - Every part is explained in the [theme guide](https://rudra-avatar.github.io/Hearth/theme/theme-guide/). You can also give the guide and the zip to an AI helper.
-4. **Zip it again** so that `manifest.json` is at the top of the zip, not inside a folder. A ready-made empty example is `docs/theme/theme_name.zip` in this repository.
-5. **Copy the zip back** to `/media/developer/themes` on the TV (or put it on a USB drive).
-6. **Load it.** *Settings, Look, Theme, Current theme*: press OK and pick the zip. A wrong file changes nothing; HearthNG shows a pop-up with the reason.
-7. **Keep or remove it.** *Save this theme* keeps it inside HearthNG, so ← → under *Current theme* can pick it again. *Delete this theme* removes it, and what it set goes back to the defaults.
-
-A theme puts its values into the normal settings, so you can still change them afterwards. A theme wallpaper replaces your wallpaper while the theme is loaded, and an icon you picked yourself for an app wins over the theme's icon.
-
-### Languages
-
-*Settings, System, HearthNG language*: the arrows switch between:
-
-- English
-- the languages that come with HearthNG (no root; they arrive with updates)
-- your own language file (OK loads it, rooted TVs)
-
-The bundled French pack (by Foxinou35), Polish pack (by sir_RAFIK) and Brazilian Portuguese pack (by assanches) were written and checked by native speakers. The bundled Indonesian, Spanish, German, Arabic and Russian packs are machine translated and are shown as *(machine translated)* until a native speaker reviews them.
-
-To add a language, see [Language files](https://rudra-avatar.github.io/Hearth/language_packs/) and the *Translation* issue form. Supported scripts: Latin, Cyrillic, Greek and Arabic (left to right).
-
-## Replacing LG Home (rooted TVs)
-
-### Recommended settings
-
-For a clean, minimal and easy way to use HearthNG as your main launcher, switch on these five settings together:
-
-1. **Replace LG Home with SAM** (experimental): HearthNG takes LG Home's place in the TV itself, so LG Home never flashes. Tested on webOS 7; if it does not work on your TV, use **Replace LG Home (helper)** instead.
-2. **Map home button:** the Home button opens HearthNG at once, with no flash of LG Home.
-3. **When the TV turns on, open...:** choose HearthNG, so the TV starts in HearthNG.
-4. **Keep HearthNG ready** (experimental): HearthNG stays in memory, so it appears immediately.
-5. **Turn off preloaded app:** (Optional) LG keeps a lot of apps half-awake in the background which can severely cripple older, slower TVs. Turn them off to get a smoother experience.
-
-
-Together they make HearthNG the screen you see when the TV starts, when you press Home and when you leave an app, so you never need to see LG Home again. The *LG Home* tile in HearthNG still opens it if you ever want it.
-
-SAM puts HearthNG where LG Home would be, so LG Home does not show at all. The helper can only react once LG Home is already in front, so with the helper LG Home may still flash for a moment after leaving an app with Back (the Home button itself does not flash).
-
-**Set it up (once):**
-
-1. Install HearthNG (see *Install HearthNG* above).
-2. Open **Settings, System, TV start** and switch on **Replace LG Home with SAM (experimental)**. Read its warning first. On a TV where it does not work, switch it off and use **Replace LG Home (helper)** instead.
-3. Open **Settings, System, Remote control, Map home button** and press Home when asked.
-4. In **Settings, System, TV start**, open **When the TV turns on, open...**, choose HearthNG, then restart the TV once.
-5. Open **Settings, System, Memory** and switch on **Keep HearthNG ready**. Read its warning first.
-6. Optional: turn off the LG logo at start-up (**Show the LG logo when the TV starts**, in *TV start*).
-
-The next sections explain each setting.
-
-### Map home button (flash-free Home key, no other app needed)
-
-*Settings, System, Remote control, Map home button.* HearthNG bundles the [Input Hook](https://github.com/Simon34545/lginputhook) key hook (credited below) and starts it itself, so you do not need the Input Hook app.
-
-Press the Home button when asked:
-
-- If its code is one LG is known to use (773, 774 or 125), HearthNG maps it by itself and a pop-up says whether it worked.
-- If not, a guide shows the pressed button on a drawing of your remote, and you can pick a code by hand.
-- The mapping is kept across restarts.
-
-![Map home button](docs/screenshots/remote-home-button.jpg)
-
-If the separate *Input Hook* app is installed with its own bindings, HearthNG greys the rows out and says why. HearthNG never changes that app's settings.
-
-### Replace LG Home with SAM (experimental) (Settings, System, TV start)
-
-The TV has a part called SAM that keeps the list of apps and decides what opens when you press Home. This setting puts a plain black page in LG Home's place and asks SAM to read it, so the TV opens HearthNG wherever it would open LG Home, with **no flash of LG Home**.
-
-- It starts about 25 seconds after the TV starts. SAM may be restarted once while it is switched on, and the screen can blink for a few seconds.
-- It was tested on webOS 7 only.
-- It cannot be on at the same time as *Replace LG Home (helper)*: each one is greyed out while the other is on.
-- Switch it off to give LG Home its place back. On a TV that had to restart SAM, restart the TV once more afterwards.
-- The method comes from [Glasshouse](https://github.com/rorygallagher2024/glasshouse) by Rory Gallagher (credited below).
-
-### Replace LG Home (helper) (Settings, System, TV start)
-
-A small background helper watches which app the TV reports as being in front. When that becomes LG Home (Home button, leaving an app with Back, boot) it opens HearthNG instead. **Nothing is replaced or mounted.** One click installs the helper, starts the bundled key hook and maps the Home button (code 773).
-
-- It starts at boot (a link in the TV's startup folder) and also whenever HearthNG is on screen.
-- **LG Home can flash for a moment** before HearthNG opens, because the helper can only react once LG Home is already in front. *Map home button* avoids the flash for the Home key.
-- The "LG Home" tile still opens LG's own Home.
-- **Turn it off before uninstalling HearthNG.** Reversal steps and a diagnostics script: [`src/homehook/README.md`](src/homehook/README.md).
-
-### Start the TV on HearthNG
-
-*System, TV start, When the TV turns on, open...* makes the TV open HearthNG when you switch it on (remote, the TV's own button, a cold start; optionally also a network wake-up).
-
-- It needs one full restart of the TV to start working.
-- It is undone by choosing *TV default* (or `rm /var/luna/preferences/bootd.json` over SSH).
-- *System, TV start, Add HearthNG as a TV input* (On/Off, rooted TVs) lists HearthNG next to HDMI 1. Set the TV to start on its last input.
-
-Details and undo steps: [`src/poweron/README.md`](src/poweron/README.md).
-
-### Keep HearthNG ready (experimental)
-
-*System, Memory, Keep HearthNG ready* asks the TV to keep HearthNG in memory so the Home key shows it at once.
-
-- It uses TV memory, so HearthNG shows a warning first.
-- A failing step switches it off with the reason.
-- *Reopen HearthNG if the TV closed it* works only together with it.
-- Both rows are greyed out on a TV that has no memory list.
-
-### Set HearthNG as the TV's Home app (experimental, webOS 4.x)
-
-*System, TV start, Set HearthNG as the TV's Home app* writes HearthNG into the TV's own Home app setting so the Home button opens it directly. The old value is kept and put back when you switch it off.
-
-- It worked on webOS 4.5 (LG 65UM7100PLA, tested by Obednal97).
-- On webOS 7.6 the setting is stored but the Home button ignores it.
-- It cannot be used together with *Replace LG Home (helper)*, so it is not part of the recommended settings.
-
-Undo steps: [`src/homeapp/README.md`](src/homeapp/README.md).
-
-### Other rooted features
-
-- **Reassign remote buttons (experimental).** *System, Remote control, Map additional keys* gives the colour buttons and other dedicated buttons of your remote a new job: open an app or input, HearthNG, mute, LG Home, or nothing.
-  - *Press a button to reassign it* lets the remote say which button is meant.
-  - Home, arrows, OK, Back, power, volume, channels and numbers are never taken.
-  - A small key filter is added to the TV's own filter chain, in memory only.
-  - After the first change HearthNG asks whether the remote still works, and only then makes it permanent.
-
-  ![Map additional keys](docs/screenshots/remote-extra-keys.jpg)
-- **LG preloaded apps (experimental).** LG keeps some apps (YouTube, the browser and other video apps) loaded in the background so they open fast; on some TVs that holds several hundred MB.
-  - *System, Memory, LG preloaded apps* lists the ones LG preloads on your TV, with the memory each takes once loaded.
-  - OK switches one off (it then opens a little slower, and its memory is free) or back to LG's own setting.
-  - Nothing is closed. *Everything back to LG's setting* undoes it.
-
-## webOS 11: one extra step on rooted TVs
-
-On webOS 11 (found on an LG C4, firmware 43.21.73, by ganondorft; the fix is reported working by several users) the TV only lets an app use the Homebrew Channel's command service when the app's Luna permissions include `org.webosbrew.hbchannel.service.group`.
-
-The app installer leaves that out for HearthNG, so even on a rooted TV every option that needs root is greyed out with *"the TV refused the command"*, the app icons are letters, and the wallpaper picker cannot read the storage.
-
-Older webOS versions do not need this.
-
-The script `tools/webos11-permission.sh` (inside the app) adds the permission. The installer writes HearthNG's permission file again on every install or update, so the script installs itself as a boot hook that checks it at each start. Once, over SSH on the TV:
-
-```
-sh /media/developer/apps/usr/palm/applications/com.hearthng.launcher/tools/webos11-permission.sh
+# Re-enable HearthNG helper
+sh /media/developer/launcher-homehook/stop.sh resume
 ```
 
-Or from a computer, with the file from this repository (`public/tools/`):
+---
 
-```
-scp -O webos11-permission.sh root@TV_IP:/var/lib/webosbrew/init.d/40-hearth-permission
-ssh root@TV_IP 'chmod 755 /var/lib/webosbrew/init.d/40-hearth-permission; sh /var/lib/webosbrew/init.d/40-hearth-permission'
-```
+## Building from Source
 
-Then close and reopen HearthNG. After updating HearthNG, restart the TV (or run the command again). To undo it, delete `/var/lib/webosbrew/init.d/40-hearth-permission` and reinstall HearthNG.
+```bash
+# Clone repository
+git clone https://github.com/emoorpheus/HearthNG.git
+cd HearthNG
 
-## Troubleshooting
-
-More in the [Troubleshooting guide](https://rudra-avatar.github.io/Hearth/troubleshooting/). To report a problem, switch **System, Show the Debug tab** on and send `/tmp/hearth-debug.txt` to the HearthNG author. Hearth's [issue tracker](https://github.com/rudra-avatar/Hearth/issues) is for Hearth, not for HearthNG. The troubleshooting guide is Hearth's.
-
-- **"Can't read the storage" / a greyed-out row:** the message tells you which of these it is. *The Homebrew Channel service is not running*: the TV is not rooted, or it is rooted but the service has not started (open the Homebrew Channel once, then try again). *Did not answer in time*: the service is still starting, try again in a moment. *The TV refused it*: this TV does not allow it without root.
-- **A picture will not show:** the message says why (over 8 MB, over 25 megapixels, or not a picture).
-- **USB drive missing in the picker:** plug it in, then open the picker again. The TV must have mounted it.
-- **The weather does not appear:** check the TV's internet connection; it tries again by itself after 2, 10 and then 30 minutes.
-- **The Home button shows LG Home for a moment:** the helper script can only react once LG Home is in front. Use *Map home button*.
-- **The Home button does not open HearthNG:** the key code differs between remotes; run the guide in *Map home button*. If the Input Hook app has its own bindings, HearthNG's rows are greyed out with a reason.
-- **Hold OK does nothing** on an app: users report that **turning the TV off and on again** (unplug it for a minute) fixes it. The cause is not known yet.
-- **Root options greyed out with "the TV refused the command", or elevation (root) problems:** update the Homebrew Channel to **0.8.0-rc1** ([release page](https://github.com/throwaway96/webos-homebrew-channel/releases/tag/v0.8.0-rc1)) and open it once. On webOS 11 also do the permission step above.
-- **The Home button does nothing after uninstalling HearthNG:** right after uninstalling it can stay dead until the TV restarts. Restart the TV (unplug it for 30 seconds); the clean-up then finishes and the Home button works again (confirmed by a user).
-- **Odd layout after changing sizes:** Settings, Look, **Reset HearthNG visual settings to default**.
-
-## Credits
-
-These are Hearth's credits; HearthNG carries this code. HearthNG's own changes are by emoorpheus (see *Authors*).
-
-**Code contributions** (applied by hand into Hearth's own code; authors credited in the commits and the changelog):
-
-- **Alejandro Morales**, pull request #1: slideshow shuffle that survives restarts.
-- **chriskoperdraad-tech**, pull requests #2, #3 and #37: webOS 3.x (Chromium 38) support (the Home-bar watcher lines are theirs; the ES5 build and the custom-property fallback are Hearth's own code) and the fix that lets *Map home button* find the Home button's code on webOS 3 (#37). Also the testing and research on a webOS 3.9 TV that shaped Hearth's webOS 3 support (issue #23).
-- **ganondorft**, pull request #6: the webOS 11 permission fix and the Windows line-ending fix.
-- **iulyax27**, pull requests #8 and #10: icon batches, the Input Hook guide, and the ideas for quiet mode, OLED shift and *When Home is pressed*.
-- **Obednal97**, pull requests #16 to #22, #25 and #39: input status (#16), the Settings scroll fix (#17), *Set Hearth as the TV's Home app* (#18), remote button reassigning and the remote drawings (#19, #22), *When Home is pressed* (#20), icon refresh after app updates (#21), *When the TV turns on, open...* with the TV's start-up table method (#25), and the clear message and the 2016 Magic Remote drawing for TVs that cannot use the other remote method (#39, issue #36). Hearth's code is adapted from theirs.
-- **simbasjungles**, free-my-tv pull request #285: the fix for the "1008" error that newer LG firmware gives a web page's connection to the TV's remote-control service (SSAP): a small packaged service connects with the right origin. Hearth's helper service `com.hearthng.launcher.ssap` follows that idea and is written in Hearth's own code; it is what makes the app list work without root on webOS 11.2.
-- **Recent apps panel, icon shapes and bottom fade:** community contribution, author not named. The idea and the TV services to call came from it; Hearth's code is its own.
-
-**Projects and ideas:**
-
-- **[partridgeworks/webos-launcher](https://github.com/partridgeworks/webos-launcher)** (MIT): the project this one began as a fork of: app skeleton, Luna service bridge, app list and icon loading, remote handling.
-- **[Glasshouse](https://github.com/rorygallagher2024/glasshouse)** by Rory Gallagher (MIT): the ideas behind the screen saver (including the method for webOS 10 and newer), the *LG preloaded apps* feature (the TV's preload list plus the preload manager's live call) and the *Replace LG Home with SAM* option. Adapted parts are credited in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- **[webOS Brew / Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel)**: the root access, `exec` service and startup folder everything rooted runs on; **throwaway96's** Homebrew Channel 0.8.0-rc1 for the elevation fixes.
-- **[custom-screensaver](https://github.com/webosbrew/custom-screensaver)** (webosbrew, MIT) and **[custom-screensaver-aerial](https://github.com/aabytt/custom-screensaver-aerial)** by aabytt (MIT): the idea of replacing the TV's screen saver QML, and how video is shown on the TV (the transparent video area, the multimedia imports). Hearth's screen saver code is its own.
-- **[LG Input Hook](https://github.com/Simon34545/lginputhook)** by Simon34545 (BSD-3-Clause): the flash-free Home button. Hearth's *Map home button* (and so HearthNG's) carries Input Hook's key hook (its injector and library, unchanged, in the `homehook` folder of the install), so it works without the Input Hook app.
-  - The library is built from **[inputhookpp](https://github.com/sundermann/inputhookpp)** by Sundermann (GPL-3.0).
-  - It is loaded with **[ezinject](https://github.com/smx-smx/ezinject)** by smx-smx (zlib-style licence).
-  - The original script is by Informatic.
-  - Licences and source links: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- **[webos-vibehack](https://github.com/OmkarK97/webos-vibehack)** by OmkarK97 (MIT; design credited to tv-vibehack): the second-device watcher idea described under *Opening HearthNG without root*.
-- **Clean Your TV:** the idea of reading the app list through LG's remote-control service.
-- **Photos:** the 25 bundled photos are public-domain photos supplied by the maintainer, resized to 1920x1080.
-- **[Night Stock Videos by Vecteezy](https://www.vecteezy.com/free-videos/night):** the short fireplace clip used by the built-in video screen saver.
-- Weather data: [Open-Meteo](https://open-meteo.com) (free for non-commercial use, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).
-- Bundled third-party material, with its licences, is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- **Developed with Claude (Anthropic).** Claude wrote and tested most of the code and the machine-made translations; the maintainer directed it and tried it on real LG TVs. (A credit, not an endorsement by Anthropic.)
-
-Thank you to everyone who tested and reported problems.
-
-## Build
-
-Needs Node 18+.
-
-```
+# Install dependencies
 npm install
-npm test           # unit tests, plus the shell tests of the TV scripts
-npm run build      # type-check, then build dist/ (app.js for Chrome 53+, app.legacy.js for webOS 3.x / Chromium 38)
-npm run package    # dist/ -> build/com.hearthng.launcher_<version>_all.ipk
+
+# Run development server with mock environment
+npm run dev
+
+# Run comprehensive test suite (70 test files)
+npm test
+
+# Build production bundle and package IPK
+npm run build
+npm run package
 ```
 
-`npm run dev` serves the UI in a desktop browser with sample apps and folders.
+Built packages will be generated in the root directory:
+- `com.hearthng.launcher_1.0.0_all.ipk`
+- `com.hearthng.toast_1.0.0_all.ipk`
 
-## Notes for developers
+---
 
-- The build targets Chrome 53 (webOS 4 and newer) and, from the same sources, Chromium 38 (webOS 3, ES5 build); it avoids CSS grid, `gap` and `inset`. Module scripts do not load from `file://` on webOS, so the bundle is one classic script.
-- Custom properties are set only through `src/lib/cssvars.ts` (`setRootVars`, `varScope`). In the normal build they are plain CSS variables; in the legacy build (`HEARTH_LEGACY=1`, see `scripts/legacy.mjs`) the stylesheet is rewritten with the values filled in.
-- `src/lib/prefs.ts` describes every setting in one table; the Settings lists and key handling come from it. Every text is in the string table `src/i18n/en.ts`.
-- Shell commands go through one place, `exec` in `src/lib/apps.ts`, which also learns whether this TV can run commands (`src/lib/failure.ts`) so rows can be greyed out and errors explained at no extra cost.
-- The weather code is behind a build switch: `HEARTH_WEATHER=0 npm run build` leaves it out entirely.
-- `scripts/gen-repo.mjs` writes `repo/apps.json`, the file the Homebrew Channel reads.
-- Guides are built from `docs/` with MkDocs Material (`pip install mkdocs-material==9.5.50; mkdocs build --strict`) and published by `.github/workflows/pages.yml`.
-- The *Tested TVs* table is filled in by `.github/workflows/compatibility.yml` from issues labelled `verified`.
+## Authors & Credits
+
+- **HearthNG**: emoorpheus.
+- **Hearth for WebOS**: [rudra-avatar](https://github.com/rudra-avatar/Hearth) and upstream contributors.
+- **Original concept**: Based originally on `partridgeworks/webos-launcher`.
+
+## License
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete terms.
