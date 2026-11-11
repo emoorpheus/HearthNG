@@ -12,6 +12,7 @@ import {themeIcon} from '../lib/themeicons';
 import type {AppEntry} from '../lib/apps';
 import type {SourceEdits} from '../lib/sourceicons';
 import {cachedRecents, closeRecents, listRecents, type RecentApp} from '../lib/recents';
+import {markOpeningApp, clearOpeningApp} from '../lib/homehook';
 import {log} from '../lib/log';
 import {LAYOUT} from '../theme/tokens';
 import {t as tt} from '../i18n';
@@ -71,7 +72,18 @@ export function Recents ({icons, edits, inputs, sourceEdits, width, height, onCl
 			else { onToast(ids.length > 1 ? tt('recents.closedApps', {length: ids.length}) : tt('recents.closed', {label})); if (hideAfter) onClose(); }
 		}));
 	};
-	const open = (a?: RecentApp) => { if (a && onOpen) onOpen(a.id); if (a) launchApp(a.id).then(() => onClose(), () => onToast(tt('recents.couldnTOpen', {title: nameOf(a)}), 'error')); };
+	const open = (a?: RecentApp) => {
+		if (!a) return;
+		if (onOpen) onOpen(a.id);
+		markOpeningApp(a.id);
+		launchApp(a.id).then(
+			() => onClose(),
+			() => {
+				clearOpeningApp();
+				onToast(tt('recents.couldnTOpen', {title: nameOf(a)}), 'error');
+			}
+		);
+	};
 
 	const handleKey = useCallback((key: NavKey): boolean => {
 		if (key === 'back') { onClose(); return true; }

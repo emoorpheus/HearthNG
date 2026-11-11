@@ -9,7 +9,7 @@
 // (guard.sh) starts it again if it stops. stop.sh is the emergency exit (run by hand over SSH).
 
 /** Bump when the scripts change: the launcher then rewrites the installed copy and restarts the watcher. */
-export const HOOK_VERSION = '18-ng5';
+export const HOOK_VERSION = '18-ng6';
 export const HOOK_DIR = '/media/developer/launcher-homehook';
 export const HOOK_LINK = '/var/lib/webosbrew/init.d/48-launcher-homehook';
 export const APP_QML = '/usr/palm/applications/com.webos.app.home/qml';
@@ -22,6 +22,7 @@ export const STOPPED_FILE = `${HOOK_DIR}/stopped`;
 export const HOME_PROC_PATTERN = '[f]lutter-client -i com\\.webos\\.app\\.home([^A-Za-z0-9._-]|$)';
 export const ALLOW_FILE = '/tmp/launcher-allow-stock-home';
 export const ALIVE_FILE = '/tmp/launcher-alive';
+export const OPENING_FILE = '/tmp/launcher-opening';
 
 export type HookResult = 'applied' | 'stopped' | 'launcher-missing' | 'files-missing' | 'failed';
 

@@ -13,7 +13,7 @@ import {classifyFailure, failureReason} from './failure';
 import {isWebOS} from './luna';
 import {t as tt} from '../i18n';
 import {
-	ALIVE_FILE, APPLY_COMMAND, HOOK_VERSION, installSteps, lastLine, parseExit, parseHookResult,
+	ALIVE_FILE, APPLY_COMMAND, HOOK_VERSION, installSteps, lastLine, OPENING_FILE, parseExit, parseHookResult,
 	parseHookStatus, REMOVE_COMMAND, STATUS_COMMAND, STOCK_COMMAND, VERSION_COMMAND, withStatus,
 	type HookResult, type HookStatus
 } from './homehookcmd';
@@ -127,6 +127,22 @@ export function launchParams (): string {
 		const raw = ps && ps.launchParams ? String(ps.launchParams) : '';
 		return raw && raw !== '{}' ? cleanForLog(raw).slice(0, 80) : 'none';
 	} catch (e) { return 'none'; }
+}
+
+/** Tells the helper an app launch was initiated (prevents false empty-screen takeover during cold start). */
+export function markOpeningApp (appId: string): void {
+	if (!isWebOS()) return;
+	const parts = [
+		`_up=$(cut -d' ' -f1 /proc/uptime 2>/dev/null); echo "\${_up%%.*}:${appId}" > '${OPENING_FILE}'`,
+		`touch '${ALIVE_FILE}'`
+	];
+	exec(parts.join('; '), 2000).catch(() => undefined);
+}
+
+/** Clears the opening app marker if launch failed or cancelled. */
+export function clearOpeningApp (): void {
+	if (!isWebOS()) return;
+	exec(`rm -f '${OPENING_FILE}' 2>/dev/null`, 2000).catch(() => undefined);
 }
 
 /** Tells the helper this launcher is on screen (it checks for this after opening the launcher). */

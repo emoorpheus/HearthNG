@@ -1,6 +1,6 @@
 {
   "id": "com.hearthng.launcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "vendor": "emoorpheus",
   "type": "web",
   "main": "index.html",

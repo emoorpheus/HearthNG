@@ -99,7 +99,8 @@ case "$TOAST_MS" in ''|*[!0-9]*) TOAST_MS=2000 ;; esac
 FRONT_TOAST_TRIES="${FRONT_TOAST_TRIES:-4}"   # own notification reported in front: front() asks again this many times, 1 s apart
 TLOCK="${TLOCK:-/tmp/launcher-toast-lock}"   # the notification helper is running (holds the uptime it started at)
 ALIVE="${ALIVE:-/tmp/launcher-alive}"        # touched by the launcher whenever it becomes visible
-EMPTY_DELAY="${EMPTY_DELAY:-0.2}"     # the foreground must stay empty this many s (a sleep without fractions waits 1 s)
+OPENING_FLAG="${OPENING_FLAG:-/tmp/launcher-opening}" # written by the launcher when launching an app
+EMPTY_DELAY="${EMPTY_DELAY:-1.5}"     # the foreground must stay empty this many s (a sleep without fractions waits 1 s)
 GONE_DELAY="${GONE_DELAY:-5}"         # launcher not found: look again after this many s (files vanish during an update)
 ALLOW_MAX_S="${ALLOW_MAX_S:-30}"      # ALLOW is dropped if LG Home did not come to the front within this time
 VERIFY_TRIES="${VERIFY_TRIES:-8}"     # asks again this many times, then closes the launcher and starts it again
@@ -181,11 +182,12 @@ front () {
 }
 
 # The TV is on and not turning off. No answer, or no "state" in it: taken as on.
+# Screen Saver is an active on-state (not standby), so it must not trigger standby logic.
 tv_active () {
     p=$("$LUNA" -n 1 "$POWER_URI" '{}' 2>/dev/null)
     case "$p" in
         *'"processing"'*) return 1 ;;
-        *'"state":"Active"'*|*'"state": "Active"'*) return 0 ;;
+        *'"state":"Active"'*|*'"state": "Active"'*|*'"state":"Screen Saver"'*|*'"state": "Screen Saver"'*) return 0 ;;
         *'"state"'*) return 1 ;;
     esac
     return 0
@@ -243,6 +245,20 @@ standby_begin () {
     log "standby: foreground is empty and the TV is not Active ($(power_line)): $th, waiting for the TV to turn on"
 }
 
+# Whether an app was launched recently (within 8 s). Protects cold-start transitions from empty-screen takeovers.
+app_opening () {
+    [ -f "$OPENING_FLAG" ] || return 1
+    _ao_now=$(uptime_now); _ao_now=${_ao_now%%.*}
+    _ao_t=; read -r _ao_t 2>/dev/null < "$OPENING_FLAG"
+    _ao_ts=${_ao_t%%:*}
+    _ao_age=$(( ${_ao_now:-0} - ${_ao_ts:-0} ))
+    if [ "$_ao_age" -ge 0 ] && [ "$_ao_age" -le 8 ]; then
+        return 0
+    fi
+    rm -f "$OPENING_FLAG" 2>/dev/null
+    return 1
+}
+
 # The TV is on again. LG Home, nothing or the launcher in front: open the launcher (for the launcher itself that is a
 # relaunch over itself: its window may not have come back), unless the launcher has already shown itself since the TV
 # went to standby or turned on. Another app in front: left alone. The notification comes from start_toast, only if the
@@ -254,6 +270,10 @@ wake_open () {
         log "wake ($1): LG Home is allowed, takeover is active or the emergency exit is on: nothing to do"; return
     fi
     if [ ! -f "$LAUNCHER/appinfo.json" ]; then log "wake ($1): Hearth is not installed: nothing to do"; return; fi
+    if app_opening; then
+        log "wake ($1): an app is opening: left as it is"
+        return
+    fi
     # (file times are compared to the second)
     if is_launcher "$f" && [ -f "$WAKE_REF" ] && [ "$ALIVE" -nt "$WAKE_REF" ]; then
         log "wake ($1): Hearth is in front and has shown itself since the TV turned on ($ALIVE is newer): nothing to do"; return
@@ -604,6 +624,10 @@ verify () {
         $NAP 1
         [ -f "$ALLOW" ] && return
         takeover_active && return
+        if app_opening; then
+            log "verify: an app is opening: stopping verify"
+            return
+        fi
         front=$(front)
         if is_launcher "$front"; then
             freeze_home
@@ -612,6 +636,10 @@ verify () {
             # the TV went to standby: no more tries, wake_loop opens the launcher when the TV is on again
             if [ -f "$STANDBY_FLAG" ] && ! tv_active; then
                 log "the TV is not Active ($(power_line)): no more tries, Hearth is opened when the TV turns on"
+                return
+            fi
+            if app_opening; then
+                log "verify: an app is opening: stopping verify"
                 return
             fi
             if [ "$tries" -ge "$VERIFY_TRIES" ]; then recover; return; fi
@@ -706,6 +734,10 @@ handle () {
             log "the TV is not Active ($(power_line)): Hearth is opened when the TV turns on"
             return
         fi
+        if is_empty "$line" && app_opening; then
+            log "transition: empty foreground while an app is opening: ignored"
+            return
+        fi
         if is_empty "$line" && ! empty_for_real; then
             # empty because the TV is going to standby
             is_empty "$(front)" && ! tv_active && standby_begin
@@ -726,7 +758,8 @@ handle () {
         asked=
         clear_stale_allow
         _u_app=$(app_of "$line")
-        if [ -n "$_u_app" ] && [ "$_u_app" != "(empty)" ]; then
+        rm -f "$OPENING_FLAG" 2>/dev/null
+        if [ -n "$_u_app" ] && [ "$_u_app" != "(empty)" ] && [ "$_u_app" != "com.webos.app.screensaver" ]; then
             last_user_app="$_u_app"
             _u_now=$(uptime_now); last_user_app_time=${_u_now%%.*}
         fi
@@ -871,7 +904,7 @@ if [ -f "$PIDFILE" ]; then
     fi
 fi
 echo $$ > "$PIDFILE"
-rm -f "$VLOCK" "$TLOCK" "$STANDBY_FLAG" "$STANDBY_REF" "$SILENT_FLAG" "$POLLING"
+rm -f "$VLOCK" "$TLOCK" "$STANDBY_FLAG" "$STANDBY_REF" "$SILENT_FLAG" "$POLLING" "$OPENING_FLAG"
 # Stopping does not unfreeze LG Home: only stock.sh, stop.sh, FAILSAFE and turning the helper off do.
 trap 'pkill -P $$ 2>/dev/null; log "stopped (pid $$), LG Home is left as it is"; [ "$(cat "$PIDFILE" 2>/dev/null)" = "$$" ] && rm -f "$PIDFILE"; exit 0' TERM INT
 if [ -s "$KEEP_FLAG" ]; then _kr=on; else _kr=off; fi

@@ -1,5 +1,14 @@
 # Changelog
 
+## HearthNG 1.0.1
+
+Bugfix release: prevent launcher takeover and reload loop after TV idle/screensaver when launching apps.
+
+- **Fix false standby on webOS Screen Saver:** `watch.sh` (`tv_active()`) now recognizes `"Screen Saver"` power state as active. Previously, when the screensaver kicked in, the helper misclassified the TV as entering standby, triggering `standby_begin()` and queuing a forced wake launch upon subsequent user activity.
+- **App cold-start guard (`app_opening`):** Added launch marker `/tmp/launcher-opening` in `src/app.tsx`, `src/screens/Recents.tsx`, and `watch.sh`. On webOS 24/25 with low RAM/swap, cold-starting heavier apps can produce an empty foreground state for 1–2 seconds. The watcher now detects when an app launch was initiated within the last 8 seconds, ignoring empty foreground transitions and avoiding erroneous fallback to `com.hearthng.launcher`.
+- **Increased empty foreground debounce:** Default `EMPTY_DELAY` increased from 0.2 s to 1.5 s in `watch.sh` to allow slow app window initialization to complete before triggering any launcher recovery.
+- **Helper version bumped to `18-ng6`:** Existing installations automatically reapply the new scripts and restart the background watcher upon launcher startup.
+
 ## HearthNG 1.0.0 (based on Hearth 2.1.3)
 
 First version of the HearthNG fork. Test build.

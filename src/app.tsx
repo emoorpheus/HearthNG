@@ -57,7 +57,7 @@ import {hidePointerOnForeground, startPointerGuard} from './lib/pointer';
 import {keepExitKey, logOtherKeys} from './lib/exitkey';
 import {startLogFile, writeReport, previousRunLines} from './lib/logfile';
 import {readStats, type SystemStats, getLogo, setLogo, closeLgHome} from './lib/system';
-import {getHookStatus, hookMessage, installHomeHook, launchParams, logLine, markAliveSoon, reapplyHomeHook, removeHomeHook, stockHome} from './lib/homehook';
+import {getHookStatus, hookMessage, installHomeHook, launchParams, logLine, markAliveSoon, markOpeningApp, clearOpeningApp, reapplyHomeHook, removeHomeHook, stockHome} from './lib/homehook';
 import {SAVER_PHOTOS, SAVER_VIDEO} from './lib/saverconfig';
 import {installSaver, reapplySaver, removeSaver, saverMessage, saverSettings, showSaver} from './lib/screensaver';
 import {cleanupMessage, removeTakeover} from './lib/takeover';
@@ -1094,10 +1094,16 @@ export function App () {
 		}
 		// With the helper on: say the launcher is alive and note what is being opened, so the helper's check
 		// can never mistake this moment for a failure, and its log shows what happened if an app does not open.
-		if (config.replaceHome || config.samHome) markAliveSoon(`launcher: opening ${item.key}`, false);
+		if (config.replaceHome || config.samHome) {
+			markOpeningApp(item.key);
+			markAliveSoon(`launcher: opening ${item.key}`, false);
+		}
 		noteOpened(item.key);
 		launchApp(item.key).catch(() => {
-			if (config.replaceHome || config.samHome) logLine(`launcher: the TV refused to open ${item.key}`);
+			if (config.replaceHome || config.samHome) {
+				clearOpeningApp();
+				logLine(`launcher: the TV refused to open ${item.key}`);
+			}
 			showToast(tt('app.couldnTOpen', {label: item.label}), 'error');
 		});
 	}, [showToast, config.replaceHome, config.samHome]);
