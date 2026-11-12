@@ -148,7 +148,7 @@ export function clearOpeningApp (): void {
 /** Tells the helper this launcher is on screen (it checks for this after opening the launcher). */
 export function markAlive (): void {
 	if (!isWebOS()) return;
-	exec(`touch '${ALIVE_FILE}'`, 4000).catch(() => undefined);
+	exec(`touch '${ALIVE_FILE}'; rm -f '${OPENING_FILE}' 2>/dev/null`, 4000).catch(() => undefined);
 }
 
 /** markAlive, with an optional line for the log, in ONE call to the TV (each call starts a shell, and the TV is
@@ -158,6 +158,7 @@ export function markAlive (): void {
 export function markAliveSoon (note?: string, repeat: boolean = true): void {
 	if (!isWebOS()) return;
 	const parts = [`touch '${ALIVE_FILE}'`];
+	if (repeat) parts.push(`rm -f '${OPENING_FILE}' 2>/dev/null`);
 	if (note) parts.push(`echo "${logText(note)}" >> ${LOG_FILE}`);
 	if (repeat) parts.push(`( nohup sh -c "sleep 1; touch '${ALIVE_FILE}'; sleep 1; touch '${ALIVE_FILE}'" >/dev/null 2>&1 </dev/null & )`);
 	exec(parts.join('; '), 4000).catch(() => undefined);

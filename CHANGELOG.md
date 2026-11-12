@@ -1,5 +1,14 @@
 # Changelog
 
+## HearthNG 1.0.2
+
+Critical fix: prevent app relaunch/reset during TV cold boot and startup window transitions.
+
+- **Fix false boot collision on empty foreground:** In `watch.sh` (`handle()`), early boot collision recovery (`< 75s`) now strictly matches `is_home "$line"` (when LG Home `com.webos.app.home` actually steals foreground). It no longer triggers on transient `(empty)` foreground events, which previously caused `watch.sh` to forcefully call `launch` on `last_user_app`, killing and restarting newly opened apps (e.g. Lampac) during their webview/DRM initialization.
+- **Top-level `app_opening` guard:** Moved `is_empty "$line" && app_opening` to the top of `handle()` before any home or collision checks, guaranteeing all transient layer transitions within 8 seconds of an app launch are ignored.
+- **Preserve `OPENING_FLAG` across foreground transitions:** Removed premature deletion of `/tmp/launcher-opening` in `handle()`'s user app branch, allowing the 8-second protection window to cover full multi-stage app initialization.
+- **Helper version bumped to `18-ng7`.**
+
 ## HearthNG 1.0.1
 
 Bugfix release: prevent launcher takeover and reload loop after TV idle/screensaver when launching apps.

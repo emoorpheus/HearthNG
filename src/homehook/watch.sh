@@ -706,6 +706,13 @@ handle () {
     fi
     # HearthNG's own notification window: nothing changes (when it closes, SAM reports what is in front again)
     if is_toast_app "$line"; then return; fi
+    # While an app is in the process of opening (within 8 s of launch), ignore transient empty foreground.
+    # WebAppMgr, AirPlay and video decoders briefly drop the card window during startup; taking over or
+    # relaunching here corrupts the app's startup sequence.
+    if is_empty "$line" && app_opening; then
+        log "transition: empty foreground while an app is opening: ignored"
+        return
+    fi
     # no LG Home process to freeze (EMPTY_AS_HOME=auto) or EMPTY_AS_HOME=0: an empty foreground is left alone, as in
     # Hearth's own helper
     if is_empty "$line" && ! empty_counts; then return; fi
@@ -714,12 +721,13 @@ handle () {
             if is_home "$line"; then allow_home_seen=1; thaw_home; fi
             return
         fi
-        # During boot: if a user app was running just before LSM reinitialized or SAM triggered LAUNCH_LASTAPP,
+        # During boot: if LG Home actually appeared over a running user app (e.g. SAM LAUNCH_LASTAPP or preloadmanager),
         # freeze LG Home and relaunch/restore the user app instead of overriding it with HearthNG.
+        # Must only match is_home: an empty foreground is never a collision with LG Home.
         _h_now=$(uptime_now); _h_now=${_h_now%%.*}
-        if [ "${_h_now:-0}" -lt 75 ] && [ -n "$last_user_app" ] && [ $(( ${_h_now:-0} - last_user_app_time )) -le 15 ]; then
+        if is_home "$line" && [ "${_h_now:-0}" -lt 75 ] && [ -n "$last_user_app" ] && [ $(( ${_h_now:-0} - last_user_app_time )) -le 15 ]; then
             freeze_home
-            log "boot collision: $(app_of "$line") appeared over $last_user_app during boot (uptime ${_h_now}s): restoring $last_user_app"
+            log "boot collision: LG Home appeared over $last_user_app during boot (uptime ${_h_now}s): restoring $last_user_app"
             "$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$last_user_app\"}" 2>/dev/null
             return
         fi
@@ -732,10 +740,6 @@ handle () {
         # the TV is in standby (switched off with the remote): nothing is launched, wake_loop opens the launcher later
         if [ -f "$STANDBY_FLAG" ] && ! tv_active; then
             log "the TV is not Active ($(power_line)): Hearth is opened when the TV turns on"
-            return
-        fi
-        if is_empty "$line" && app_opening; then
-            log "transition: empty foreground while an app is opening: ignored"
             return
         fi
         if is_empty "$line" && ! empty_for_real; then
@@ -758,7 +762,6 @@ handle () {
         asked=
         clear_stale_allow
         _u_app=$(app_of "$line")
-        rm -f "$OPENING_FLAG" 2>/dev/null
         if [ -n "$_u_app" ] && [ "$_u_app" != "(empty)" ] && [ "$_u_app" != "com.webos.app.screensaver" ]; then
             last_user_app="$_u_app"
             _u_now=$(uptime_now); last_user_app_time=${_u_now%%.*}
