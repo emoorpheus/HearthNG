@@ -1,4 +1,6 @@
 import {log} from '../lib/log';
+import {exec} from '../lib/apps';
+import {QUIET_OFF_COMMAND} from '../lib/quietoff';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {Clock} from '../components/Clock';
 import {Row} from '../components/Row';
@@ -40,6 +42,8 @@ export interface Appearance {
 	quietDimSec: number;
 	/** quiet mode dim strength, % darkness (10-80) */
 	quietDimLevel: number;
+	/** quiet mode: seconds after the apps hide before the TV is switched off (0 = never; rooted TVs only) */
+	quietPowerOff: number;
 	/** OLED shift on */
 	oledShift: boolean;
 	/** px at 1080p */
@@ -137,6 +141,7 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 	useEffect(() => {
 		const secs = appearance.quietSec;
 		const dimSecs = appearance.quietDimSec;
+		const offSecs = appearance.quietPowerOff;
 		quietRef.current = false;
 		setQuiet(false);
 		setDimmed(false);
@@ -145,27 +150,34 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 		let hidden = false;
 		let swallow = false;
 		let dimTimer = 0;
+		let offTimer = 0;
 		const arm = () => {
 			window.clearTimeout(timer);
 			window.clearTimeout(dimTimer);
+			window.clearTimeout(offTimer);
 			timer = window.setTimeout(() => {
 				hidden = true; quietRef.current = true; setQuiet(true);
 				// the screen dims a set time after the apps hide
 				if (dimSecs) dimTimer = window.setTimeout(() => setDimmed(true), dimSecs * 1000);
+				// QP: the TV switches off a set time after the apps hide (rooted TVs; a failed call changes nothing)
+				if (offSecs) offTimer = window.setTimeout(() => { exec(QUIET_OFF_COMMAND, 15000).catch(() => undefined); }, offSecs * 1000);
 			}, secs * 1000);
 		};
-		const wake = () => { hidden = false; setQuiet(false); setDimmed(false); window.clearTimeout(dimTimer); };
+		const wake = () => { hidden = false; setQuiet(false); setDimmed(false); window.clearTimeout(dimTimer); window.clearTimeout(offTimer); };
 		const onDown = () => { if (hidden) { swallow = true; wake(); } arm(); };
 		const onUp = () => { if (swallow) window.setTimeout(() => { swallow = false; quietRef.current = false; }, 0); };
-		// Pointer: the waking move or press only wakes (it hovers and clicks nothing until the pointer rests); repeated moves at one spot are ignored.
+		// Pointer (2.1.6 M1): a waking move wakes the apps and selects the tile under the pointer once; nothing is held back after that.
+		// A waking press only wakes (its release and click are used up). Repeated moves at one spot and tremor under 3 px are ignored.
 		const guard = createPointerGuard();
 		const onPointer = (e: Event) => {
-			const m = e as MouseEvent;
-			if (e.type === 'mouseover' || e.type === 'mouseenter' || e.type === 'mouseup') { if (guard.blocks(e.type)) e.stopImmediatePropagation(); return; }   // never wake or keep awake, only guarded
-			if (e.type === 'mousemove' && guard.sameSpot(m.screenX, m.screenY)) return;
-			if (hidden) { guard.wake(e.type); wake(); quietRef.current = false; }
-			else if (e.type === 'mousemove') guard.move();
-			if (guard.blocks(e.type)) e.stopImmediatePropagation();
+			const type = e.type;
+			if (type === 'mouseover' || type === 'mouseenter') return;
+			if (type === 'mouseup') { if (guard.blocks(type)) e.stopImmediatePropagation(); return; }
+			if (type === 'mousemove') { const m = e as MouseEvent; if (guard.sameSpot(m.screenX, m.screenY) || !guard.farEnough(m.screenX, m.screenY)) return; }
+			if (hidden) {
+				guard.wake(type); wake(); quietRef.current = false;
+			}
+			if (guard.blocks(type)) e.stopImmediatePropagation();
 			arm();
 		};
 		const PTR = ['mousemove', 'mouseover', 'mouseenter', 'mousedown', 'mouseup', 'click', 'wheel'];
@@ -176,13 +188,14 @@ export function Home ({items: allItems, favourites, timeFormat, appearance, acti
 		return () => {
 			window.clearTimeout(timer);
 			window.clearTimeout(dimTimer);
+			window.clearTimeout(offTimer);
 			window.removeEventListener('keydown', onDown, true);
 			window.removeEventListener('keyup', onUp, true);
 			for (const type of PTR) window.removeEventListener(type, onPointer, true);
 			guard.stop();
 			quietRef.current = false;
 		};
-	}, [appearance.quietSec, appearance.quietDimSec, active, paused, wake]);
+	}, [appearance.quietSec, appearance.quietDimSec, appearance.quietPowerOff, active, paused, wake]);
 
 	// Quiet mode also hides the wallpaper's bottom fade (CSS: `.hearth-quiet .wallpaper__fade`).
 	useEffect(() => {

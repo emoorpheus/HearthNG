@@ -273,7 +273,7 @@ cat > "$T/luna3" <<'M'
 # the stand-in in front the first time it is asked, Hearth afterwards
 case "$*" in
   *getForegroundAppInfo*) if [ -f "$T/fg_once" ]; then echo '{"returnValue":true,"appId":"com.hearthng.launcher"}'; else touch "$T/fg_once"; echo '{"returnValue":true,"appId":"com.webos.app.home"}'; fi ;;
-  *applicationManager/launch*) sleep 0.05; touch "$T/alive"; exec "$T/luna" "$@" ;;
+  *applicationManager/launch*) touch -t 203001010000 "$T/alive"; exec "$T/luna" "$@" ;;
   *) exec "$T/luna" "$@" ;;
 esac
 M
@@ -283,14 +283,14 @@ check "verify: one more ask, then Hearth shows itself (alive mark newer than the
 yes"
 reset; touch "$T/obey_nudge"; run on >/dev/null; : > "$T/luna.log"
 printf '%s\n' '{"returnValue":true,"appId":"com.hearthng.launcher"}' > "$T/front"
-touch -d '2000-01-01' "$T/mark"; touch "$T/alive"
+touch -t 200001010000 "$T/mark"; touch "$T/alive"
 run verify >/dev/null 2>&1
 check "verify: Hearth in front and shown itself since the ask: no ask, stays on" "$(grep -c launch "$T/luna.log"; mounted)" "0
 yes"
 # the black screen the release helper also guards against: the TV reports Hearth in front, but it never shows itself
 reset; touch "$T/obey_nudge"; run on >/dev/null; : > "$T/luna.log"
 printf '%s\n' '{"returnValue":true,"appId":"com.hearthng.launcher"}' > "$T/front"
-touch "$T/alive"; touch -d '2030-01-01' "$T/mark"
+touch "$T/alive"; touch -t 203001010000 "$T/mark"
 run verify >/dev/null 2>&1
 check "verify: Hearth reported in front but not alive: it is asked for again, six times" "$(grep -c 'launch .*com.hearthng.launcher' "$T/luna.log")" "6"
 check "verify: and closed once, so it starts afresh" "$(grep -c closeByAppId "$T/luna.log")" "1"

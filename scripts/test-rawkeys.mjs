@@ -41,12 +41,17 @@ const ev = (type, code, value) => { const b = Buffer.alloc(W); const o = W - 8; 
 const evs = Buffer.concat([ev(1, 773, 1), ev(1, 773, 0), ev(2, 1, 5), ev(1, 102, 1)]);
 const file = '/tmp/hearth-keys.event9';
 writeFileSync(file, evs);
-const read = sh(c.RAW_READ_COMMAND);
-eq(c.parseRawKeys(read).map((k) => [k.code, k.count]), [[773, 1], [102, 1]], 'presses are read from the file, releases and pointer events are not');
-// a big file: only the newest bytes are read, the newest press is still found
-const noise = Buffer.concat(Array.from({length: 40000}, () => ev(2, 0, 1)));
-writeFileSync(file, Buffer.concat([ev(1, 999, 1), noise, ev(1, 103, 1)]));
-eq(c.parseRawKeys(sh(c.RAW_READ_COMMAND)).map((k) => k.code), [103], 'a long file: only the newest part is read, the newest press is found');
+const hasOdW = (() => { try { execFileSync('od', ['-w16', '/dev/null']); return true; } catch { return false; } })();
+if (hasOdW) {
+	const read = sh(c.RAW_READ_COMMAND);
+	eq(c.parseRawKeys(read).map((k) => [k.code, k.count]), [[773, 1], [102, 1]], 'presses are read from the file, releases and pointer events are not');
+	// a big file: only the newest bytes are read, the newest press is still found
+	const noise = Buffer.concat(Array.from({length: 40000}, () => ev(2, 0, 1)));
+	writeFileSync(file, Buffer.concat([ev(1, 999, 1), noise, ev(1, 103, 1)]));
+	eq(c.parseRawKeys(sh(c.RAW_READ_COMMAND)).map((k) => k.code), [103], 'a long file: only the newest part is read, the newest press is found');
+} else {
+	console.log('skip  od -w not supported on this host (BSD od on macOS)');
+}
 rmSync(file, {force: true});
 
 // Z2: the end marker must really be printed (`true echo X` printed nothing and every poll looked failed)

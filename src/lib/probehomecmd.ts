@@ -28,7 +28,7 @@ start)
   if [ ! -f "$BAK" ] && [ ! -f "$NONE" ]; then
     if [ -f "$KEYS" ]; then cp "$KEYS" "$BAK"; else echo x > "$NONE"; mkdir -p "$(dirname "$KEYS")"; echo '{}' > "$KEYS"; fi
   fi
-  printf '%s\\n' '#!/bin/sh' "cut -d' ' -f1 /proc/uptime >> '$REC'" > "$DIR/hit.sh"
+  printf '%s\\n' '#!/bin/sh' "{ cut -d' ' -f1 /proc/uptime 2>/dev/null || date +%s; } >> '$REC'" > "$DIR/hit.sh"
   : > "$REC"
   CODE=$(python3 - "$KEYS" "$APP" <<'PY'
 import json, sys

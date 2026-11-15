@@ -76,6 +76,8 @@ eq(p.applyPref(c0, 'theme', 'ok').theme, 'grey', 'OK flips the theme');
 eq(p.applyPref(c0, 'showDate', 'ok').clock.showDate, false, 'OK flips a switch');
 eq(p.applyPref(c0, 'showDate', 'right') === c0, true, 'arrows leave a switch alone');
 eq(p.applyPref(c0, 'clockSize', 'right').clock.size, 150, 'clock size steps by 10');
+eq([s.RANGES.clockSize.min, s.RANGES.clockSize.max], [80, 240], '2.1.6: widget size range 80..240 (shown 40..200)');
+eq(p.optionsFor('clock', {...c0, clock: {...c0.clock, size: 140}}).filter((o) => o.id === 'clockSize').map((o) => o.valueText), ['100'], '2.1.6: the row shows the saved px minus 40');
 eq(p.applyPref(c0, 'clockTop', 'right').clock.top, 22, 'clock height steps by 2% (from the 20% default)');
 eq(p.applyPref(c0, 'clockLeft', 'left').clock.left, 48, 'clock sideways: left arrow moves it left by 2% (from the 50% default)');
 eq(p.applyPref({...c0, clock: {...c0.clock, left: 100}}, 'clockLeft', 'right').clock.left, 100, 'clock sideways stops at the right limit');
@@ -95,7 +97,7 @@ for (const tab of ['look', 'clock', 'wallpaper', 'system']) {
   eq(list.length >= 1 && list.length <= 30, true, `${tab} tab has ${list.length} options (a long list scrolls)`);
 }
 const look = p.optionsFor('look', c0);
-eq(look.map((o) => o.id).join(','), 'preset,theme,iconScale,tileShape,iconStyle,tileFrame,iconGap,iconOpacity,rows,scrollSpeed,homeFocus,sideMargin,bottomMargin,inputStatus,showLgHome,showSystem,hideSettings,showLabels,labelsOnFocus,labelColor,labelFont,labelSize,labelWeight,quietSec,quietDimSec,quietDimLevel,oledShift,recentsSize,resetLook', 'P35b: the Look tab lists its rows in group order');
+eq(look.map((o) => o.id).join(','), 'preset,theme,iconScale,tileShape,iconStyle,tileFrame,iconGap,iconOpacity,rows,scrollSpeed,homeFocus,sideMargin,bottomMargin,inputStatus,showLgHome,showSystem,hideSettings,showLabels,labelsOnFocus,labelColor,labelFont,labelSize,labelWeight,quietSec,quietDimSec,quietDimLevel,quietPowerOff,oledShift,recentsSize,resetLook', 'P35b: the Look tab lists its rows in group order');
 eq(p.applyPref(c0, 'rows', 'ok').rows, 2, 'Rows of apps: 1 -> 2');
 eq(p.applyPref(p.applyPref(c0, 'rows', 'ok'), 'rows', 'ok').rows, 1, 'and 2 -> 1');
 eq(p.applyPref(c0, 'showLabels', 'ok').showLabels, false, 'Show app names switches off');
@@ -118,7 +120,7 @@ store[KEY] = JSON.stringify({defaultsV: 1, iconLight: true}); eq(s.loadConfig().
 store[KEY] = JSON.stringify({defaultsV: 1, iconStyle: 'nope'}); eq([s.loadConfig().iconStyle, s.DEFAULT_CONFIG.iconStyle], ['original', 'original'], 'an unknown icon style falls back to original');
 store[KEY] = JSON.stringify({defaultsV: 1, minimal: true}); eq(s.loadConfig().minimal, true, 'the minimalist choice is read back');
 store[KEY] = JSON.stringify({defaultsV: 1, appEdits: {'a.b': {label: 'X'}, 'c.d': {icon: 'nope'}}}); eq(s.loadConfig().appEdits, {'a.b': {label: 'X'}}, 'app edits are read back and cleaned');
-eq(p.optionsFor('system', c0).map((o) => o.id).join(','), 'language,homeKey,remap,tvApps,noRootGuide,tvInput,replaceHome,samHome,powerOnApp,lgLogo,noUpdate,homeApp,preload,keepReady,keepRelaunch,showDebug', 'the System tab (P61b2: the Home button row moved to the Remote group): the TV app list first (shown only when not rooted), the helper script, the Home button, the power-on app, the LG logo, the experimental Home app row (P58c) and last the Debug tab switch (the TV-input row, 2.0.2, is one On/Off toggle)');
+eq(p.optionsFor('system', c0).map((o) => o.id).join(','), 'updates,language,homeKey,remap,tvApps,noRootGuide,tvInput,replaceHome,samHome,powerOnApp,lgLogo,homeApp,preload,keepReady,keepRelaunch,showDebug,undoAll', 'the System tab (U1: the undo row last) (P61b2: the Home button row moved to the Remote group): the TV app list first (shown only when not rooted), the helper script, the Home button, the power-on app, the LG logo, the experimental Home app row (P58c) and last the Debug tab switch (the TV-input row, 2.0.2, is one On/Off toggle)');
 eq(p.optionsFor('system', c0, {homeApp: null, homeHook: null, tvInput: true}).find((o) => o.id === 'tvInput').valueText, 'On', 'the TV-input row reads On when the TV lists Hearth (2.0.2)');
 eq(p.optionsFor('system', c0, {homeApp: null, homeHook: null, tvInput: false}).find((o) => o.id === 'tvInput').valueText, 'Off', 'and Off when it is not listed');
 eq(p.optionsFor('system', c0).some((o) => o.id === 'tvInput'), true, 'and is shown while the TV has not been asked')
@@ -262,7 +264,7 @@ eq(p.resetLook({...c0, clock: {...c0.clock, color: 'black', opacity: 30}}).clock
   q.resetRootState();
   eq(ids().includes('keepReady') || ids().includes('group:system:Memory'), true, 'P83: root unknown: the root groups show');
   q.noteExec(new Error('Service does not exist'));
-  eq(ids(), 'language,tvApps,noRootGuide,showDebug', 'P83/T0/P92: root failed: language, the SSAP row, the no-root guide and the Debug switch, no group headers');
+  eq(ids(), 'updates,language,tvApps,noRootGuide,showDebug', 'P83/T0/P92: root failed: the update check, language, the SSAP row, the no-root guide and the Debug switch, no group headers');
   q.noteExec();
   eq(ids().includes('group:system:Memory'), true, 'P83: root works again: the groups return');
   q.resetRootState();
@@ -284,13 +286,12 @@ eq(p.resetLook({...c0, clock: {...c0.clock, color: 'black', opacity: 30}}).clock
   s.loadConfig();
   eq(BK in store, false, 'P106: a fresh install has no backup');
 }
-process.exit(fail ? 1 : 0);
 
 // ---- P35b: groups ----
 const grouped = p.optionsFor('look', c0, undefined, p.FIRST_GROUP);
-eq(grouped.filter((o) => o.header).map((o) => o.label).join(','), 'Theme,Icons,Home row,Names,Quiet mode,Recent apps', 'P35b/P79: Look has six group headers (Theme first)');
+eq(grouped.filter((o) => o.header).map((o) => o.label).join(','), 'Theme,Icons,Home row,Labels,Quiet mode,Recent apps', 'P35b/P79: Look has six group headers (Theme first)');
 eq(grouped.filter((o) => o.header && o.open).map((o) => o.label).join(','), 'Theme', 'FIRST_GROUP still opens the first group (the app starts with every group closed, P35i)');
-eq(p.optionsFor('look', c0, undefined, 'Labels').filter((o) => o.grouped).map((o) => o.id).join(','), 'showLabels,labelColor,labelFont,labelSize,labelWeight', 'opening a group shows only its rows');
+eq(p.optionsFor('look', c0, undefined, 'Labels').filter((o) => o.grouped).map((o) => o.id).join(','), 'showLabels,labelsOnFocus,labelColor,labelFont,labelSize,labelWeight', 'opening a group shows only its rows');
 eq(p.optionsFor('look', c0, undefined, '').filter((o) => o.grouped).length, 0, 'all groups can be closed');
 
 // ---- P35c: merged rows (saved values unchanged) ----
@@ -319,9 +320,10 @@ eq(p.optionsFor('look', c0).some((o) => /^fav/.test(o.id)), false, 'P35e: no fav
 const fv = {...c0, favourites: ['a']};
 eq(p.optionsFor('look', fv).filter((o) => /^fav/.test(o.id)).map((o) => o.id).join(','), 'favSideMargin,favBottomMargin', 'with favourites the two margin rows show');
 eq(p.optionsFor('look', fv, undefined, 'Favourites').filter((o) => o.header).map((o) => o.label).includes('Favourites'), true, 'and they form the Favourites group');
-eq([s.DEFAULT_CONFIG.favSideMargin, s.DEFAULT_CONFIG.favBottomMargin, p.applyPref({...fv, favBottomMargin: 390}, 'favBottomMargin', 'right').favBottomMargin], [20, 10, 400], 'favourites margins default to the home row\'s and the bottom margin reaches 400 px');
+eq([s.DEFAULT_CONFIG.favSideMargin, s.DEFAULT_CONFIG.favBottomMargin, p.applyPref({...fv, favBottomMargin: 390}, 'favBottomMargin', 'right').favBottomMargin], [20, 30, 400], 'favourites bottom margin defaults to 30 px (2.1.6; side margin as the home row), reaches 400 px');
 eq([p.optionsFor('look', c0).filter((o) => o.id === 'rows')[0].disabled, !!p.optionsFor('look', fv).filter((o) => o.id === 'rows')[0].disabled], [undefined, true], 'P33b: Rows of apps is greyed out only while favourites are set');
 
 // P46c: Welcome font row, bundled font set
 store[KEY] = JSON.stringify({clock: {font: 'papyrus'}, labelFont: 'nope'});
-eq([s.loadConfig().clock.font, s.loadConfig().labelFont], ['inter', 'default'], 'unknown saved fonts fall back');
+eq([s.loadConfig().clock.font, s.loadConfig().labelFont], ['outfit', 'default'], 'unknown saved fonts fall back');
+process.exit(fail ? 1 : 0);

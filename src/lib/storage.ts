@@ -34,8 +34,8 @@ export const RANGES = {
 	sideMargin:   {min: 0,   max: 300, step: 10, def: 20},    // px at 1080p, left and right of the app row
 	bottomMargin: {min: 0,   max: 200, step: 10, def: 10},    // px at 1080p, below the app row
 	favSideMargin:   {min: 0, max: 300, step: 10, def: 20},   // px at 1080p, left and right of the favourites row
-	favBottomMargin: {min: 0, max: 400, step: 10, def: 10},   // px at 1080p, below the favourites row while it is alone (a high row is possible)
-	clockSize:    {min: 80,  max: 220, step: 10, def: 140},   // px, height of the digits
+	favBottomMargin: {min: 0, max: 400, step: 10, def: 30},   // px at 1080p, below the favourites row while it is alone (a high row is possible)
+	clockSize:    {min: 80,  max: 240, step: 10, def: 140},   // px, height of the digits
 	clockTop:     {min: 0,   max: 70,  step: 2,  def: 20},   // % of the screen height (0 = the very top)
 	clockLeft:    {min: 0,   max: 100, step: 2,  def: 50},   // % of the screen width (where the clock's centre sits)
 	clockShadow: {min: 10,  max: 100, step: 10, def: 100},     // % (strength of the widget's drop shadow)
@@ -142,6 +142,8 @@ export interface UserConfig {
 	sourceIds: string[];
 	/** the order of the apps and inputs together on the home row (tile keys); null → apps, then inputs */
 	tileOrder: string[] | null;
+	/** S3 (2.1.6): the Essentials rows the user chose, in order (row ids; unknown ids ignored); null = the default list (follows later changes to it) */
+	essentials: string[] | null;
 	/** tile keys (apps and inputs) the user marked as favourites; empty → no favourites row */
 	favourites: string[];
 	/** read the live app list through the Homebrew Channel (root) */
@@ -230,6 +232,8 @@ export interface UserConfig {
 	quietDimSec: number;
 	/** quiet mode dim strength: % darkness */
 	quietDimLevel: number;
+	/** quiet mode: seconds after the apps hide before the TV is switched off (0 = never; rooted TVs only, QP) */
+	quietPowerOff: number;
 	/** OLED shift: the clock and the apps move a few pixels now and then so nothing burns in */
 	oledShift: boolean;
 	/** colour of the names under the icons: 'theme' or a plain colour id (see LABEL_COLOR_IDS) */
@@ -339,6 +343,7 @@ export const DEFAULT_CONFIG: UserConfig = {
 	hiddenIds: [],
 	sourceIds: [],
 	tileOrder: null,
+	essentials: null,
 	favourites: [],
 	closeHome: true,
 	tvApps: false,
@@ -383,6 +388,7 @@ export const DEFAULT_CONFIG: UserConfig = {
 	quietSec: RANGES.quietSec.def,
 	quietDimSec: RANGES.quietDimSec.def,
 	quietDimLevel: RANGES.quietDimLevel.def,
+	quietPowerOff: 0,
 	oledShift: true,
 	labelColor: 'theme',
 	labelFont: 'default',
@@ -461,7 +467,7 @@ function ranged (value: unknown, name: RangeName): number {
 }
 
 /** Fields left alone by the P41f reset: the user's own apps, order, names and favourites, and everything installed on the TV (helper, Home key, power-on app, saver, keep-ready, remote, debug). */
-const KEPT_ON_RESET: readonly (keyof UserConfig)[] = ['appIds', 'hiddenIds', 'sourceIds', 'tileOrder', 'favourites', 'sourceEdits', 'appEdits', 'closeHome', 'tvApps', 'showDebug', 'language', 'hideSettings',
+const KEPT_ON_RESET: readonly (keyof UserConfig)[] = ['appIds', 'hiddenIds', 'sourceIds', 'tileOrder', 'essentials', 'favourites', 'sourceEdits', 'appEdits', 'closeHome', 'tvApps', 'showDebug', 'language', 'hideSettings',
 	'replaceHome', 'homeApp', 'homeAppPrevious', 'preloadOff', 'keepReady', 'keepRelaunch', 'takeoverHome', 'samHome', 'screensaver', 'screensaverSource', 'screensaverInterval', 'screensaverShuffle',
 	'screensaverCare', 'screensaverPowerOff', 'screensaverDim', 'screensaverDimLevel', 'screensaverFit', 'screensaverRecursive', 'powerOnApp', 'powerOnNetwork', 'remoteModel', 'remap', 'remapKept', 'defaultsV'];
 
@@ -604,6 +610,7 @@ function fromSaved (parsed: Saved): UserConfig {
 		hiddenIds: stringList(parsed.hiddenIds) !== null ? stringList(parsed.hiddenIds) : (stringList(parsed.appIds) === null ? [] : null),
 		sourceIds: stringList(parsed.sourceIds) || [],
 		tileOrder: stringList(parsed.tileOrder),
+		essentials: stringList(parsed.essentials),
 		favourites: stringList(parsed.favourites) || [],
 		closeHome: parsed.closeHome !== false,
 		tvApps: parsed.tvApps === true,
@@ -647,6 +654,7 @@ function fromSaved (parsed: Saved): UserConfig {
 		quietSec: ranged(parsed.quietSec, 'quietSec'),
 		quietDimSec: ranged(parsed.quietDimSec, 'quietDimSec'),
 		quietDimLevel: ranged(parsed.quietDimLevel, 'quietDimLevel'),
+		quietPowerOff: typeof parsed.quietPowerOff === 'number' && parsed.quietPowerOff >= 0 && parsed.quietPowerOff <= 86400 ? Math.round(parsed.quietPowerOff) : 0,
 		screensaverDimLevel: typeof parsed.screensaverDimLevel === 'number' && parsed.screensaverDimLevel >= 10 && parsed.screensaverDimLevel <= 80 ? Math.round(parsed.screensaverDimLevel / 10) * 10 : 40,
 		oledShift: parsed.oledShift !== false,
 		labelColor: LABEL_COLOR_IDS.indexOf(parsed.labelColor as string) !== -1 ? (parsed.labelColor as string) : 'theme',

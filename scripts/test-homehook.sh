@@ -155,7 +155,8 @@ cat > "$T/quiet.sh" <<'Q'
 exit 0
 Q
 chmod +x "$T/quiet.sh"
-start_watch () { timeout 10 env LUNA_SEND="$T/quiet.sh" PIDFILE="$T/pid" LOG="$T/log" LAUNCHER="$T/launcher" ALLOW="$T/allow" STOPPED="$T/hook/stopped" UPTIME_FILE="$T/uptime" HOME_PROC="$NOPROC" sh "$S/watch.sh"; }
+run_timeout () { if command -v timeout >/dev/null 2>&1; then timeout "$@"; elif command -v gtimeout >/dev/null 2>&1; then gtimeout "$@"; else shift; "$@"; fi; }
+start_watch () { run_timeout 10 env LUNA_SEND="$T/quiet.sh" PIDFILE="$T/pid" LOG="$T/log" LAUNCHER="$T/launcher" ALLOW="$T/allow" STOPPED="$T/hook/stopped" UPTIME_FILE="$T/uptime" HOME_PROC="$NOPROC" sh "$S/watch.sh"; }
 : > "$T/log"; echo "$$" > "$T/pid"
 start_watch
 check "a second watcher exits at once when one is already running" "$(grep -c 'another watcher is already running' "$T/log")" "1"

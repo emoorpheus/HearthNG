@@ -16,6 +16,7 @@ case "$3" in
 esac
 FAKE
 reset () {
+    TR=
     rm -rf "$T/bootd.log" "$T/dir" "$T/po" "$T/init.d" "$T/log" "$T/calls" "$T/listed" "$T/stubborn" "$T/down" "$T/launched" "$T/fg" "$T/bootd.json"
     mkdir -p "$T/dir" "$T/po" "$T/init.d"; echo '{"appId":"x"}' > "$T/dir/input.json"
     : > "$T/init.d/44-launcher-bootguard"; : > "$T/listed"
@@ -88,9 +89,11 @@ check "the input delete is sent after a list was read" "$([ "$(grep -n deleteDev
 reset; st 1 0 2 0
 g reached
 check "reached: the count is back to 0" "$(now)" "input=1 powerOn=0 tries=0 reverted=0 "
-reset; st 1 0 0 1; touch -d '2020-01-01' "$T/dir/state"
+mtime () { if stat -c %Y "$1" 2>/dev/null; then :; else stat -f %m "$1"; fi; }
+reset; st 1 0 0 1; touch -t 202001010000 "$T/dir/state"
+old_ts=$(mtime "$T/dir/state")
 g reached
-check "reached with a clean count writes nothing" "$(stat -c %Y "$T/dir/state")" "$(date -d '2020-01-01' +%s)"
+check "reached with a clean count writes nothing" "$(mtime "$T/dir/state")" "$old_ts"
 check "and keeps the reverted note" "$(now)" "input=1 powerOn=0 tries=0 reverted=1 "
 
 # start (from the startup folder): decides in the foreground, works in the background, prints nothing

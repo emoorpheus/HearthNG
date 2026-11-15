@@ -1,13 +1,69 @@
 # Changelog
 
-## HearthNG 1.0.2
+## HearthNG 1.0.3 (based on Hearth 2.2.0)
 
-Critical fix: prevent app relaunch/reset during TV cold boot and startup window transitions.
+Integrated upstream Hearth 2.2.0 while strictly preserving user configuration and custom features, and resolved app kickout/reset race condition after TV turn-on/standby wake.
 
-- **Fix false boot collision on empty foreground:** In `watch.sh` (`handle()`), early boot collision recovery (`< 75s`) now strictly matches `is_home "$line"` (when LG Home `com.webos.app.home` actually steals foreground). It no longer triggers on transient `(empty)` foreground events, which previously caused `watch.sh` to forcefully call `launch` on `last_user_app`, killing and restarting newly opened apps (e.g. Lampac) during their webview/DRM initialization.
-- **Top-level `app_opening` guard:** Moved `is_empty "$line" && app_opening` to the top of `handle()` before any home or collision checks, guaranteeing all transient layer transitions within 8 seconds of an app launch are ignored.
-- **Preserve `OPENING_FLAG` across foreground transitions:** Removed premature deletion of `/tmp/launcher-opening` in `handle()`'s user app branch, allowing the 8-second protection window to cover full multi-stage app initialization.
-- **Helper version bumped to `18-ng7`.**
+### HearthNG Improvements & Fixes
+
+- **Helper 18-ng8 (Collision & App Kickout Resolution):**
+  - **Eliminate app kickout after TV turn-on / long standby:** Fixed root cause where SAM's `last_input_handler` in `last_input` mode spawned `com.webos.app.home` and transient services (AirPlay, splash, inputcommon) dropped card windows to `(empty)` at ~43s after boot or standby wake. `watch.sh` no longer confuses transient background services with user apps, and automatically freezes LG Home and restores the running user app (`$LAUNCH_URI {"id":"$_target_app"}`) instead of opening HearthNG.
+  - **Filter transient system services:** In `watch.sh`, `last_user_app` tracking now strictly filters out transient overlays and services (`airplay`, `com.webos.app.splash`, `com.webos.app.screensaver`, `com.webos.app.inputcommon`, `com.webos.app.notification`, `com.webos.app.voice`, `com.webos.app.toast`, `com.hearthng.toast`, `com.webos.service.*`).
+  - **Extended cold-start protection window:** `app_opening()` debounce window extended from 8 s to 45 s to reliably cover cold boot and wake delays on heavier apps (Lampac, streaming apps).
+  - **Wake loop active check:** `wake_open()` checks whether a real user app is already running before initiating any launcher launch on wake.
+  - **Helper version bumped to `18-ng8`:** Installed helper on the TV automatically updates and restarts on launcher startup.
+- **Upstream Hearth 2.2.0 Integration:**
+  - Integrated Essentials tab and in-place Essentials editor (`EssentialsEdit`).
+  - Integrated live previews and contextual Help panel in Settings.
+  - Integrated *Most used* tile ordering (`orderByUsage`, `noteUsage`) replacing legacy recency.
+  - Integrated Network folder support (SMB share for icons, wallpapers, themes).
+  - Integrated unified *Map additional keys* (`ExtraKeys`, `maptargets`).
+  - Integrated quiet mode auto power-off (`quietPowerOff`, `quietoff.ts`).
+  - Integrated full cleanup of legacy update blockers and key filters (`retirePointerBlock`, `retireKeyFilter`, `cleanupOldBlock`).
+  - Added Italian and Thai language packs with Noto Sans Thai fonts.
+- **Preserved HearthNG Custom Capabilities:**
+  - Complete Russian localization (`ru.json`, `ru.js`).
+  - OLED Pure Black theme (`.oled-bare`, `.oled-black`).
+  - Live HDMI video signal indicator dot (`hdmiSignalExist` / `signal`).
+  - LG-style tile editing mode (`TileEdit`).
+  - 100% backward-compatible config loading (`storage.ts` preserves all existing user preferences).
+
+## 2.2.0
+
+A bigger release: a calmer Settings screen with help and previews, an Essentials tab you can edit, *Most used* ordering, a network folder, many more buttons to map, and Italian and Thai language packs.
+
+### Changes
+
+- **Essentials tab.** A new first tab after Apps & Sources with the settings most people change: theme, wallpaper, widget, screen saver, quiet mode, icon size. *Edit Essentials* (last row) lets you add, remove and reorder its rows. The rows also stay in their own tabs.
+- **Help and previews in Settings.** Every row can show a short help text beside the list, and rows that change how Home looks (icons, home row, margins, wallpaper, widget position, labels) show a live preview of the home screen. Settings use the full screen width, tab pills slide as you move, and the Magic Remote pointer scrolls the tab bar.
+- **Row names say where they belong.** Rows with a general word now start with their area, for example *Home row: scroll speed*, *Widget: show the date*, *Weather: city*, *Screensaver: brightness*, *Favourites: side margin*. Nothing saved changes.
+- **Most used** replaces *Order by last opened* (the switch keeps its place and its saved value). Apps you open most come first; favourites keep their places.
+- **Network folder** (rooted, experimental). Use pictures, icons, themes, language files and screen saver pictures from a NAS or PC (SMB share, read only). If the share is not there, Hearth uses its built-in pictures. Thanks to Maksim (lordmax895-oss, pull request #53) for the way to connect.
+- **Map additional keys** is rebuilt on the bundled key hook: four kinds of target (an app, an input, another remote button, a TV action such as *Screen off* or volume), a list of the TV's own inputs, and *Add a button* that only listens and does not start the app that button belongs to. Actions that are not tested on a TV are marked *untested*. The old *Reassign remote buttons* is gone: Hearth removes its filter once, keeps a backup of the old map, and asks you to map the buttons again. Thanks to Magic Mapper (afonsojramos, andrewfraley) for the ideas.
+- **Home leaves Settings.** Press Home twice, or Back, to leave Settings. Settings no longer closes by itself when the TV sends Hearth a spurious relaunch.
+- **Quiet mode** can switch the TV off a set time after the apps hide (*Quiet mode: switch the TV off after*). A pointer that wakes quiet mode uses up that one press and nothing else.
+- **Uninstall Hearth and undo all system changes** (rooted, System tab, last row): takes back what Hearth changed on the TV, writes one log, restarts the TV when needed, and uninstalls Hearth.
+- **Magic Remote pointer.** The pointer only moves the highlight in the middle of the home row; in the outer 20% the row scrolls smoothly, at the speed of *Home row: scroll speed*. A hover no longer jumps the row.
+- **Screen saver.** The video stays inside its frame while the OLED care drift runs; the care frame is 12 px. Saver rows have help texts. The saver log says which app was in front when the saver started (for issue #48).
+- **Slideshow *Each visit*** always shows a new picture: at once when Hearth is back in front after a minute or more away, and right after the first frames at a restart.
+- **Widget size** goes from 40 to 200 on the scale shown; date and weather text grow with the clock. The favourites bottom margin starts at 30 on fresh installs.
+- **Weather** tries three Open-Meteo hosts and remembers the one that worked (pull request #51, Maksim).
+- **Cities.** The city list is now grouped by country, 50 cities each for the countries of the bundled languages, including Italy and Thailand. A saved city keeps working.
+- **Languages.** Italian (pull request #55, doppiaRR) and Thai (pull request #56, MangaThatsFine) join French, Polish, Brazilian Portuguese, Indonesian, Spanish, German, Arabic and Russian. All new texts exist in every bundled language; texts in id, es, de, ar, ru, fr, it, pl and pt-BR are machine translated.
+- **Guides.** The README and the guides explain the Essentials tab, help and previews, the network folder, key mapping and installing with webOS Dev Manager on a rooted TV.
+
+### Fixes
+
+- The highlight no longer jumps to the first app while you move along the row (a relaunch while Hearth was in front reset it). *When Home is pressed* now starts on the first app for fresh installs; saved values stay.
+- Favourites: Up and Down glide instead of jerking.
+- The Settings preview shows the wallpaper at once, not only after a change.
+- *Block LG update pop-up* (2.1.5) is removed (LG's pop-up cannot be closed from outside). TVs that had it On are cleaned once at start and *Software update* works again.
+- The clock, pop-ups and app monograms are drawn on whole pixels, so their text stays sharp.
+- Helpers no longer keep the Homebrew Channel's open sockets: each one closes all file descriptors above 2 before it starts, so the TV's service hub cannot be held up by a leftover socket (seen as "root status pending" on a webOS 3.9 TV; not yet tested on a TV). Thanks to chriskoperdraad-tech (pull request #54).
+
+### Texts
+
+- New help texts and row names were machine translated into all bundled languages except Thai; the texts missing in the Italian pack were machine translated too. Corrections are welcome.
 
 ## HearthNG 1.0.1
 

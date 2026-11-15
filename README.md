@@ -169,6 +169,27 @@ sh /media/developer/launcher-homehook/stop.sh
 sh /media/developer/launcher-homehook/stop.sh resume
 ```
 
+## The remote stops answering
+
+If the remote stops answering, repair it in small steps. Do the next step only if the one before did not help.
+
+1. **Restart the TV.** Unplug it for 30 seconds, then plug it in again.
+2. **Remove start-up links.** Connect to the TV as `root` and type these two lines, one after the other.
+
+```
+sh /media/developer/launcher-remap/apply.sh off
+rm -f /var/lib/webosbrew/init.d/47-launcher-remap /var/lib/webosbrew/init.d/48-launcher-homehook /var/lib/webosbrew/init.d/49-launcher-homekey
+```
+
+3. **Only if you also use the Input Hook app:**
+
+```
+rm -f /var/lib/webosbrew/init.d/inputhook
+rm -f /home/root/.config/lginputhook/keybinds.json
+```
+
+Then restart the TV again.
+
 ---
 
 ## Building from Source

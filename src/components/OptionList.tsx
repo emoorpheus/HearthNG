@@ -1,5 +1,6 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'preact/hooks';
 import {LAYOUT} from '../theme/tokens';
+import {layoutSize, layoutY} from '../lib/fitscale';
 
 export interface OptionItem {
 	id: string;
@@ -27,7 +28,7 @@ interface Props {
 	onSelect: (index: number) => void;
 	onActivate: (index: number) => void;
 	/** panel width in px (the tab bar's width); default 1116 */
-	width?: number;
+	width?: number | string;
 }
 
 /** Room kept free below the list, in px. */
@@ -51,8 +52,8 @@ export function OptionList ({options, focused, selected, onSelect, onActivate, w
 		const measure = () => {
 			const view = viewRef.current;
 			if (!view) return;
-			const screenHeight = Math.min(window.innerHeight || LAYOUT.screenHeight, LAYOUT.screenHeight);
-			const room = Math.round(screenHeight - view.getBoundingClientRect().top - BOTTOM_SPACE);
+			const screenHeight = Math.min(layoutSize().h || LAYOUT.screenHeight, LAYOUT.screenHeight);
+			const room = Math.round(screenHeight - layoutY(view.getBoundingClientRect().top) - BOTTOM_SPACE);
 			if (room >= 120) setHeight((h) => (h === room ? h : room));
 		};
 		measure();
@@ -89,7 +90,7 @@ export function OptionList ({options, focused, selected, onSelect, onActivate, w
 	useEffect(() => { shiftRef.current = 0; setShift(0); }, [first]);
 
 	return (
-		<div class="options" ref={viewRef} style={width ? {height: `${height}px`, width: `${width}px`} : {height: `${height}px`}}>
+		<div class="options" ref={viewRef} style={width ? {height: `${height}px`, width: typeof width === 'number' ? `${width}px` : width} : {height: `${height}px`}}>
 			<div class="options__track" ref={trackRef} style={{transform: `translateY(${-shift}px)`}}>
 				{options.map((o, i) => o.header ? (
 					<div

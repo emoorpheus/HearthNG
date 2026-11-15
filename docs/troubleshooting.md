@@ -20,6 +20,27 @@ Then close and reopen HearthNG. After updating HearthNG, restart the TV or run t
 - **It does not open HearthNG.** Remotes send different key numbers. Run the guide in **Map home button**. If the separate *Input Hook* app has its own settings, HearthNG's rows are grey with a reason.
 - **It is dead after uninstalling HearthNG.** Restart the TV (unplug it for 30 seconds). The clean-up finishes and Home works again.
 
+## The remote stops answering
+
+If the remote stops answering, repair it in small steps. Do the next step only if the one before did not help.
+
+1. **Restart the TV.** Unplug it for 30 seconds, then plug it in again.
+2. **Remove start-up links.** Connect to the TV as `root` and type these two lines, one after the other.
+
+```
+sh /media/developer/launcher-remap/apply.sh off
+rm -f /var/lib/webosbrew/init.d/47-launcher-remap /var/lib/webosbrew/init.d/48-launcher-homehook /var/lib/webosbrew/init.d/49-launcher-homekey
+```
+
+3. **Only if you also use the Input Hook app:**
+
+```
+rm -f /var/lib/webosbrew/init.d/inputhook
+rm -f /home/root/.config/lginputhook/keybinds.json
+```
+
+Then restart the TV again.
+
 ## Other problems
 
 - **The Settings tile is gone.** You hid it on purpose. Hold OK on any app, press Up and choose the gear (**HearthNG Settings**) above the tile, or press Down five times on the Home screen to show the tile until HearthNG restarts. Then turn off **Hide the HearthNG Settings tile** in Look -> Home row.

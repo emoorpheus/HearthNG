@@ -122,6 +122,21 @@ LAUNCH_URI="luna://com.webos.applicationManager/launch"
 # Seconds since boot with hundredths: /proc/uptime does not depend on the TV's clock.
 uptime_now () { _up=; read -r _up _rest 2>/dev/null < "$UPTIME_FILE"; echo "${_up:-0}"; }
 log () { echo "$(uptime_now) watcher: $*" >> "$LOG"; }
+# >>> fdclean (the same lines in every helper; checked by scripts/test-fdclean.sh) >>>
+# #54: a helper started through the Homebrew service inherits its sockets (fds 3 and up) and a stuck registration can follow.
+# fdclean closes every fd above 2 in the process that runs it (use it in the background part, before `exec`); a shell that
+# cannot name a two-digit fd (dash) closes only fds 3 to 9. fdnote prints the count for the log.
+fdclean () {
+    _w=0; ( eval "exec 10>&-" ) 2>/dev/null && _w=1
+    for _f in /proc/self/fd/*; do
+        _n=${_f##*/}
+        case "$_n" in ''|*[!0-9]*|0|1|2) continue ;; esac
+        [ "${#_n}" -gt 1 ] && [ "$_w" = 0 ] && continue
+        eval "exec $_n>&-" 2>/dev/null
+    done
+}
+fdnote () { set -- /proc/self/fd/*; echo "fds=$#"; }
+# <<< fdclean <<<
 
 # "1234.56" -> 123456 (hundredths of a second). Not a number -> 0: an error inside $(( )) would stop the watcher.
 centis () {
@@ -162,6 +177,22 @@ sam_answered () {
 # HearthNG's own notification window (com.hearthng.toast): never an app the person opened.
 is_toast_app () {
     case "$1" in *"\"appId\":\"$TOAST_APP_ID\""*|*"\"appId\": \"$TOAST_APP_ID\""*) return 0 ;; esac
+    return 1
+}
+
+# Transient system services and overlays that must never be treated as the user's running app.
+is_system_transient_app () {
+    case "$1" in
+        airplay|\
+        com.webos.app.splash|\
+        com.webos.app.screensaver|\
+        com.webos.app.inputcommon|\
+        com.webos.app.notification|\
+        com.webos.app.voice|\
+        com.webos.app.toast|\
+        com.hearthng.toast|\
+        com.webos.service.*) return 0 ;;
+    esac
     return 1
 }
 
@@ -245,17 +276,35 @@ standby_begin () {
     log "standby: foreground is empty and the TV is not Active ($(power_line)): $th, waiting for the TV to turn on"
 }
 
-# Whether an app was launched recently (within 8 s). Protects cold-start transitions from empty-screen takeovers.
+# Whether an app was launched recently (within 45 s). Protects cold-start transitions from empty-screen takeovers.
 app_opening () {
     [ -f "$OPENING_FLAG" ] || return 1
     _ao_now=$(uptime_now); _ao_now=${_ao_now%%.*}
     _ao_t=; read -r _ao_t 2>/dev/null < "$OPENING_FLAG"
     _ao_ts=${_ao_t%%:*}
     _ao_age=$(( ${_ao_now:-0} - ${_ao_ts:-0} ))
-    if [ "$_ao_age" -ge 0 ] && [ "$_ao_age" -le 8 ]; then
+    if [ "$_ao_age" -ge 0 ] && [ "$_ao_age" -le 45 ]; then
         return 0
     fi
     rm -f "$OPENING_FLAG" 2>/dev/null
+    return 1
+}
+
+# The app ID recorded in OPENING_FLAG if present.
+opening_app () {
+    [ -f "$OPENING_FLAG" ] || return 1
+    _oa=; read -r _oa 2>/dev/null < "$OPENING_FLAG"
+    _oa_id="${_oa#*:}"
+    [ -n "$_oa_id" ] && [ "$_oa_id" != "$_oa" ] && echo "$_oa_id" && return 0
+    return 1
+}
+
+# Checks if a given app ID is currently running in SAM.
+app_is_running () {
+    [ -n "$1" ] || return 1
+    case "$("$LUNA" -n 1 "$RUNNING_URI" '{}' 2>/dev/null)" in
+        *"\"id\":\"$1\""*|*"\"id\": \"$1\""*) return 0 ;;
+    esac
     return 1
 }
 
@@ -272,6 +321,10 @@ wake_open () {
     if [ ! -f "$LAUNCHER/appinfo.json" ]; then log "wake ($1): Hearth is not installed: nothing to do"; return; fi
     if app_opening; then
         log "wake ($1): an app is opening: left as it is"
+        return
+    fi
+    if [ -n "$last_user_app" ] && ! is_system_transient_app "$last_user_app" && app_is_running "$last_user_app"; then
+        log "wake ($1): user app $last_user_app is running: left as it is"
         return
     fi
     # (file times are compared to the second)
@@ -721,14 +774,23 @@ handle () {
             if is_home "$line"; then allow_home_seen=1; thaw_home; fi
             return
         fi
-        # During boot: if LG Home actually appeared over a running user app (e.g. SAM LAUNCH_LASTAPP or preloadmanager),
-        # freeze LG Home and relaunch/restore the user app instead of overriding it with HearthNG.
-        # Must only match is_home: an empty foreground is never a collision with LG Home.
-        _h_now=$(uptime_now); _h_now=${_h_now%%.*}
-        if is_home "$line" && [ "${_h_now:-0}" -lt 75 ] && [ -n "$last_user_app" ] && [ $(( ${_h_now:-0} - last_user_app_time )) -le 15 ]; then
+        # If an app is opening or was in front within 60s and is still running in SAM:
+        # freeze LG Home and restore the user app instead of overriding it with HearthNG.
+        _target_app=
+        if app_opening; then
+            _target_app=$(opening_app)
+        fi
+        if [ -z "$_target_app" ] && [ -n "$last_user_app" ] && ! is_system_transient_app "$last_user_app"; then
+            _h_now=$(uptime_now); _h_now=${_h_now%%.*}
+            _app_age=$(( ${_h_now:-0} - ${last_user_app_time:-0} ))
+            if [ "$_app_age" -ge 0 ] && [ "$_app_age" -le 60 ] && app_is_running "$last_user_app"; then
+                _target_app="$last_user_app"
+            fi
+        fi
+        if [ -n "$_target_app" ]; then
             freeze_home
-            log "boot collision: LG Home appeared over $last_user_app during boot (uptime ${_h_now}s): restoring $last_user_app"
-            "$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$last_user_app\"}" 2>/dev/null
+            log "collision: LG Home or empty foreground over $_target_app: restoring $_target_app"
+            "$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$_target_app\"}" 2>/dev/null
             return
         fi
         if [ ! -f "$LAUNCHER/appinfo.json" ]; then
@@ -762,7 +824,7 @@ handle () {
         asked=
         clear_stale_allow
         _u_app=$(app_of "$line")
-        if [ -n "$_u_app" ] && [ "$_u_app" != "(empty)" ] && [ "$_u_app" != "com.webos.app.screensaver" ]; then
+        if [ -n "$_u_app" ] && [ "$_u_app" != "(empty)" ] && ! is_system_transient_app "$_u_app"; then
             last_user_app="$_u_app"
             _u_now=$(uptime_now); last_user_app_time=${_u_now%%.*}
         fi

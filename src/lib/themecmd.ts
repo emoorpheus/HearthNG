@@ -65,7 +65,7 @@ export function parseExtract (out: string): Extracted {
 	const files: Record<string, number> = {};
 	const head = out.slice(0, Math.max(0, out.indexOf('@@MANIFEST')) || out.length);
 	for (const l of head.split('\n')) {
-		const m = /^@@F (\d+) \.\/(.+?)\s*$/.exec(l.replace(/\r$/, ''));
+		const m = /^@@F\s+(\d+) \.\/(.+?)\s*$/.exec(l.replace(/\r$/, ''));
 		if (m) files[m[2]] = parseInt(m[1], 10);
 	}
 	const a = out.indexOf('@@MANIFEST\n');
