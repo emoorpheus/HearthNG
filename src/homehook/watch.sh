@@ -759,11 +759,17 @@ handle () {
     fi
     # HearthNG's own notification window: nothing changes (when it closes, SAM reports what is in front again)
     if is_toast_app "$line"; then return; fi
-    # While an app is in the process of opening (within 8 s of launch), ignore transient empty foreground.
+    # While an app is in the process of opening (within 45 s of launch), ignore transient empty foreground.
     # WebAppMgr, AirPlay and video decoders briefly drop the card window during startup; taking over or
     # relaunching here corrupts the app's startup sequence.
     if is_empty "$line" && app_opening; then
         log "transition: empty foreground while an app is opening: ignored"
+        return
+    fi
+    # If foreground is transiently empty (during boot card switch or service init), but a user app is still running:
+    # do NOT open the launcher and do NOT relaunch the app; simply ignore the transient empty frame.
+    if is_empty "$line" && [ -n "$last_user_app" ] && ! is_system_transient_app "$last_user_app" && app_is_running "$last_user_app"; then
+        log "transition: empty foreground while user app $last_user_app is running: ignored"
         return
     fi
     # no LG Home process to freeze (EMPTY_AS_HOME=auto) or EMPTY_AS_HOME=0: an empty foreground is left alone, as in
@@ -772,25 +778,6 @@ handle () {
     if is_home "$line" || is_empty "$line"; then
         if [ -f "$ALLOW" ]; then
             if is_home "$line"; then allow_home_seen=1; thaw_home; fi
-            return
-        fi
-        # If an app is opening or was in front within 60s and is still running in SAM:
-        # freeze LG Home and restore the user app instead of overriding it with HearthNG.
-        _target_app=
-        if app_opening; then
-            _target_app=$(opening_app)
-        fi
-        if [ -z "$_target_app" ] && [ -n "$last_user_app" ] && ! is_system_transient_app "$last_user_app"; then
-            _h_now=$(uptime_now); _h_now=${_h_now%%.*}
-            _app_age=$(( ${_h_now:-0} - ${last_user_app_time:-0} ))
-            if [ "$_app_age" -ge 0 ] && [ "$_app_age" -le 60 ] && app_is_running "$last_user_app"; then
-                _target_app="$last_user_app"
-            fi
-        fi
-        if [ -n "$_target_app" ]; then
-            freeze_home
-            log "collision: LG Home or empty foreground over $_target_app: restoring $_target_app"
-            "$LUNA" -n 1 "$LAUNCH_URI" "{\"id\":\"$_target_app\"}" 2>/dev/null
             return
         fi
         if [ ! -f "$LAUNCHER/appinfo.json" ]; then
@@ -809,6 +796,7 @@ handle () {
             is_empty "$(front)" && ! tv_active && standby_begin
             return
         fi
+        last_user_app=
         asked=$(uptime_now)
         rm -f "$STANDBY_FLAG" "$STANDBY_REF"    # the TV is on: any standby is over
         open_launcher
