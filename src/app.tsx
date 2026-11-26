@@ -1016,7 +1016,11 @@ export function App () {
 		[shownApps, shownInputs, config.tileOrder, config.sourceEdits, config.inputStatus, appEditsShown, config.orderByRecent, config.favourites, recentWake, themeRev]
 	);
 	const homeItems: TileModel[] = useMemo(
-		() => orderedTiles.concat(MISC_TILES.filter((t) => (t.key === MISC.lgHome ? config.showLgHome : t.key === MISC.system ? config.showSystem : !config.hideSettings || tileBack))),
+		() => orderedTiles.concat(
+			MISC_TILES
+				.filter((t) => (t.key === MISC.lgHome ? config.showLgHome : t.key === MISC.system ? config.showSystem : !config.hideSettings || tileBack))
+				.map((t) => ({...t, label: t.label}))
+		),
 		[orderedTiles, config.showLgHome, config.showSystem, config.hideSettings, tileBack, config.language, langTick]
 	);
 
@@ -1128,6 +1132,7 @@ export function App () {
 				shown: () => shownInputs.map((i) => inputTile(i, config.sourceEdits, config.inputStatus))
 			})
 		]},
+		lazyTab({id: TAB.essentials, label: tt('app.essentials'), items: [], shown: []}, {options: () => groupsOf('essentials', {...systemInfo, tvInput, powerOnNames})}),
 		lazyTab({id: TAB.look, label: tt('app.look'), items: [], shown: []}, {options: () => groupsOf('look', systemInfo)}),
 		lazyTab({id: TAB.clock, label: tt('app.widget'), items: [], shown: []}, {options: () => groupsOf('clock')}),
 		lazyTab({id: TAB.wallpaper, label: tt('app.wallpaper'), items: [], shown: []}, {options: () => groupsOf('wallpaper')}),

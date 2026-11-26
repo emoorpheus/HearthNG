@@ -9,7 +9,7 @@ export const INSTALL_OUT = '/tmp/hearth-install.out';
 export const INSTALL_PLACES = ['/media/developer/hearth-install.ipk', '/tmp/hearth-install.ipk'];
 export const INSTALL_ID = 'com.hearthng.launcher';
 const SHA = /^[0-9a-f]{64}$/;
-const URL_OK = /^https:\/\/github\.com\/(rudra-avatar\/Hearth|emoorpheus\/HearthNG)\/releases\/download\/[A-Za-z0-9._\/-]+$/;
+const URL_OK = /^https:\/\/github\.com\/emoorpheus\/HearthNG\/releases\/download\/[A-Za-z0-9._\/-]+$/;
 const VER = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 
 export interface InstallTarget {url: string; sha: string; version: string}

@@ -1,5 +1,16 @@
 # Changelog
 
+## HearthNG 1.0.4 (based on Hearth 2.2.0)
+
+Fixes for the self-updater, clock widget centering, Settings Essentials tab, complete Russian localization, and input-hook process re-injection reliability.
+
+- **Clock Widget Centering (`Clock.tsx`):** Restored whole-pixel horizontal margin centering (`p9`) for `center` and `right` alignment after the 2.2.0 CSS update removed `translateX(-50%)`, fixing both the main home clock and Settings `WidgetPreview`.
+- **Essentials Tab & Help Panels (`app.tsx`, `en.ts`, `ru.json`):** Restored the missing `Essentials` tab in Settings tabs and added complete help descriptions for HearthNG Look options (`preset`, `restoreLook`, `tileFrame`, `labelsOnFocus`).
+- **Live Language Refresh on Misc Tiles (`app.tsx`):** Cloned `MISC_TILES` entries on language changes/loads so `Tile`'s `shouldComponentUpdate` immediately reflects translated labels (`Настройки HearthNG`, etc.).
+- **Russian Localization Completed:** Translated all 259 missing UI labels, help texts, update prompts, network folder dialogs, essentials editor texts, and remote action descriptions (`docs/languages/packs/ru.json`, `public/languages/ru.js`).
+- **Self-Updater Fixed (`repo/updates.json`, `updatecore.ts`, `probeinstallcmd.ts`):** Restricted update manifest and IPK verification strictly to `emoorpheus/HearthNG` releases and updated `repo/updates.json` + `repo/apps.json` so Check for updates tracks HearthNG releases rather than upstream `tld.my.customlauncher`.
+- **Key Engine Re-Injection Resilience (`homehook.sh`):** Added live `/proc/$pid/maps` verification (`libinputhookpp.so`) for `lginput2` and `RELEASE` so restarted input daemons do not stay unhooked behind a stale `/tmp/inputhook` marker.
+
 ## HearthNG 1.0.3 (based on Hearth 2.2.0)
 
 Integrated upstream Hearth 2.2.0 while strictly preserving user configuration and custom features, and resolved app kickout/reset race condition after TV turn-on/standby wake.

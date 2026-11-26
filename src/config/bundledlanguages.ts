@@ -8,6 +8,6 @@ export const BUNDLED_LANGUAGES: readonly {id: string; name: string; stamp: strin
 	{id: "it", name: "Italiano", stamp: "842e52675d"},
 	{id: "pl", name: "Polski", stamp: "764af28607"},
 	{id: "pt-BR", name: "Português (Brasil)", stamp: "b1840cca18"},
-	{id: "ru", name: "Русский", stamp: "0414511f7f"},
+	{id: "ru", name: "Русский", stamp: "d6dd602d55"},
 	{id: "th", name: "ไทย", stamp: "eddaf21432"}
 ];

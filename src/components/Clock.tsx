@@ -1,3 +1,4 @@
+import {useLayoutEffect, useRef} from 'preact/hooks';
 import {fullDate, timeParts, type TimeFormat} from '../lib/clock';
 import type {ClockConfig} from '../lib/storage';
 import {colorInfo, inkIsDark, validInk} from '../lib/clockcolor';
@@ -9,6 +10,7 @@ import {varScope} from '../lib/cssvars';
 /** The clock: the time (with a small AM/PM beside it in 12-hour mode) and the date.
  *  Size, thickness, colour, position and what is shown all come from the settings. */
 export function Clock ({now, format, config, weather}: {now: Date; format: TimeFormat; config: ClockConfig; weather?: WeatherView | null}) {
+	const ref = useRef<HTMLDivElement>(null);
 	const {time, period} = timeParts(now, format);
 	const size = config.size;
 	const info = colorInfo(config.color);
@@ -33,8 +35,22 @@ export function Clock ({now, format, config, weather}: {now: Date; format: TimeF
 	for (const k in scope.obj) style[k] = scope.obj[k];
 	if (config.opacity < 100) style.opacity = String(config.opacity / 100);
 	const classes = [scope.cls, 'clock', dark && 'clock--dark', !config.shadow && 'clock--noshadow', config.align === 'left' && 'clock--left', config.align === 'right' && 'clock--right'].filter(Boolean).join(' ');
+	// p9: centre/right-align with a whole-pixel margin instead of CSS translateX(-50%), so OLED shift and WidgetPreview scale stay crisp
+	useLayoutEffect(() => {
+		const fit = () => {
+			const el = ref.current;
+			if (!el) return;
+			const w = el.offsetWidth;
+			el.style.marginLeft = config.align === 'left' ? '' : config.align === 'right' ? `${-w}px` : `${-Math.round(w / 2)}px`;
+		};
+		fit();
+		let alive = true;
+		const fonts = (document as {fonts?: {ready?: Promise<unknown>}}).fonts;
+		if (fonts && fonts.ready) fonts.ready.then(() => { if (alive) fit(); });
+		return () => { alive = false; };
+	});
 	return (
-		<div class={classes} style={style}>
+		<div ref={ref} class={classes} style={style}>
 			{scrimBg && <div class="clock__scrim" style={{background: scrimBg}} />}
 			<div class="clock__time" style={{fontSize: `${size}px`, fontWeight: config.weight, letterSpacing: `${(size * 0.045).toFixed(1)}px`}}>
 				{time}

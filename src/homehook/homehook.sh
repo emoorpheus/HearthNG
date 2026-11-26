@@ -41,7 +41,24 @@ ENGINE_DIR="${ENGINE_DIR:-/media/developer/launcher-homekey}"
 LOGF="${LOGF:-/tmp/hearth-homehook.log}"
 
 have_files () { [ -f "$DIR/ezinject" ] && [ -f "$DIR/libinputhookpp.so" ]; }
-ready_count () { n=0; for f in /tmp/lginput-hook-*.log; do [ -f "$f" ] && grep -q 'InputHook initialized' "$f" 2>/dev/null && n=$((n+1)); done; echo $n; }
+ready_count () {
+    if [ -r /proc/self/maps ] && command -v pidof >/dev/null 2>&1; then
+        _live=0; _miss=0
+        for _t in lginput2 RELEASE micomservice tvservice testapp; do
+            for _p in $(pidof "$_t" 2>/dev/null); do
+                [ -r "/proc/$_p/maps" ] || continue
+                if grep -q 'libinputhookpp\.so' "/proc/$_p/maps" 2>/dev/null; then
+                    _live=$((_live + 1))
+                elif [ "$_t" = lginput2 ] || [ "$_t" = RELEASE ]; then
+                    _miss=1
+                fi
+            done
+        done
+        if [ "$_miss" -eq 1 ]; then echo 0; return 0; fi
+        if [ "$_live" -gt 0 ]; then echo "$_live"; return 0; fi
+    fi
+    n=0; for f in /tmp/lginput-hook-*.log; do [ -f "$f" ] && grep -q 'InputHook initialized' "$f" 2>/dev/null && n=$((n+1)); done; echo $n
+}
 
 find_pids () {   # prints "comm pid" for each running target (one grep over /proc: cheap even while the TV is still starting)
     grep -sE "^($(echo $TARGETS | tr ' ' '|'))\$" /proc/[0-9]*/comm 2>/dev/null | sed -n 's#^/proc/\([0-9]*\)/comm:\(.*\)$#\2 \1#p'

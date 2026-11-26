@@ -7,25 +7,25 @@
   },
   "packages": [
     {
-      "id": "tld.my.customlauncher",
-      "title": "Hearth for WebOS",
-      "iconUri": "https://raw.githubusercontent.com/rudra-avatar/Hearth/main/public/largeIcon.png",
+      "id": "com.hearthng.launcher",
+      "title": "HearthNG for webOS",
+      "iconUri": "https://raw.githubusercontent.com/emoorpheus/HearthNG/main/public/largeIcon.png",
       "shortDescription": "Fast, calm home screen: clock, weather, apps, inputs, wallpaper.",
-      "fullDescriptionUrl": "https://raw.githubusercontent.com/rudra-avatar/Hearth/main/repo/description.html",
+      "fullDescriptionUrl": "https://raw.githubusercontent.com/emoorpheus/HearthNG/main/repo/description.html",
       "manifest": {
-        "id": "tld.my.customlauncher",
-        "version": "2.1.0",
+        "id": "com.hearthng.launcher",
+        "version": "1.0.4",
         "type": "web",
-        "title": "Hearth for WebOS",
-        "appDescription": "A fast, calm home screen for LG webOS TVs: clock, weather, your apps and inputs, wallpaper or slideshow.",
-        "iconUri": "https://raw.githubusercontent.com/rudra-avatar/Hearth/main/public/largeIcon.png",
-        "sourceUrl": "https://github.com/rudra-avatar/Hearth",
+        "title": "HearthNG for webOS",
+        "appDescription": "HearthNG (a fork of Hearth): a fast, calm home screen for LG webOS TVs: clock, weather, your apps and inputs, wallpaper or slideshow.",
+        "iconUri": "https://raw.githubusercontent.com/emoorpheus/HearthNG/main/public/largeIcon.png",
+        "sourceUrl": "https://github.com/emoorpheus/HearthNG",
         "rootRequired": "optional",
-        "ipkUrl": "https://github.com/rudra-avatar/Hearth/releases/download/v2.1.0/tld.my.customlauncher_2.1.0_all.ipk",
+        "ipkUrl": "https://github.com/emoorpheus/HearthNG/releases/download/v1.0.4/com.hearthng.launcher_1.0.4_all.ipk",
         "ipkHash": {
-          "sha256": "d62ee9d31e756683dec235d08db58dce57f2db40a74dbe824c012541016226da"
+          "sha256": "9ea435a8409d26110c460833e037cac0623e8ebce79f59b0a62a8af4631436e3"
         },
-        "ipkSize": 19313484
+        "ipkSize": 22176116
       }
     }
   ]

@@ -15,7 +15,7 @@ export interface UpdateEntry {
 }
 
 const VERSION = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-const IPK_URL = /^https:\/\/github\.com\/(rudra-avatar\/Hearth|emoorpheus\/HearthNG)\/releases\/download\/[A-Za-z0-9._\/-]+\.ipk$/;
+const IPK_URL = /^https:\/\/github\.com\/emoorpheus\/HearthNG\/releases\/download\/[A-Za-z0-9._\/-]+\.ipk$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const CONTROL = /[\u0000-\u001f\u007f]/g;
 const MAX_VERSIONS = 30;

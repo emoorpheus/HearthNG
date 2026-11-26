@@ -13,11 +13,12 @@ let fail = 0;
 const eq = (a, b, m) => { const ok = JSON.stringify(a) === JSON.stringify(b); if (!ok) fail++; console.log(ok ? 'ok  ' : 'FAIL', m, ok ? '' : `(${JSON.stringify(a)} != ${JSON.stringify(b)})`); };
 
 const SHA = 'a'.repeat(64);
-const list = (extra = {}) => JSON.stringify({packages: [{manifest: Object.assign({ipkUrl: 'https://github.com/rudra-avatar/Hearth/releases/download/v2.0.2/tld.my.customlauncher_2.0.2_all.ipk', ipkHash: {sha256: SHA}}, extra)}]});
-eq(h.installTarget(list()), {url: 'https://github.com/rudra-avatar/Hearth/releases/download/v2.0.2/tld.my.customlauncher_2.0.2_all.ipk', sha: SHA, version: '2.0.2'}, 'target: version from the address');
-eq(h.installTarget(list({version: '2.0.9'})).version, '2.0.9', 'target: manifest version wins');
+const list = (extra = {}) => JSON.stringify({packages: [{manifest: Object.assign({ipkUrl: 'https://github.com/emoorpheus/HearthNG/releases/download/v1.0.4/com.hearthng.launcher_1.0.4_all.ipk', ipkHash: {sha256: SHA}}, extra)}]});
+eq(h.installTarget(list()), {url: 'https://github.com/emoorpheus/HearthNG/releases/download/v1.0.4/com.hearthng.launcher_1.0.4_all.ipk', sha: SHA, version: '1.0.4'}, 'target: version from the address');
+eq(h.installTarget(list({version: '1.0.5'})).version, '1.0.5', 'target: manifest version wins');
 eq(typeof h.installTarget(list({ipkUrl: 'https://evil.example/x.ipk'})), 'string', 'target: foreign address refused');
-eq(typeof h.installTarget(list({ipkUrl: 'https://github.com/rudra-avatar/Hearth/releases/download/v2/x;rm -rf'})), 'string', 'target: shell characters refused');
+eq(typeof h.installTarget(list({ipkUrl: 'https://github.com/rudra-avatar/Hearth/releases/download/v2.2.0/tld.my.customlauncher_2.2.0_all.ipk'})), 'string', 'target: upstream Hearth address refused');
+eq(typeof h.installTarget(list({ipkUrl: 'https://github.com/emoorpheus/HearthNG/releases/download/v1.0.4/x;rm -rf'})), 'string', 'target: shell characters refused');
 eq(typeof h.installTarget('{'), 'string', 'target: bad json');
 let threw = false; try { h.installScript({url: 'https://github.com/x', sha: SHA, version: '2.0.2'}); } catch (e) { threw = true; }
 eq(threw, true, 'script: a bad target throws');
